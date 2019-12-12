@@ -9,6 +9,12 @@ extern "C" {
 //#include "stm32f1xx.h"
 #include <stm32f103xb.h>
 
+
+/* GPIO definitions */
+#define GPIO_MODE_MASK  15
+#define GPIO_MODE_OUT   (2 << 0)     // max speed 2MHz
+#define GPIO_CFG_OOD    (1 << 2)     // Output open drain
+
 #if 0
 #define LED_PORT    GPIOB
 #define LED_PIN     GPIO_PIN_3
@@ -35,6 +41,10 @@ extern "C" {
 #define DBG_LED_INIT LED_INIT
 
 #define GPIO_ENABLE RCC->APB2ENR |= (1<<4) | (1 << 3) | (1 << 2) | (1 << 0)
+
+//PB6
+#define DBG_PIN_INIT GPIOB->CRL = (GPIOB->CRL & ~(GPIO_MODE_MASK<<24)) | (GPIO_MODE_OUT << 24)
+#define DBG_PIN_TOGGLE GPIOB->ODR ^= (1 << 6)
 
 
 #define MCO_EN GPIOA->CRH = (GPIOA->CRH & ~(15<<0)) | (11 << 0); \

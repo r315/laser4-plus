@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "board.h"
+#include "app.h"
 
 
 #define HSI_VALUE 8000000U /*!< Default value of the Internal oscillator in Hz. */
@@ -16,17 +16,28 @@
 #define RCC_CR_PLLON_bb     (*(uint8_t *)0x42420060UL)
 #define RCC_CR_PLLRDY_bb    (*(uint8_t *)0x42420064UL)
 
-uint32_t SystemCoreClock;
-extern unsigned int _sidata, _sdata, _edata, _sbss, _ebss, _stack, _estack;
+uint32_t SystemCoreClock = 8000000UL;
+extern uint32_t _sidata, _sdata, _edata, _sbss, _ebss, _stack, _estack;
+static void errorHandler(void);
 
-static void errorHandler(void){
-    while (1){
-        asm("nop");
+#ifdef USE_FREERTOS
+#define USER_TSK_SIZE       1024
+#define USER_TSK_PRIO       (configMAX_PRIORITIES / 4)
+#define USER_TSK_HANDLE     &husertsk
+#define USER_TSK_PARAM      &SystemCoreClock
+
+static TaskHandle_t         husertsk;
+
+
+static void user_task(void *ptr){
+    while(1){
+        app_loop(ptr);
     }
 }
+#endif
 
 NAKED void Reset_Handler(void){
-    volatile unsigned *src, *dest;
+volatile uint32_t *src, *dest;
 
     /* Copy .data section */
     for (src = &_sidata, dest = &_sdata; dest < &_edata; src++, dest++){
@@ -105,18 +116,37 @@ NAKED void Reset_Handler(void){
             errorHandler();
         }
     }
-    //__libc_init_array();
 
-#if defined(RTOS)
+    SystemCoreClock = 72000000UL;
+
+    SysTick_Config(SystemCoreClock/1000U);
+    NVIC_SetPriority(SysTick_IRQn, 15);         // Maximum priority
+    NVIC_EnableIRQ(SysTick_IRQn);
+
+#if defined(USE_FREERTOS)
+    asm volatile("sub sp, sp, #16");         // Give some stack for function parameters
     app_setup();
     /* Configure tasks*/
+    if(xTaskCreate(user_task, "User Task", USER_TSK_SIZE, USER_TSK_PARAM, USER_TSK_PRIO, USER_TSK_HANDLE) != pdPASS){
+        errorHandler();
+    }
     /* Start scheduler */
-#else    
+    vTaskStartScheduler();
+
+#else
+    //__libc_init_array();
     app_main();
 #endif
     /* case returns... */
     asm("b .");
 }
+
+static void errorHandler(void){
+    while (1){
+        asm("nop");
+    }
+}
+
 
 void defaultHandler(void){
     while (1){
@@ -127,8 +157,36 @@ void defaultHandler(void){
     }
 }
 
+void dumpHandler(uint32_t *regs){
+/*volatile uint32_t r0 = regs[ 0 ];
+volatile uint32_t r1 = regs[ 1 ];
+volatile uint32_t r2 = regs[ 2 ];
+volatile uint32_t r3 = regs[ 3 ];
+
+volatile uint32_t r12 = regs[ 4 ];
+volatile uint32_t lr = regs[ 5 ];
+volatile uint32_t pc = regs[ 6 ];
+volatile uint32_t psr = regs[ 7 ];*/
+    while(1){
+    }
+}
+
+NAKED void HardFault_Handler(void){
+    asm volatile
+    (
+        " tst lr, #4                                 \n"
+        " ite eq                                     \n"
+        " mrseq r0, msp                              \n"
+        " mrsne r0, psp                              \n"
+        " ldr r1, [r0, #24]                          \n"
+        " ldr r2, dumpHandler_address                \n"
+        " bx r2                                      \n"
+        " dumpHandler_address: .word dumpHandler     \n"
+    );
+}
+
 WEAK void NMI_Handler(void);
-WEAK void HardFault_Handler(void);
+//WEAK void HardFault_Handler(void);
 WEAK void MemManage_Handler(void);
 WEAK void BusFault_Handler(void);
 WEAK void UsageFault_Handler(void);
@@ -181,7 +239,7 @@ WEAK void RTC_Alarm_IRQHandler(void);
 WEAK void USBWakeUp_IRQHandler(void);
 
 #pragma weak NMI_Handler = defaultHandler
-#pragma weak HardFault_Handler = defaultHandler
+//#pragma weak HardFault_Handler = defaultHandler
 #pragma weak MemManage_Handler = defaultHandler
 #pragma weak BusFault_Handler = defaultHandler
 #pragma weak UsageFault_Handler = defaultHandler
