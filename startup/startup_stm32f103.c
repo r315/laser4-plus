@@ -11,10 +11,10 @@
 /* RCC_CR Bit Banding definitions 
     address = bit_banding_peripheral_base + (offset * 32) + (bit * 4)
 */
-#define RCC_CR_HSEON_bb (*(uint8_t *)0x42420040UL)
-#define RCC_CR_HSERDY_bb *((uint8_t *)0x42420044UL)
-#define RCC_CR_PLLON_bb *((uint8_t *)0x42420060UL)
-#define RCC_CR_PLLRDY_bb *((uint8_t *)0x42420064UL)
+#define RCC_CR_HSEON_bb     (*(uint8_t *)0x42420040UL)
+#define RCC_CR_HSERDY_bb    (*(uint8_t *)0x42420044UL)
+#define RCC_CR_PLLON_bb     (*(uint8_t *)0x42420060UL)
+#define RCC_CR_PLLRDY_bb    (*(uint8_t *)0x42420064UL)
 
 uint32_t SystemCoreClock;
 extern unsigned int _sidata, _sdata, _edata, _sbss, _ebss, _stack, _estack;
@@ -120,6 +120,10 @@ NAKED void Reset_Handler(void){
 
 void defaultHandler(void){
     while (1){
+        asm volatile (
+            "nop\t\n"
+            "b ."
+        );
     }
 }
 
