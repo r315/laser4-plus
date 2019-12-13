@@ -5,7 +5,6 @@
 extern "C" {
 #endif
 
-//#include <stdout.h>
 //#include "stm32f1xx.h"
 #include <stm32f103xb.h>
 

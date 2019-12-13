@@ -21,10 +21,11 @@ extern uint32_t _sidata, _sdata, _edata, _sbss, _ebss, _stack, _estack;
 static void errorHandler(void);
 
 #ifdef USE_FREERTOS
+
 #define USER_TSK_SIZE       1024
 #define USER_TSK_PRIO       (configMAX_PRIORITIES / 4)
 #define USER_TSK_HANDLE     &husertsk
-#define USER_TSK_PARAM      &SystemCoreClock
+#define USER_TSK_PARAM      NULL
 
 static TaskHandle_t         husertsk;
 
@@ -141,7 +142,7 @@ volatile uint32_t *src, *dest;
     asm("b .");
 }
 
-static void errorHandler(void){
+void errorHandler(void){
     while (1){
         asm("nop");
     }

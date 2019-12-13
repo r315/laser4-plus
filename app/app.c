@@ -7,13 +7,13 @@ void app_setup(void){
     DBG_LED_INIT;
     DBG_PIN_INIT;
     //MCO_EN;
+    CDC_Init();
 }
 
 void app_loop(void *ptr){
     DBG_LED_TOGGLE;
     DBG_PIN_TOGGLE;
     vTaskDelay(200);
-
 }
 #else
 void app_main(void){

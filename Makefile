@@ -30,7 +30,7 @@ OPT = -Og
 # source path
 
 APP_SRC_PATH :=$(CURDIR)/app
-LIB_USB_PATH :=$(CURDIR)/lib/stm32-usb-device
+LIB_USB_PATH :=$(CURDIR)/lib/stm32-usb-cdc
 LIB_DFU_PATH :=$(CURDIR)/lib/stm32-dfu-bootloader
 STARTUP_PATH :=$(CURDIR)/startup
 
@@ -74,26 +74,19 @@ BUILD_DIR :=build
 # C sources
 C_SOURCES =  \
 $(STARTUP_PATH)/startup_stm32f103.c \
+$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c \
 $(wildcard $(APP_SRC_PATH)/*.c) \
 #$(LIBEMB_PATH)/misc/strfunc.c \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd_ex.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_ll_usb.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc.c \
@@ -108,6 +101,18 @@ $(FREERTOS_DIR)/queue.c \
 $(FREERTOS_DIR)/tasks.c \
 $(FREERTOS_DIR)/timers.c \
 $(FREERTOS_DIR)/CMSIS_RTOS/cmsis_os.c \
+
+C_SOURCES += \
+$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
+$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
+$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
+$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
+$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_ll_usb.c \
+$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd.c \
+$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd_ex.c \
+$(LIB_USB_PATH)/usbd_conf.c \
+$(LIB_USB_PATH)/usbd_desc.c \
+$(LIB_USB_PATH)/usbd_cdc_if.c \
 
 # CPP sources
 CPP_SOURCES = \
@@ -131,11 +136,11 @@ C_INCLUDES =  \
 -I$(APP_SRC_PATH) \
 -I$(LIB_USB_PATH) \
 -I$(LIBEMB_PATH)/include \
+-I$(REPOSITORY)Drivers/CMSIS/Include \
 -I$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Inc \
 -I$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Inc/Legacy \
--I$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Inc \
 -I$(REPOSITORY)Drivers/CMSIS/Device/ST/STM32F1xx/Include \
--I$(REPOSITORY)Drivers/CMSIS/Include \
+-I$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Inc \
 -I$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
 -I$(FREERTOS_DIR)/include \
 -I$(FREERTOS_DIR)/CMSIS_RTOS \
@@ -172,7 +177,7 @@ CPU = -mcpu=cortex-m3
 # NONE for Cortex-M0/M0+/M3
 
 # float-abi
-FLOAT-ABI = -u_printf_float
+FLOAT-ABI = #-u_printf_float
 
 # mcu
 MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
@@ -208,11 +213,16 @@ endif
 LDSCRIPT = startup/STM32F103C8Tx_FLASH.ld
 #LDSCRIPT =startup/f103c8tx_dfu.ld
 
+#SPECS =-specs=nano.specs
 # libraries
-LIBS = -lc -lnosys #-nostartfiles -nostdlib #-lc -lm -lnosys 
+LIBS =-nostartfiles -nostdlib #-lc -lm -lnosys 
 LIBDIR = 
-LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
+LDFLAGS = $(MCU) $(SPECS) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
+
+#######################################
+# Rules
+#######################################
 # default action: build all
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin #$(BUILD_DIR)/$(TARGET).hex
 #@echo $(OBJECTS)
