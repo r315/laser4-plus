@@ -1,9 +1,6 @@
 #include <stdint.h>
 #include "app.h"
 
-
-#define HSI_VALUE 8000000U /*!< Default value of the Internal oscillator in Hz. */
-#define HSE_VALUE 8000000U /*!< Default value of the External oscillator in Hz. */
 #define WEAK __attribute__((weak))
 #define NAKED __attribute__((naked))
 #define ISR __attribute__((section(".isr_vector")))
@@ -142,6 +139,20 @@ volatile uint32_t *src, *dest;
     asm("b .");
 }
 
+NAKED void HardFault_Handler(void){
+    asm volatile
+    (
+        " tst lr, #4                                 \n"        // Check current stack
+        " ite eq                                     \n"
+        " mrseq r0, msp                              \n"        // Move msp to r0 ??
+        " mrsne r0, psp                              \n"        // Move psp to r0 ??
+        " ldr r1, [r0, #24]                          \n"        // Get address were exception happen ?
+        " ldr r2, dumpHandler_address                \n"
+        " bx r2                                      \n"
+        " dumpHandler_address: .word dumpHandler     \n"
+    );
+}
+
 void errorHandler(void){
     while (1){
         asm("nop");
@@ -170,20 +181,6 @@ volatile uint32_t pc = regs[ 6 ];
 volatile uint32_t psr = regs[ 7 ];*/
     while(1){
     }
-}
-
-NAKED void HardFault_Handler(void){
-    asm volatile
-    (
-        " tst lr, #4                                 \n"
-        " ite eq                                     \n"
-        " mrseq r0, msp                              \n"
-        " mrsne r0, psp                              \n"
-        " ldr r1, [r0, #24]                          \n"
-        " ldr r2, dumpHandler_address                \n"
-        " bx r2                                      \n"
-        " dumpHandler_address: .word dumpHandler     \n"
-    );
 }
 
 WEAK void NMI_Handler(void);
