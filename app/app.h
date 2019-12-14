@@ -1,6 +1,10 @@
 #ifndef _app_h_
 #define _app_h_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "board.h"
 
@@ -8,6 +12,7 @@
 
 #ifdef USE_FREERTOS
 #include <FreeRTOS.h>
+#include <console.h>
 #include <task.h>
 #include <queue.h>
 #include <stdout.h>
@@ -20,4 +25,9 @@ void app_loop(void *ptr);
 #else
 void app_main(void);
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

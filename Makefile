@@ -13,7 +13,7 @@
 ######################################
 # target
 ######################################
-TARGET = laser4+
+TARGET =laser4+
 
 ######################################
 # building variables
@@ -32,6 +32,7 @@ OPT = -Og
 APP_SRC_PATH :=$(CURDIR)/app
 LIB_USB_PATH :=$(CURDIR)/lib/stm32-usb-cdc
 LIB_DFU_PATH :=$(CURDIR)/lib/stm32-dfu-bootloader
+#LIB_MULTIPROTOCOL_PATH :=$(CURDIR)/lib/multiprotocol
 STARTUP_PATH :=$(CURDIR)/startup
 
 FW :=STM32Cube_FW_F1_V1.8.0/
@@ -60,6 +61,7 @@ $(FREERTOS_DIR) \
 $(FREERTOS_DIR)/portable/GCC/ARM_CM3 \
 $(FREERTOS_DIR)/portable/MemMang \
 $(FREERTOS_DIR)/CMSIS_RTOS \
+$(LIB_MULTIPROTOCOL_PATH) \
 
 # firmware library path
 PERIFLIB_PATH = 
@@ -76,12 +78,12 @@ C_SOURCES =  \
 $(STARTUP_PATH)/startup_stm32f103.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c \
 $(wildcard $(APP_SRC_PATH)/*.c) \
-#$(LIBEMB_PATH)/misc/strfunc.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c \
+$(wildcard $(LIB_MULTIPROTOCOL_PATH)/*.c) \
+$(LIBEMB_PATH)/misc/strfunc.c \
+#$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c \
@@ -114,11 +116,16 @@ $(LIB_USB_PATH)/usbd_conf.c \
 $(LIB_USB_PATH)/usbd_desc.c \
 $(LIB_USB_PATH)/usbd_cdc_if.c \
 
+C_SOURCES += \
+$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c \
+$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c \
+
 # CPP sources
 CPP_SOURCES = \
+$(LIBEMB_PATH)/console/console.cpp \
+$(wildcard $(APP_SRC_PATH)/*.cpp) \
 #$(wildcard $(APP_SRC_DIR)/*.cpp) \
 $(wildcard $(APP_SRC_DIR)/console/*.cpp) \
-$(LIBEMB_PATH)/console/console.cpp \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -190,7 +197,7 @@ AS_DEFS =
 C_DEFS =  \
 -DUSE_HAL_DRIVER \
 -DSTM32F103xB \
--DCONSOLE_BLOCKING
+#-DCONSOLE_BLOCKING \
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
@@ -227,6 +234,7 @@ LDFLAGS = $(MCU) $(SPECS) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/
 all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin #$(BUILD_DIR)/$(TARGET).hex
 #@echo $(OBJECTS)
 
+ifeq ($(shell uname -s), Linux)
 $(TARGET).cfg:
 	@echo "Creating opencod configuration file"
 	echo "interface jlink" >> $@
@@ -238,7 +246,20 @@ $(TARGET).cfg:
 program: $(BUILD_DIR)/$(TARGET).elf $(TARGET).cfg
 	openocd -f $(TARGET).cfg -c "program $(BUILD_DIR)/$(TARGET).elf verify reset exit"
 #openocd -f $(TARGET).cfg -c "program $(BUILD_DIR)/$(TARGET).bin 0x08001000 verify reset exit"
+else
+JLINK =c:/tools/jlink_v500/JLink
+DEVICE =STM32F103T8
+$(TARGET).jlink:
+	@echo "Creating Jlink configuration file"
+	echo "erase" >> $@
+	echo "loadbin  $(BUILD_DIR)/$(TARGET).bin , 0x08000000" >> $@
+	echo "r" >> $@
+	echo "q" >> $@
 
+program: $(BUILD_DIR)/$(TARGET).bin $(TARGET).jlink
+	$(JLINK) -device $(DEVICE) -if SWD -speed auto -CommanderScript $(TARGET).jlink
+endif
+# DFU upload
 upload: $(BUILD_DIR)/$(TARGET).bin
 	dfu-util -a 0 -s 0x08001000 -D $< -R
 
