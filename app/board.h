@@ -39,20 +39,30 @@ extern "C" {
 #define DBG_LED_OFF LED_OFF
 #define DBG_LED_INIT GPO_INIT(LED_PORT, LED_PIN)
 
-#define GPIO_ENABLE RCC->APB2ENR |= (1<<4) | (1 << 3) | (1 << 2) | (1 << 0)
 
 //PB6
-#define DBG_PIN_INIT GPIOB->CRL = (GPIOB->CRL & ~(GPIO_MODE_MASK<<24)) | (GPIO_MODE_OUT << 24)
-#define DBG_PIN_TOGGLE GPIOB->ODR ^= (1 << 6)
+#define CC25_CS_PIN     6
+#define CC25_CS_PORT    GPIOB
+#define CC25_CS_INIT GPO_INIT(CC25_CS_PORT, CC25_CS_PIN); CC25_CSN_off
+#define CC25_CSN_off GPO_SET(CC25_CS_PORT, CC25_CS_PIN)
+#define CC25_CSN_on GPO_CLEAR(CC25_CS_PORT, CC25_CS_PIN)
 
+#define DBG_PIN_TOGGLE CC25_CS_PORT->ODR ^= (1<<CC25_CS_PIN)
 
+/* SPI */
+#define SPI_PINS_INIT GPIOB->CRH = (GPIOB->CRH & ~(0xFFF << 20)) | (0xB4B << 20); //Output AF_PP, IN no pull
+
+//Main Clock Outpu, requires prior MCO bit in RCC_CFG
 #define MCO_EN GPIOA->CRH = (GPIOA->CRH & ~(15<<0)) | (11 << 0); \
-            RCC->APB2ENR |= (1 << 0)
- 
+               RCC->APB2ENR |= (1 << 0)
 
+#define HEL_GetTick BOARD_GetTick
+void BOARD_Init(void);
+uint32_t BOARD_GetTick(void);
 void BOARD_GPO_Init(GPIO_TypeDef *port, uint8_t pin);
 void SPI_Write(uint8_t data);
 uint8_t SPI_Read(void);
+
 
 #ifdef __cplusplus
 }
