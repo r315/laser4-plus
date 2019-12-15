@@ -16,6 +16,7 @@
 uint32_t SystemCoreClock = 8000000UL;
 extern uint32_t _sidata, _sdata, _edata, _sbss, _ebss, _stack, _estack;
 static void errorHandler(void);
+extern void __libc_init_array(void);
 
 #ifdef USE_FREERTOS
 
@@ -123,6 +124,7 @@ volatile uint32_t *src, *dest;
 
 #if defined(USE_FREERTOS)
     asm volatile("sub sp, sp, #16");         // Give some stack for function parameters
+    __libc_init_array();
     app_setup();
     /* Configure tasks*/
     if(xTaskCreate(user_task, "User Task", USER_TSK_SIZE, USER_TSK_PARAM, USER_TSK_PRIO, USER_TSK_HANDLE) != pdPASS){
@@ -130,7 +132,6 @@ volatile uint32_t *src, *dest;
     }
     /* Start scheduler */
     vTaskStartScheduler();
-
 #else
     //__libc_init_array();
     app_main();

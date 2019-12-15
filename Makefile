@@ -220,9 +220,10 @@ endif
 LDSCRIPT = startup/STM32F103C8Tx_FLASH.ld
 #LDSCRIPT =startup/f103c8tx_dfu.ld
 
-#SPECS =-specs=nano.specs
+SPECS =-specs=nano.specs
 # libraries
-LIBS =-nostartfiles -nostdlib #-lc -lm -lnosys 
+#LIBS =-nostartfiles #-nostdlib
+LIBS =-lstdc++ -lnosys -lm
 LIBDIR = 
 LDFLAGS = $(MCU) $(SPECS) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 
