@@ -3,21 +3,15 @@
 
 static Console con;
 
-/**
- * Possible commands
- * > bind
- * > select protocol
- * > override channel
- */
 #ifdef USE_FREERTOS
+
 void app_setup(void){
-    GPIO_ENABLE;
-    DBG_LED_INIT;
-    CC25_CS_INIT;
+    BOARD_Init();
     //MCO_EN;
     CDC_Init();
 
     con.init(&vcom, "laser4+ >");
+    con.registerCommandList(laser4_commands);
 }
 
 void app_loop(void *ptr){

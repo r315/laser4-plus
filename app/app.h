@@ -19,6 +19,9 @@ extern "C" {
 #include "usbd_cdc_if.h"
 
 extern stdout_t vcom;
+#ifdef __cplusplus
+extern ConsoleCommand *laser4_commands[];
+#endif
 void app_setup(void);
 void app_loop(void *ptr);
 
