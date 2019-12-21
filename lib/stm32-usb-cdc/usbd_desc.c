@@ -63,13 +63,13 @@
   * @{
   */
 
-#define USBD_VID     1155
-#define USBD_LANGID_STRING     1033
-#define USBD_MANUFACTURER_STRING     "STMicroelectronics"
-#define USBD_PID_FS     22336
-#define USBD_PRODUCT_STRING_FS     "STM32 Virtual ComPort"
-#define USBD_CONFIGURATION_STRING_FS     "CDC Config"
-#define USBD_INTERFACE_STRING_FS     "CDC Interface"
+#define USBD_VID                        0x1209 //0x0483
+#define USBD_PID_FS                     0x2019 //0x5730
+#define USBD_LANGID_STRING              1033
+#define USBD_MANUFACTURER_STRING        "HR Designs"
+#define USBD_PRODUCT_STRING_FS          "Laser4+"
+#define USBD_CONFIGURATION_STRING_FS    "CDC Config"
+#define USBD_INTERFACE_STRING_FS        "CDC Interface"
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
 

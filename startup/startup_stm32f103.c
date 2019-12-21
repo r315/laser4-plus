@@ -27,12 +27,13 @@ extern void __libc_init_array(void);
 
 static TaskHandle_t         husertsk;
 
-
 static void user_task(void *ptr){
     while(1){
         app_loop(ptr);
     }
 }
+#else
+WEAK void main(void){}
 #endif
 
 NAKED void Reset_Handler(void){
@@ -132,9 +133,8 @@ volatile uint32_t *src, *dest;
     }
     /* Start scheduler */
     vTaskStartScheduler();
-#else
-    //__libc_init_array();
-    app_main();
+#else    
+    main();
 #endif
     /* case returns... */
     asm("b .");
@@ -160,13 +160,9 @@ void errorHandler(void){
     }
 }
 
-
 void defaultHandler(void){
     while (1){
-        asm volatile (
-            "nop\t\n"
-            "b ."
-        );
+        asm("nop");
     }
 }
 

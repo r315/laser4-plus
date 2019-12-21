@@ -10,7 +10,6 @@ extern "C" {
 
 #define USE_FREERTOS
 
-#ifdef USE_FREERTOS
 #include <FreeRTOS.h>
 #include <console.h>
 #include <task.h>
@@ -18,16 +17,15 @@ extern "C" {
 #include <stdout.h>
 #include "usbd_cdc_if.h"
 
+
 extern stdout_t vcom;
 #ifdef __cplusplus
 extern ConsoleCommand *laser4_commands[];
 #endif
+
 void app_setup(void);
 void app_loop(void *ptr);
 
-#else
-void app_main(void);
-#endif
 
 #ifdef __cplusplus
 }
