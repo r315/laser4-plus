@@ -26,7 +26,9 @@ void SPI_Write(uint8_t data){
 } 
 
 uint8_t SPI_Read(void){
-    return 0;
+uint8_t data;
+    HAL_SPI_Receive(&hspi, &data, 1, 10);
+    return data;
 }
 
 void BOARD_GPO_Init(GPIO_TypeDef *port, uint8_t pin) {
@@ -84,8 +86,13 @@ TIM_TypeDef *tim = TIM4;
 
 }
 
-uint32_t HAL_GetTick(void){
-//uint32_t BOARD_GetTick(void){    
+void BOARD_DelayMs(uint32_t ms){
+uint32_t timeout = ticks + ms;
+    while(ticks < timeout){        
+    }
+}
+
+uint32_t BOARD_GetTick(void){    
     return ticks;    
 }
 
@@ -95,3 +102,4 @@ void TIM4_IRQHandler(void){
     //DBG_PIN_TOGGLE;
 }
 
+uint32_t HAL_GetTick(void){ return BOARD_GetTick(); }

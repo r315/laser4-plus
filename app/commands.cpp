@@ -1,5 +1,6 @@
 
 #include "app.h"
+#include "iface_cc2500.h"
 
 /**
  * Possible commands
@@ -58,7 +59,7 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 
 	void help(void) {
-		console->xputs("Available commands:\n\n");
+		console->xputs("Available commands:\n");
 		
 		for (uint8_t i = 0; i < console->getCmdListSize(); i++) {			
 				console->print("\t%s\n", console->getCmdIndexed(i)->getName());
@@ -73,44 +74,58 @@ public:
 }cmdhelp;
 
 
-
-static uint32_t cmdSpiWrite(uint32_t argc, char **argv){
-uint32_t data;
-char *value = getOptValue((char*)"-w", argc, argv);
-
-    if(value == NULL){
-        return CMD_BAD_PARAM;
-    }
-
-    if(nextHex(&value, &data)){
-        CC25_CSN_on;
-        SPI_Write(data);
-        CC25_CSN_off;
-        return CMD_OK;
-    }
-
-    return CMD_BAD_PARAM;
-}
-
-class CmdSpi : public ConsoleCommand {
+class CmdCC25 : public ConsoleCommand {
 	Console *console;
     
 public:
-    CmdSpi() : ConsoleCommand("spi") {}	
+    CmdCC25() : ConsoleCommand("cc2500") {}	
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
+
+	char reset(void){
+		if(CC2500_Reset()){
+			console->print("Reset ok\n");
+		}else{
+			console->print("Reset fail\n");
+		}
+		return CMD_OK;
+	}
+
+	char readRegister(uint8_t reg){
+	//uint8_t val;	
+		//val = CC2500_ReadReg(reg);
+		//console->print("Reg[0x%02x] = %x\n", reg, val);
+		return CMD_OK;
+	}
     
 	char execute(void *ptr) {
-        char *argv[4];
-        uint32_t argc;
+        char *argv[4], *param;
+        uint32_t argc, int_value;
+
+
         argc = strToArray((char*)ptr, argv);
-        return cmdSpiWrite(argc, argv);
-        
+
+		if(argc == 0){
+			return CMD_BAD_PARAM;
+		}
+
+		if(getOptValue((char*)"--reset", argc, argv) != NULL){
+			return reset();
+		}
+
+		param = getOptValue((char*)"-r", argc, argv);
+		if(param != NULL){
+			if(nextHex((char**)&param, &int_value)){
+				return readRegister(int_value & 255);
+			}
+		}
+
+        return CMD_BAD_PARAM;        
 	}	
-}cmdspi;
+}cmdcc25;
 
 ConsoleCommand *laser4_commands[]{
     &cmdhelp,
-    &cmdspi,
+    &cmdcc25,
     NULL
 };
