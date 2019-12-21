@@ -32,7 +32,8 @@ OPT = -Og
 APP_SRC_PATH :=$(CURDIR)/app
 LIB_USB_PATH :=$(CURDIR)/lib/stm32-usb-cdc
 LIB_DFU_PATH :=$(CURDIR)/lib/stm32-dfu-bootloader
-#LIB_MULTIPROTOCOL_PATH :=$(CURDIR)/lib/multiprotocol
+LIB_MULTIPROTOCOL_PATH :=$(CURDIR)/lib/multiprotocol
+#LIB_MULTIPROTOCOL_PATH :=$(CURDIR)/lib/cc2500
 STARTUP_PATH :=$(CURDIR)/startup
 
 FW :=STM32Cube_FW_F1_V1.8.0/
@@ -77,9 +78,11 @@ BUILD_DIR :=build
 C_SOURCES =  \
 $(STARTUP_PATH)/startup_stm32f103.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c \
-$(wildcard $(APP_SRC_PATH)/*.c) \
-$(wildcard $(LIB_MULTIPROTOCOL_PATH)/*.c) \
 $(LIBEMB_PATH)/misc/strfunc.c \
+$(wildcard $(APP_SRC_PATH)/*.c) \
+$(LIB_MULTIPROTOCOL_PATH)/cc2500_spi.c \
+$(LIB_MULTIPROTOCOL_PATH)/FrSkyDVX_Common.c \
+$(LIB_MULTIPROTOCOL_PATH)/FrSkyD_cc2500.c \
 #$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c \
@@ -152,6 +155,7 @@ C_INCLUDES =  \
 -I$(FREERTOS_DIR)/include \
 -I$(FREERTOS_DIR)/CMSIS_RTOS \
 -I$(FREERTOS_DIR)/portable/GCC/ARM_CM3 \
+-I$(LIB_MULTIPROTOCOL_PATH) \
 
 
 ######################################
@@ -197,12 +201,16 @@ AS_DEFS =
 C_DEFS =  \
 -DUSE_HAL_DRIVER \
 -DSTM32F103xB \
+-DSTM32_BOARD \
+-DCC2500_INSTALLED \
+-DFRSKYD_CC2500_INO \
 #-DCONSOLE_BLOCKING \
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
-CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -nostdlib -lgcc
+CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -std=gnu11
+CPPFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
 ifeq ($(DEBUG), 1)
 CFLAGS += -g -gdwarf-2
