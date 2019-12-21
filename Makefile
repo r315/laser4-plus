@@ -83,6 +83,7 @@ $(wildcard $(APP_SRC_PATH)/*.c) \
 $(LIB_MULTIPROTOCOL_PATH)/cc2500_spi.c \
 $(LIB_MULTIPROTOCOL_PATH)/FrSkyDVX_Common.c \
 $(LIB_MULTIPROTOCOL_PATH)/FrSkyD_cc2500.c \
+#$(wildcard $(LIB_MULTIPROTOCOL_PATH)/*.c) \
 #$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c \
@@ -177,7 +178,11 @@ AR = $(BINPATH)$(PREFIX)ar
 SZ = $(BINPATH)$(PREFIX)size
 HEX = $(CP) -O ihex
 BIN = $(CP) -O binary -S
- 
+
+ifeq ($(GCC_COLORS), )
+export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
+#unexport GCC_COLORS
+endif
 #######################################
 # CFLAGS
 #######################################
@@ -291,15 +296,15 @@ OBJECTS += $(addprefix $(BUILD_DIR)/,$(notdir $(ASM_SOURCES:.s=.o)))
 VPATH +=$(SOURCES_PATH)
 
 $(BUILD_DIR)/%.o: %.c Makefile | $(BUILD_DIR)
-	@echo "Compiling  " $<
+	@echo "CC  " $<
 	@$(CC) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/%.obj: %.cpp Makefile | $(BUILD_DIR)
-	@echo "Compiling  " $<
-	@$(CPP) -c $(CFLAGS)  -fno-exceptions -fno-unwind-tables -fno-rtti $< -o $@
+	@echo "CP  " $<
+	@$(CPP) -c $(CPPFLAGS)  -fno-exceptions -fno-unwind-tables -fno-rtti $< -o $@
 
 $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
-	@echo "Assembling " $<
+	@echo "AS " $<
 	@$(AS) -c $(CFLAGS) $< -o $@
 
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) #Makefile
