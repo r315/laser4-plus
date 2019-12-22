@@ -7,9 +7,6 @@ extern "C" {
 
 #include <stdint.h>
 #include "board.h"
-
-#define USE_FREERTOS
-
 #include <FreeRTOS.h>
 #include <console.h>
 #include <task.h>
@@ -17,17 +14,21 @@ extern "C" {
 #include <stdout.h>
 #include "usbd_cdc_if.h"
 
+#define USE_FREERTOS
+
+#ifdef DEBUG_SERIAL
+#define DBG_PRINT con.print
+#else
+#define DBG_PRINT(...)
+#endif
 
 extern stdout_t vcom;
-#ifdef __cplusplus
-extern ConsoleCommand *laser4_commands[];
-#endif
 
 void app_setup(void);
 void app_loop(void *ptr);
 
-
 #ifdef __cplusplus
+extern ConsoleCommand *laser4_commands[];
 }
 #endif
 

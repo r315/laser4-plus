@@ -209,6 +209,7 @@ C_DEFS =  \
 -DSTM32_BOARD \
 -DCC2500_INSTALLED \
 -DFRSKYD_CC2500_INO \
+-DDEBUG_SERIAL \
 #-DCONSOLE_BLOCKING \
 
 # compile gcc flags
@@ -218,9 +219,11 @@ CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-
 CPPFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
 ifeq ($(DEBUG), 1)
-CFLAGS += -g -gdwarf-2
+DEBUGFLAGS =-g -gdwarf-2
 endif
 
+CFLAGS +=$(DEBUGFLAGS)
+CPPFLAGS +=$(DEBUGFLAGS)
 
 # Generate dependency information
 #CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst))
