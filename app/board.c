@@ -6,6 +6,7 @@ volatile uint32_t ticks;
 
 static void spiInit(void);
 static void timInit(void);
+static void randomInit(void);
 
 void Error_Handler(char * file, int line){
   while(1){
@@ -18,6 +19,7 @@ void BOARD_Init(void){
     CC25_CS_INIT;    
     spiInit();
     timInit();
+    randomInit();
 }
 }
 
@@ -66,6 +68,7 @@ static void spiInit(){
 
 /**
  * @brief Initialyze 1ms general purpose time base
+ *          using timer4
  * 
  * */
 static void timInit(void){
@@ -83,7 +86,6 @@ TIM_TypeDef *tim = TIM4;
     tim->CR1 |= TIM_CR1_CEN;
 
     NVIC_EnableIRQ(TIM4_IRQn);
-
 }
 
 void BOARD_DelayMs(uint32_t ms){
@@ -103,3 +105,13 @@ void TIM4_IRQHandler(void){
 }
 
 uint32_t HAL_GetTick(void){ return BOARD_GetTick(); }
+
+/**
+ * @brief Pseudo random number generator initialization
+ * */
+static void randomInit(void){
+    /*uint32_t seed=0;
+		for(uint8_t i=0;i<4;i++)
+			seed=(seed<<8) | (analogRead(PB0)& 0xFF);
+		randomSeed(seed); */
+}
