@@ -2,6 +2,10 @@
 #ifndef _FRSKYDVX_COMMON_H_
 #define _FRSKYDVX_COMMON_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 #include "radio.h"
 
@@ -20,6 +24,7 @@ enum {
 	FRSKY_DATA4,
 	FRSKY_DATA5,
 };
+
 #endif
 
 extern const PROGMEM uint8_t FRSKYD_cc2500_conf[];
@@ -28,5 +33,14 @@ void Frsky_init_hop(radio_t *radio);
 void FRSKY_init_cc2500(const uint8_t *ptr, radio_t *radio);
 void Frsky_SetPower(radio_t *radio);
 uint16_t convert_channel_frsky(uint8_t num, radio_t *radio);
+
+//FrSkyD
+uint16_t initFrSky_2way(radio_t *radio);
+uint16_t ReadFrSky_2way(radio_t *radio);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* #ifndef _FRSKYDVX_COMMON_H_ */
