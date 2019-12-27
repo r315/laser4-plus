@@ -126,6 +126,7 @@ uint16_t ReadFrSky_2way(radio_t *radio)
 			radio->state++;
 		return 9000;
 	}
+
 	if (radio->state == FRSKY_BIND_DONE)
 	{
 		radio->state = FRSKY_DATA2;
@@ -134,13 +135,17 @@ uint16_t ReadFrSky_2way(radio_t *radio)
 		BIND_DONE(radio->flags);
 	}
 	else
+	{
 		if (radio->state == FRSKY_DATA5)
 		{
 			CC2500_Strobe(CC2500_SRX);//0x34 RX enable
 			radio->state = FRSKY_DATA1;	
 			return 9200;
 		}
+	}
+	
 	radio->counter = (radio->counter + 1) % 188;	
+	
 	if (radio->state == FRSKY_DATA4)
 	{	//telemetry receive
 		CC2500_SetTxRxMode(RX_EN);
@@ -185,13 +190,16 @@ uint16_t ReadFrSky_2way(radio_t *radio)
 			CC2500_SetTxRxMode(TX_EN);
 			Frsky_SetPower(radio);	// Set tx_power
 		}
+
 		CC2500_Strobe(CC2500_SIDLE);
 		CC2500_WriteReg(CC2500_0A_CHANNR, radio->hopping_frequency[radio->counter % 47]);
+		
 		if ( radio->prev_option != radio->option )
 		{
 			CC2500_WriteReg(CC2500_0C_FSCTRL0, radio->option);	// Frequency offset hack 
 			radio->prev_option = radio->option ;
 		}
+		
 		CC2500_WriteReg(CC2500_23_FSCAL3, 0x89);
 		CC2500_Strobe(CC2500_SFRX);        
 		frsky2way_data_frame(radio);
