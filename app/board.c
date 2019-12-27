@@ -21,7 +21,6 @@ void BOARD_Init(void){
     timInit();
     randomInit();
 }
-}
 
 void SPI_Write(uint8_t data){
   HAL_SPI_Transmit(&hspi, &data, 1, 10);
@@ -72,20 +71,33 @@ static void spiInit(){
  * 
  * */
 static void timInit(void){
-TIM_TypeDef *tim = TIM4;
+
     ticks = 0;
     
-    RCC->APB1ENR  |= RCC_APB1ENR_TIM4EN;    // Enable Timer 4
-    RCC->APB1RSTR |= RCC_APB1ENR_TIM4EN;    // Reset timer registers
-    RCC->APB1RSTR &= ~RCC_APB1ENR_TIM4EN;
+    RCC->APB1ENR  |= RCC_APB1ENR_TIM4EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM2EN;
+    RCC->APB1RSTR |= RCC_APB1ENR_TIM4EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM2EN;
+    RCC->APB1RSTR &= ~(RCC_APB1ENR_TIM4EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM2EN);
 
-    tim->CR1 = 0; //TIM_CR1_DIR;
-    tim->PSC = (SystemCoreClock/1000000) - 1; // Set Timer clock
-    tim->ARR = 1000 - 1;
-    tim->DIER = TIM_DIER_UIE;
-    tim->CR1 |= TIM_CR1_CEN;
-
+    TIM4->PSC = (SystemCoreClock/1000000) - 1; // Set Timer clock
+    TIM4->ARR = 1000 - 1;
+    TIM4->DIER = TIM_DIER_UIE;
+    TIM4->CR1 |= TIM_CR1_CEN;
     NVIC_EnableIRQ(TIM4_IRQn);
+
+	TIM2->PSC = 35;								// 36-1;for 72 MHZ /0.5sec/(35+1)
+	TIM2->ARR = 0xFFFF;							// Count until 0xFFFF
+	TIM2->CCMR1 = (1<<4);	                    // Main scheduler
+	TIM2->SR = 0x1E5F & ~TIM_SR_CC2IF;			// Clear Timer2/Comp2 interrupt flag
+	TIM2->DIER &= ~TIM_DIER_CC2IE;				// Disable Timer2/Comp2 interrupt
+	TIM2->EGR |= TIM_EGR_UG;					// Refresh the timer's count, prescale, and overflow
+	TIM2->CR1 |= TIM_CR1_CEN;
+
+    // PPM Mock timer
+    TIM3->PSC = (SystemCoreClock/1000000) - 1;  // Set Timer clock
+    TIM3->ARR = 6000 - 1;                       // PPM 4ch*1500us 
+    TIM3->DIER = TIM_DIER_UIE;
+    TIM3->CR1 |= TIM_CR1_CEN;
+    NVIC_EnableIRQ(TIM3_IRQn);
 }
 
 void BOARD_DelayMs(uint32_t ms){
@@ -114,4 +126,23 @@ static void randomInit(void){
 		for(uint8_t i=0;i<4;i++)
 			seed=(seed<<8) | (analogRead(PB0)& 0xFF);
 		randomSeed(seed); */
+}
+
+uint8_t eeprom_data[256];
+
+uint16_t BOARD_EEPROM_Write(uint16_t address, uint8_t *data, uint16_t len){
+    for (uint16_t i = 0; i < len; i++)
+    {
+        eeprom_data[address + i] = data[i];        
+    }    
+    return len;
+}
+
+uint16_t BOARD_EEPROM_Read(uint16_t address, uint8_t *data, uint16_t len){
+    for (uint16_t i = 0; i < len; i++)
+    {
+        data[i] = eeprom_data[address + i];
+    }
+    
+    return len;
 }

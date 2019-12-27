@@ -70,6 +70,9 @@ void BOARD_GPO_Init(GPIO_TypeDef *port, uint8_t pin);
 void SPI_Write(uint8_t data);
 uint8_t SPI_Read(void);
 
+uint16_t BOARD_EEPROM_Write(uint16_t address, uint8_t *data, uint16_t len);
+uint16_t BOARD_EEPROM_Read(uint16_t address, uint8_t *data, uint16_t len);
+
 
 /* Definitions for Multiprotocol */
 #define delayMilliseconds(x) BOARD_DelayMs(x)
@@ -77,9 +80,10 @@ uint8_t SPI_Read(void);
 #define IS_LED_on   (LED_PORT->IDR & (1<<LED_PIN))
 #define LED_off     LED_OFF
 #define LED_toggle  LED_TOGGLE
-#define eeprom_read_byte
-#define eeprom_write_byte
 #define EE_ADDR     uint16_t
+
+#define cli     __disable_irq
+#define sei     __enable_irq
 
 #ifdef __cplusplus
 }
