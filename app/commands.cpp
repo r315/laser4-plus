@@ -1,6 +1,7 @@
 
 #include "app.h"
 #include "iface_cc2500.h"
+#include "radio.h"
 
 /**
  * Possible commands
@@ -124,8 +125,58 @@ public:
 	}	
 }cmdcc25;
 
+extern radio_t radio;
+class Radio : public ConsoleCommand {
+	Console *console;
+    
+public:
+    Radio() : ConsoleCommand("radio") {}	
+	void init(void *params) { console = static_cast<Console*>(params); }
+	void help(void) {}
+
+	void printFlags(void){
+		console->print("\n"
+			"Rx              [%d]\n"
+			"Change protocol [%d]\n"
+			"Range           [%d]\n"
+			"PPM             [%d]\n"
+			"Bind done       [%d]\n"
+			"Tx pause        [%d]\n"
+			"Input signal    [%d]\n"
+			"\n",
+			IS_RX_FLAG_on(radio.flags),
+			IS_CHANGE_PROTOCOL_FLAG_on(radio.flags),
+			IS_RANGE_FLAG_on(radio.flags),
+			IS_PPM_FLAG_on(radio.flags),
+			IS_BIND_DONE(radio.flags),
+			IS_TX_MAIN_PAUSE_on(radio.flags),
+			IS_INPUT_SIGNAL_on(radio.flags)
+		);
+	}
+    
+	char execute(void *ptr) {
+        char *argv[4];
+        uint32_t argc;
+
+        argc = strToArray((char*)ptr, argv);
+
+		if(argc == 0){
+			printFlags();
+			return CMD_OK;
+		}
+
+		if(getOptValue((char*)"--bind", argc, argv) != NULL){
+			BIND_BUTTON_FLAG_on(radio.flags);
+			BIND_IN_PROGRESS(radio.flags);	
+			return CMD_OK;
+		}
+        return CMD_BAD_PARAM;        
+	}	
+}cmdradio;
+
 ConsoleCommand *laser4_commands[]{
     &cmdhelp,
     &cmdcc25,
+	&cmdradio,
     NULL
 };
