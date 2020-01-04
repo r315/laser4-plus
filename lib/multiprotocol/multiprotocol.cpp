@@ -32,8 +32,6 @@
 #include "_MyConfig.h"
 #endif
 
-#define TIMER TIM1
-
 radio_t radio;
 
 static uint8_t Update_All(void);
@@ -111,7 +109,7 @@ void multiprotocol_setup(void){
         radio.prev_power = 0xFD; // unused power value
 		
         if(PPM_prot_line->power){
-        POWER_FLAG_on;
+            POWER_FLAG_on;
         }
 
         if(PPM_prot_line->autobind){
@@ -129,80 +127,80 @@ void multiprotocol_loop(void){
 uint16_t next_callback, diff;
 uint8_t count=0;
             
-        while(radio.remote_callback == NULL || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off){		
-            if(!Update_All())
-            {
-                cli();								// Disable global int due to RW of 16 bits registers
-                #ifndef STM32_BOARD	
-                OCR1A=TCNT1;						// Callback should already have been called... Use "now" as new sync point.
-                #else
-                TIMER->CCR1 = TIMER->CNT;
-                #endif
-                sei();								// Enable global int
-            }
-        return;
-        }
-        TX_MAIN_PAUSE_on;
-        //tx_pause();
-        next_callback = radio.remote_callback() << 1;
-        TX_MAIN_PAUSE_off;
-        //tx_resume();
-        cli();										// Disable global int due to RW of 16 bits registers
-        #ifndef STM32_BOARD			
-            TIFR1=OCF1A_bm;							// Clear compare A=callback flag
-        #else
-            TIMER->CCR1 += next_callback;			// Calc when next_callback should happen
-            TIMER->SR = 0x1E5F & ~TIM_SR_CC1IF;		// Clear Timer2/Comp1 interrupt flag
-            diff = TIMER->CCR1 - TIMER->CNT;			// Calc the time difference
-        #endif		
-        sei();										// Enable global int
-        if((diff&0x8000) && !(next_callback&0x8000))
-        { // Negative result=callback should already have been called... 
-            DBG_PRINT("Short CB:%d\n", next_callback);
-        }
-        else
+    while(radio.remote_callback == NULL || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off){		
+        if(!Update_All())
         {
-            if(IS_RX_FLAG_on || IS_PPM_FLAG_on)
-            { // Serial or PPM is waiting...
-                if(++count>10)
-                { //The protocol does not leave enough time for an update so forcing it
-                    count=0;
-                    DBG_PRINT("Force update\n");
-                    Update_All();
-                }
-            }
-            #ifndef STM32_BOARD
-                while((TIFR1 & OCF1A_bm) == 0)
+            cli();								// Disable global int due to RW of 16 bits registers
+            #ifndef STM32_BOARD	
+            OCR1A=TCNT1;						// Callback should already have been called... Use "now" as new sync point.
             #else
-                while((TIMER->SR & TIM_SR_CC1IF )==0)
+            TIMER_BASE->CCR1 = TIMER_BASE->CNT;
             #endif
-            {
-                if(diff > (900*2))
-                {	//If at least 1ms is available update values 
-                    if((diff&0x8000) && !(next_callback&0x8000))
-                    {//Should never get here...
-                        DBG_PRINT("!!!BUG!!!\n");
-                        break;
-                    }
-                    count=0;
-                    Update_All();
-                    #ifdef DEBUG_SERIAL
-                        if(TIMER->SR & TIM_SR_CC1IF )
-                            DBG_PRINT("Long update\n");
-                    #endif
-                    if(radio.remote_callback == NULL)
-                        break;
-                    cli();							// Disable global int due to RW of 16 bits registers
-                    #ifndef STM32_BOARD
-                    diff = OCR1A-TCNT1;				// Calc the time difference
-                    #else
-                    diff = TIMER->CCR1 - TIMER->CNT;
-                    #endif
-                    sei();							// Enable global int
-                }
-            }
-        }			
+            sei();								// Enable global int
+        }
+        return;
     }
+    TX_MAIN_PAUSE_on;
+    //tx_pause();
+    next_callback = radio.remote_callback() << 1;
+    TX_MAIN_PAUSE_off;
+    //tx_resume();
+    cli();										// Disable global int due to RW of 16 bits registers
+    #ifndef STM32_BOARD			
+        TIFR1=OCF1A_bm;							// Clear compare A=callback flag
+    #else
+        TIMER_BASE->CCR1 += next_callback;			// Calc when next_callback should happen
+        TIMER_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;		// Clear Timer2/Comp1 interrupt flag
+        diff = TIMER_BASE->CCR1 - TIMER_BASE->CNT;			// Calc the time difference
+    #endif		
+    sei();										// Enable global int
+    if((diff&0x8000) && !(next_callback&0x8000))
+    { // Negative result=callback should already have been called... 
+        DBG_PRINT("Short CB:%d\n", next_callback);
+    }
+    else
+    {
+        if(IS_RX_FLAG_on || IS_PPM_FLAG_on)
+        { // Serial or PPM is waiting...
+            if(++count>10)
+            { //The protocol does not leave enough time for an update so forcing it
+                count=0;
+                DBG_PRINT("Force update\n");
+                Update_All();
+            }
+        }
+        #ifndef STM32_BOARD
+            while((TIFR1 & OCF1A_bm) == 0)
+        #else
+            while((TIMER_BASE->SR & TIM_SR_CC1IF )==0)
+        #endif
+        {
+            if(diff > (900*2))
+            {	//If at least 1ms is available update values 
+                if((diff&0x8000) && !(next_callback&0x8000))
+                {//Should never get here...
+                    DBG_PRINT("!!!BUG!!!\n");
+                    break;
+                }
+                count=0;
+                Update_All();
+                #ifdef DEBUG_SERIAL
+                    if(TIMER_BASE->SR & TIM_SR_CC1IF )
+                        DBG_PRINT("Long update\n");
+                #endif
+                if(radio.remote_callback == NULL)
+                    break;
+                cli();							// Disable global int due to RW of 16 bits registers
+                #ifndef STM32_BOARD
+                diff = OCR1A-TCNT1;				// Calc the time difference
+                #else
+                diff = TIMER_BASE->CCR1 - TIMER_BASE->CNT;
+                #endif
+                sei();							// Enable global int
+            }
+        }
+    }
+}
 
 static uint8_t Update_All(void){
 
@@ -257,7 +255,7 @@ static uint8_t Update_All(void){
         }
     #endif //ENABLE_PPM
     update_led_status();
-
+    
     if(IS_CHANGE_PROTOCOL_FLAG_on)
     { // Protocol needs to be changed or relaunched for bind
         protocol_init();									//init new protocol
@@ -375,8 +373,8 @@ static uint16_t next_callback;
         next_callback -= temp << 10;            // between 2-3ms left at this stage
     }
     cli();											// disable global int
-    TIMER->CCR1 = TIMER->CNT + next_callback * 2;		// set compare A for callback
-    TIMER->SR = 0x1E5F & ~TIM_SR_CC1IF;				// Clear Timer2/Comp1 interrupt flag
+    TIMER_BASE->CCR1 = TIMER_BASE->CNT + next_callback * 2;		// set compare A for callback
+    TIMER_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;				// Clear Timer2/Comp1 interrupt flag
     sei();										    // enable global int
     BIND_BUTTON_FLAG_off;
 }
@@ -462,7 +460,7 @@ void PPM_decode(){	// Interrupt on PPM pin
     static uint16_t Prev_TCNT1 = 0;
     uint16_t Cur_TCNT1;
 
-    Cur_TCNT1 = TIMER->CNT - Prev_TCNT1 ;	// Capture current Timer1 value
+    Cur_TCNT1 = TIMER_BASE->CNT - Prev_TCNT1 ;	// Capture current Timer1 value
     if(Cur_TCNT1 < 1600)
         bad_frame = 1;					// bad frame
     else
