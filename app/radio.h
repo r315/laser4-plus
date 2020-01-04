@@ -8,7 +8,7 @@
 #define VERSION_PATCH               0
 
 #define BAUD                        100000
-#define RXBUFFER_SIZE               36	// 26+1+9
+#define RXBUFFER_SIZE               36	// 26 + 1 + 9
 #define NUM_CHN                     16
 #define TELEMETRY_BUFFER_SIZE       30
 
@@ -24,19 +24,34 @@
 
 /* *************System flags ******************* */
 //
+#define RX_FLAG_off(x)                  x &= ~(1<<0)
+#define RX_FLAG_on(x)                   x |= (1<<0)
 #define IS_RX_FLAG_on(x)		        ((x & (1<<0)) != 0)
 //
 #define CHANGE_PROTOCOL_FLAG_off(x)     x &= ~(1<<1)   
 #define CHANGE_PROTOCOL_FLAG_on(x)      x |= (1<<1)
 #define IS_CHANGE_PROTOCOL_FLAG_on(x)   ((x & (1<<1)) != 0)
 //
+#define POWER_FLAG_off(x)               x &= ~(1<<2)
+#define POWER_FLAG_on(x)                x |= (1<<2)
+#define IS_POWER_FLAG_on(x)             ((x & (1<<2)) != 0)
+//
+#define RANGE_FLAG_off(x)               x &= ~(1<<3)
+#define RANGE_FLAG_on(x)                x |= (1<<3)
 #define IS_RANGE_FLAG_on(x)             ((x & (1<<3)) != 0)
+//
+#define AUTOBIND_FLAG_off(x)	        x &= ~(1<<4)
+#define AUTOBIND_FLAG_on(x)	            x |= (1<<4)
+#define IS_AUTOBIND_FLAG_on(x)	        ((x & (1<<4) ) != 0)
 //
 #define BIND_BUTTON_FLAG_off(x)	        x &= ~(1<<5)
 #define BIND_BUTTON_FLAG_on(x)	        x |= (1<<5)
 #define IS_BIND_BUTTON_FLAG_on(x)	    ((x & (1<<5)) != 0)
 //PPM RX OK
+#define PPM_FLAG_off(x)                 x &= ~(1<<6)
+#define PPM_FLAG_on(x)                  x |= (1<<6)
 #define IS_PPM_FLAG_on(x)		        ((x & (1<<6)) != 0)
+
 //Bind flag
 #define BIND_IN_PROGRESS(x)	            x &= ~(1<<7)
 #define BIND_DONE(x)                    x |= (1<<7)
@@ -45,7 +60,13 @@
 /* ****** flags2 ***** */
 // _BV(0)
 // _BV(1)
+#define RX_DONOTUPDATE_off(x)           x &= ~(1<<1)
+#define RX_DONOTUPDATE_on(x)            x |= (1<<1)
+#define IS_RX_DONOTUPDATE_on(x)	        ((x & (1<<1) ) != 0)
 // _BV(2)
+#define RX_MISSED_BUFF_off(x)           x &= ~(1<<2)
+#define RX_MISSED_BUFF_on(x)            x |= (1<<2)
+#define IS_RX_MISSED_BUFF_on(x)         ((x & (1<<2)) != 0)
 // _BV(3)
 #define TX_MAIN_PAUSE_off(x)            x &= ~(1<<11)
 #define TX_MAIN_PAUSE_on(x)             x |= (1<<11)
@@ -69,18 +90,63 @@
 #define DATA_BUFFER_LOW_off(x)	        x &= ~(1<<16)
 // _BV(1)
 // _BV(2)
+#define DISABLE_CH_MAP_off(x)           x &= ~(1<<2)
+#define DISABLE_CH_MAP_on(x)            x |= (1<<2)
+#define IS_DISABLE_CH_MAP_on(x)         ((x & (1<<2)) != 0)
+#define IS_DISABLE_CH_MAP_off(x)        ((x & (1<<2)) == 0)
 // _BV(3)
+#define DISABLE_TELEM_off(x)            x &= ~(1<<3)
+#define DISABLE_TELEM_on(x)             x |= (1<<3)
+#define IS_DISABLE_TELEM_on(x)          ((x & (1<<3)) != 0)
+#define IS_DISABLE_TELEM_off(x)         ((x & (1<<3)) == 0)
 // _BV(4)
 // _BV(5)
 // _BV(6)
 // _BV(7)
 
-enum aetr_e{
-    AILERON = 0,
-    ELEVATOR,
-    THROTTLE,
-    RUDDER
-};
+
+//Channel definitions
+#define	CH1		0
+#define	CH2		1
+#define	CH3		2
+#define	CH4		3
+#define	CH5		4
+#define	CH6		5
+#define	CH7		6
+#define	CH8		7
+#define	CH9		8
+#define	CH10	9
+#define	CH11	10
+#define	CH12	11
+#define	CH13	12
+#define	CH14	13
+#define	CH15	14
+#define	CH16	15
+
+//Channel order
+#ifdef AETR
+	#define	AILERON  0
+	#define	ELEVATOR 1
+	#define	THROTTLE 2
+	#define	RUDDER   3
+#endif
+
+//Channel MIN MAX values
+#define CHANNEL_MAX_100	1844	//	100%
+#define CHANNEL_MIN_100	204		//	100%
+#define CHANNEL_MAX_125	2047	//	125%
+#define CHANNEL_MIN_125	0
+#define CHANNEL_SWITCH  1104    // 1550us	
+
+#define MIN_PPM_CHANNELS 4
+#define MAX_PPM_CHANNELS 16
+//#if defined(TX_ER9X)
+	#define PPM_MAX_100 2012	//	100%
+	#define PPM_MIN_100 988		//	100%
+//#endif
+
+#define EEPROM_ID_OFFSET 0
+
 
 enum state_e{
     STATE_BINDING
@@ -88,7 +154,10 @@ enum state_e{
 
 enum protocols_e{
     MODE_SERIAL     = 0,
-    PROTO_FRSKYD    = 3
+    PROTO_FRSKYD    = 3,
+    PROTO_FRSKYX    = 15,
+    PROTO_FRSKYV    = 25,
+    PROTO_AFHDS2A   = 28
 };
 
 typedef struct radio{
@@ -97,7 +166,7 @@ typedef struct radio{
 
     // Servo data 
     uint16_t channel_data[NUM_CHN];
-    uint8_t  channel_AUX;
+    uint8_t  channel_aux;
 #ifdef FAILSAFE_ENABLE
 	uint16_t Failsafe_data[NUM_CHN];
 #endif
@@ -112,6 +181,7 @@ typedef struct radio{
     uint16_t state;
     uint8_t  len;
     uint8_t  packet_count;
+    uint16_t bind_counter;
 
     // Serial
     uint8_t sub_protocol;
@@ -121,7 +191,19 @@ typedef struct radio{
     uint8_t prev_option;
     uint8_t prev_power; 
     uint8_t rx_num;
-    
+    // Serial RX
+    volatile uint8_t rx_buff[RXBUFFER_SIZE];
+    volatile uint8_t rx_ok_buff[RXBUFFER_SIZE];
+    volatile uint8_t discard_frame;
+    volatile uint8_t rx_idx;
+    volatile uint8_t rx_len;    
+
+#ifdef ENABLE_PPM
+    // PPM variable
+    volatile uint16_t ppm_data[NUM_CHN];
+    volatile uint8_t  ppm_chan_max;
+    uint32_t chan_order;
+#endif
 
     //Telemetry
     uint8_t packet_in[TELEMETRY_BUFFER_SIZE];//telemetry receiving packets

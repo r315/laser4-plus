@@ -3,6 +3,7 @@
 #include "iface_cc2500.h"
 #include "radio.h"
 
+#ifdef ENABLE_CONSOLE
 /**
  * Possible commands
  * > bind
@@ -126,11 +127,11 @@ public:
 }cmdcc25;
 
 extern radio_t radio;
-class Radio : public ConsoleCommand {
+class CmdRadio : public ConsoleCommand {
 	Console *console;
     
 public:
-    Radio() : ConsoleCommand("radio") {}	
+    CmdRadio() : ConsoleCommand("radio") {}	
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 
@@ -174,9 +175,22 @@ public:
 	}	
 }cmdradio;
 
+class CmdReset : public ConsoleCommand {
+	Console *console;    
+public:
+    CmdReset() : ConsoleCommand("reset") {}
+	void help(void) {}
+	char execute(void *ptr) {NVIC_SystemReset();}
+}cmdreset;	
+
 ConsoleCommand *laser4_commands[]{
     &cmdhelp,
     &cmdcc25,
 	&cmdradio,
+	&cmdreset,
     NULL
 };
+
+
+
+#endif
