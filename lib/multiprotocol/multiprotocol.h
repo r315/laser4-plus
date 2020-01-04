@@ -172,10 +172,75 @@ extern "C" {
 
 enum protocols_e{
     MODE_SERIAL     = 0,
+    PROTO_FLYSKY 	= 1,	// =>A7105
+    PROTO_KN		= 9,	// =>NRF24L01
     PROTO_FRSKYD    = 3,
+    PROTO_DEVO		= 7,	// =>CYRF6936
     PROTO_FRSKYX    = 15,
+    PROTO_SFHSS		= 21,	// =>CC2500
     PROTO_FRSKYV    = 25,
-    PROTO_AFHDS2A   = 28
+    PROTO_AFHDS2A   = 28,
+    PROTO_WK2x01	= 30,	// =>CYRF6936
+};
+
+enum KN {
+	WLTOYS	= 0,
+	FEILUN	= 1,
+};
+
+enum Flysky {
+	Flysky	= 0,
+	V9X9	= 1,
+	V6X6	= 2,
+	V912	= 3,
+	CX20	= 4,
+};
+
+enum AFHDS2A {
+	PWM_IBUS = 0,
+	PPM_IBUS = 1,
+	PWM_SBUS = 2,
+	PPM_SBUS = 3,
+};
+
+enum Hubsan {
+	H107	= 0,
+	H301	= 1,
+	H501	= 2,
+};
+
+enum FRSKYX {
+	CH_16	= 0,
+	CH_8	= 1,
+	EU_16	= 2,
+	EU_8	= 3,
+};
+
+enum WK2x01 {
+	WK2801	= 0,
+	WK2401	= 1,
+	W6_5_1	= 2,
+	W6_6_1	= 3,
+	W6_HEL	= 4,
+	W6_HEL_I= 5,
+};
+
+
+#define NONE 		0
+#define P_HIGH		1
+#define P_LOW		0
+#define AUTOBIND	1
+#define NO_AUTOBIND	0
+
+struct PPM_Parameters
+{
+	uint8_t protocol;
+	uint8_t sub_proto	: 3;
+	uint8_t rx_num		: 6;
+	uint8_t power		: 1;
+	uint8_t autobind	: 1;
+	int8_t option;
+	uint32_t chan_order;
 };
 
 typedef struct radio{

@@ -26,15 +26,15 @@
 #include "multiprotocol.h"
 #include "FrSkyDVX_Common.h"
 
-#ifdef ENABLE_CONSOLE 
-static Console con;
+#define TIMER_BASE TIM1
+//Personal config file
+#if defined(USE_MY_CONFIG)
+#include "_MyConfig.h"
 #endif
 
 #define TIMER TIM1
 
 radio_t radio;
-
-void (*device_process)(void);
 
 static uint8_t Update_All(void);
 static void modules_reset(void);
@@ -64,6 +64,8 @@ void multiprotocol_setup(void){
         BIND_DONE;
 
     radio.mode_select = 10; // 1...14
+    uint8_t bank = 0;
+
     DBG_PRINT("Protocol selection switch reads as %d\n", radio.mode_select);	
 
     for(int8_t i = 0; i < NUM_CHN; i++){
@@ -92,15 +94,30 @@ void multiprotocol_setup(void){
 
         //uint8_t bank = 0; //bank_switch();
 
-        radio.protocol = PROTO_FRSKYD;
-        radio.cur_protocol[0] = radio.protocol;
-        radio.sub_protocol = 0; //NONE;
-        radio.rx_num = 0;
-        radio.option = 40;
-        radio.chan_order = 0;
+        #ifdef MY_PPM_PROT
+			const PPM_Parameters *PPM_prot_line = &My_PPM_prot[ bank * 14 + radio.mode_select -1];
+		#else
+			const PPM_Parameters *PPM_prot_line = &PPM_prot[bank * 14 + radio.mode_select - 1];
+		#endif
 
-        POWER_FLAG_on;
+        radio.protocol          = PPM_prot_line->protocol;
+        radio.cur_protocol[1]   = radio.protocol;
+        radio.sub_protocol      = PPM_prot_line->sub_proto;
+        radio.rx_num            = PPM_prot_line->rx_num;
+        radio.chan_order        = PPM_prot_line->chan_order;
+
+        radio.option = (uint8_t)PPM_prot_line->option;	// Use radio-defined option value
+        
         radio.prev_power = 0xFD; // unused power value
+		
+        if(PPM_prot_line->power){
+        POWER_FLAG_on;
+        }
+
+        if(PPM_prot_line->autobind){
+			AUTOBIND_FLAG_on;
+			BIND_IN_PROGRESS;	// Force a bind at protocol startup
+		}       
 
         protocol_init();
     }
