@@ -146,6 +146,7 @@ $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c \
 CPP_SOURCES += \
 $(wildcard $(APP_SRC_PATH)/*.cpp) \
 $(LIBEMB_PATH)/console/console.cpp \
+$(LIB_MULTIPROTOCOL_PATH)/multiprotocol.cpp \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -253,7 +254,7 @@ LDSCRIPT = startup/STM32F103C8Tx_FLASH.ld
 SPECS =-specs=nano.specs
 # libraries
 #LIBS =-nostartfiles #-nostdlib
-LIBS =-lstdc++ -lnosys -lm
+LIBS =-lstdc++#-lnosys -lm
 LIBDIR = 
 LDFLAGS = $(MCU) $(SPECS) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
 

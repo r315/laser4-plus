@@ -7,9 +7,6 @@ extern "C" {
 
 #include <stdint.h>
 #include "board.h"
-#include <FreeRTOS.h>
-#include <task.h>
-#include <queue.h>
 #include <nvdata.h>
 #include <stdout.h>
 #include <fifo.h>

@@ -60,7 +60,6 @@ void usart_init(void){
     fifo_init(&usart_rx_fifo);
     fifo_init(&usart_tx_fifo);
 
-    NVIC_SetPriority(USART1_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY - 2); 
     NVIC_EnableIRQ(USART1_IRQn);
 }
 
