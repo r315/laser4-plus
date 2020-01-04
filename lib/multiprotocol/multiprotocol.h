@@ -14,6 +14,10 @@
 #ifndef _MULTIPROTOCOL_H_
 #define _MULTIPROTOCOL_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
 
 //******************
@@ -28,7 +32,9 @@
 #define NUM_CHN                     16
 #define TELEMETRY_BUFFER_SIZE       30
 
-// Led timmings
+//********************
+//*** Blink timing ***
+//********************
 #define BLINK_SERIAL_TIME           500
 #define BLINK_PPM_TIME              1000
 #define BLINK_BAD_PROTO_TIME_LOW    1000
@@ -234,4 +240,14 @@ typedef struct radio{
 }radio_t;
 
 extern radio_t radio;
+
+void multiprotocol_setup(void);
+void multiprotocol_loop(void);
+void multiprotocol_mock_ppm(void);
+
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* _MULTIPROTOCOL_H_ */

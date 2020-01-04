@@ -51,25 +51,7 @@ uint8_t CH_TAER[]={THROTTLE, AILERON, ELEVATOR, RUDDER, CH5, CH6, CH7, CH8, CH9,
 //uint8_t CH_RETA[]={RUDDER, ELEVATOR, THROTTLE, AILERON, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 uint8_t CH_EATR[]={ELEVATOR, AILERON, THROTTLE, RUDDER, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 
-void setup(void){
-    BOARD_Init();
-    //MCO_EN;
-    #ifdef ENABLE_VCOM
-    CDC_Init();
-    #endif
-
-    #ifdef ENABLE_GAME_CONTROLLER
-    HID_Init();
-    CONTROLLER_Init();
-    #endif
-
-    #ifdef ENABLE_CONSOLE
-    con.init(IO_CHAR, "laser4+ >");
-    con.print("\b\b\b\b\b\b\b\b\b\b");
-    con.registerCommandList(laser4_commands);
-    #endif
-
-    NV_Init();
+void multiprotocol_setup(void){   
 
     // Read status of bind button
     if(IS_HW_BIND_BUTTON_PRESSED)
@@ -126,11 +108,10 @@ void setup(void){
     DBG_PRINT("Laser4+ version: %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
 }
 
-void loop(void){
+void multiprotocol_loop(void){
 uint16_t next_callback, diff;
 uint8_t count=0;
-    while(1)
-    {        
+            
         while(radio.remote_callback == NULL || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off){		
             if(!Update_All())
             {
@@ -142,6 +123,7 @@ uint8_t count=0;
                 #endif
                 sei();								// Enable global int
             }
+        return;
         }
         TX_MAIN_PAUSE_on;
         //tx_pause();
@@ -204,7 +186,6 @@ uint8_t count=0;
             }
         }			
     }
-}
 
 static uint8_t Update_All(void){
 
@@ -260,12 +241,6 @@ static uint8_t Update_All(void){
     #endif //ENABLE_PPM
     update_led_status();
 
-    con.process();
-
-    if(device_process != NULL){
-        device_process();
-    }
-    
     if(IS_CHANGE_PROTOCOL_FLAG_on)
     { // Protocol needs to be changed or relaunched for bind
         protocol_init();									//init new protocol
@@ -393,300 +368,6 @@ static void modules_reset(void){
     HW_CC2500_MODULE_RESET;
 }
 
-#ifdef ENABLE_SERIAL
-static void update_serial_data(void){
-static bool prev_ch_mapping = false;
-
-    #if defined(TELEMETRY) && defined(INVERT_TELEMETRY_TX)
-        #ifdef INVERT_TELEMETRY
-            static bool prev_inv_telem=true;
-        #else
-            static bool prev_inv_telem=false;
-        #endif
-    #endif
-
-    RX_DONOTUPDATE_on;
-    RX_FLAG_off;								//data is being processed
-
-    #ifdef SAMSON	// Extremely dangerous, do not enable this unless you know what you are doing...
-        if( rx_ok_buff[0]==0x55 && (rx_ok_buff[1]&0x1F)==PROTO_FRSKYD && rx_ok_buff[2]==0x7F && rx_ok_buff[24]==217 && rx_ok_buff[25]==202 )
-        {//proto==FRSKYD+sub==7+rx_num==7+CH15==73%+CH16==73%
-            rx_ok_buff[1]=(rx_ok_buff[1]&0xE0) | PROTO_FLYSKY;			// change the protocol to Flysky
-            memcpy((void*)(rx_ok_buff+4),(void*)(rx_ok_buff+4+11),11);	// reassign channels 9-16 to 1-8
-        }
-    #endif
-    #ifdef BONI	// Extremely dangerous, do not enable this!!! This is really for a special case...
-        if(CH14_SW)
-            rx_ok_buff[2]=(rx_ok_buff[2]&0xF0)|((rx_ok_buff[2]+1)&0x0F);
-    #endif
-
-    if(radio.rx_ok_buff[1] & 0x20){             //check range
-        RANGE_FLAG_on;
-    }else{
-        RANGE_FLAG_off;
-    }
-
-    if(radio.rx_ok_buff[1] & 0x40){             //check autobind
-        AUTOBIND_FLAG_on;
-    }else{
-        AUTOBIND_FLAG_off;
-    }
-
-    if(radio.rx_ok_buff[2] & 0x80){             //if rx_ok_buff[2] ==1,power is low ,0-power high
-        POWER_FLAG_off;            //power low
-    }else{
-        POWER_FLAG_on;             //power high
-    }
-
-    //Forced frequency tuning values for CC2500 protocols
-    #if defined(FORCE_FRSKYD_TUNING) && defined(FRSKYD_CC2500_INO)
-        if(protocol==PROTO_FRSKYD) 
-            option=FORCE_FRSKYD_TUNING;			// Use config-defined tuning value for FrSkyD
-        else
-    #endif
-    #if defined(FORCE_FRSKYV_TUNING) && defined(FRSKYV_CC2500_INO)
-        if(protocol==PROTO_FRSKYV)
-            option=FORCE_FRSKYV_TUNING;			// Use config-defined tuning value for FrSkyV
-        else
-    #endif
-    #if defined(FORCE_FRSKYX_TUNING) && defined(FRSKYX_CC2500_INO)
-        if(protocol==PROTO_FRSKYX)
-            option=FORCE_FRSKYX_TUNING;			// Use config-defined tuning value for FrSkyX
-        else
-    #endif 
-    #if defined(FORCE_SFHSS_TUNING) && defined(SFHSS_CC2500_INO)
-        if (protocol==PROTO_SFHSS)
-            option=FORCE_SFHSS_TUNING;			// Use config-defined tuning value for SFHSS
-        else
-    #endif
-    #if defined(FORCE_CORONA_TUNING) && defined(CORONA_CC2500_INO)
-        if (protocol==PROTO_CORONA)
-            option=FORCE_CORONA_TUNING;			// Use config-defined tuning value for CORONA
-        else
-    #endif
-    #if defined(FORCE_REDPINE_TUNING) && defined(REDPINE_CC2500_INO)
-        if (protocol==PROTO_REDPINE)
-            option=FORCE_REDPINE_TUNING;		// Use config-defined tuning value for REDPINE
-        else
-    #endif
-    #if defined(FORCE_HITEC_TUNING) && defined(HITEC_CC2500_INO)
-        if (protocol==PROTO_HITEC)
-            option=FORCE_HITEC_TUNING;			// Use config-defined tuning value for HITEC
-        else
-    #endif
-    #if defined(FORCE_HOTT_TUNING) && defined(HOTT_CC2500_INO)
-        if (protocol==PROTO_HOTT)
-            option=FORCE_HOTT_TUNING;			// Use config-defined tuning value for HOTT
-        else
-    #endif
-    
-    radio.option = radio.rx_ok_buff[3];         // Use radio-defined option value
-
-    #ifdef FAILSAFE_ENABLE
-        bool failsafe=false;
-        if(rx_ok_buff[0]&0x02)
-        { // Packet contains failsafe instead of channels
-            failsafe=true;
-            rx_ok_buff[0]&=0xFD;				// Remove the failsafe flag
-            FAILSAFE_VALUES_on;					// Failsafe data has been received
-            debugln("Failsafe received");
-        }
-    #endif
-
-    DISABLE_CH_MAP_off;
-    DISABLE_TELEM_off;
-
-    if(radio.rx_len > 26)
-    {//Additional flag received at the end
-        radio.rx_ok_buff[0] = ( radio.rx_ok_buff[26]&0xF0) | (radio.rx_ok_buff[0]&0x0F);	// Additional protocol numbers and RX_Num available -> store them in rx_ok_buff[0]
-        if(radio.rx_ok_buff[26]&0x02)
-            DISABLE_TELEM_on;
-        if(radio.rx_ok_buff[26]&0x01)
-            DISABLE_CH_MAP_on;
-        #if defined(TELEMETRY) && defined(INVERT_TELEMETRY_TX)
-            if(((rx_ok_buff[26]&0x08)!=0) ^ prev_inv_telem)
-            { //value changed
-                if(rx_ok_buff[26]&0x08)
-                {								// Invert telemetry
-                    debugln("Invert telem %d,%d",rx_ok_buff[26]&0x01,prev_inv_telem);
-                    #if defined (ORANGE_TX)
-                        PORTC.PIN3CTRL |= 0x40 ;
-                    #elif defined (STM32_BOARD)
-                        TX_INV_on;
-                        RX_INV_on;
-                    #endif
-                }
-                else
-                {								// Normal telemetry
-                    debugln("Normal telem %d,%d",rx_ok_buff[26]&0x01,prev_inv_telem);
-                    #if defined (ORANGE_TX)
-                        PORTC.PIN3CTRL &= 0xBF ;
-                    #elif defined (STM32_BOARD)
-                        TX_INV_off;
-                        RX_INV_off;
-                    #endif
-                }
-                prev_inv_telem=rx_ok_buff[26]&0x08;
-            }
-        #endif
-    }
-
-    if( (radio.rx_ok_buff[0] != radio.cur_protocol[0]) || ((radio.rx_ok_buff[1]&0x5F) != (radio.cur_protocol[1]&0x5F)) || ( (radio.rx_ok_buff[2]&0x7F) != (radio.cur_protocol[2]&0x7F) ) )
-    { // New model has been selected
-        CHANGE_PROTOCOL_FLAG_on;				//change protocol
-        WAIT_BIND_off;
-        if((radio.rx_ok_buff[1]&0x80)!=0 || IS_AUTOBIND_FLAG_on)
-            BIND_IN_PROGRESS;					//launch bind right away if in autobind mode or bind is set
-        else
-            BIND_DONE;
-        radio.protocol = radio.rx_ok_buff[1]&0x1F;			//protocol no (0-31)
-        if(!(radio.rx_ok_buff[0]&1))
-            radio.protocol+=32;						//protocol no (0-63)
-        if(radio.rx_len>26)
-            radio.protocol |= radio.rx_ok_buff[26]&0xC0;		//protocol no (0-255)
-        radio.sub_protocol = (radio.rx_ok_buff[2]>>4)& 0x07;	//subprotocol no (0-7) bits 4-6
-        radio.rx_num = radio.rx_ok_buff[2]& 0x0F;				//rx_num no (0-15)
-        if(radio.rx_len>26)
-            radio.rx_num |= radio.rx_ok_buff[26]&0x30;		//rx_num no (0-63)
-    }
-    else
-        if( ((radio.rx_ok_buff[1]&0x80)!=0) && ((radio.cur_protocol[1]&0x80)==0) )		// Bind flag has been set
-        { // Restart protocol with bind
-            CHANGE_PROTOCOL_FLAG_on;
-            BIND_IN_PROGRESS;
-        }
-        else
-            if( ((radio.rx_ok_buff[1]&0x80)==0) && ((radio.cur_protocol[1]&0x80)!=0) )	// Bind flag has been reset
-            { // Request protocol to end bind
-                #if defined(FRSKYD_CC2500_INO) || defined(FRSKYX_CC2500_INO) || defined(FRSKYV_CC2500_INO) || defined(AFHDS2A_A7105_INO)
-                if(radio.protocol==PROTO_FRSKYD || radio.protocol == PROTO_FRSKYX || radio.protocol == PROTO_FRSKYV || radio.protocol == PROTO_AFHDS2A )
-                    BIND_DONE;
-                else
-                #endif
-                if(radio.bind_counter > 2)
-                    radio.bind_counter = 2;
-            }
-            
-    //store current protocol values
-    for(uint8_t i=0;i<3;i++)
-        radio.cur_protocol[i] =  radio.rx_ok_buff[i];
-
-    //disable channel mapping
-    //if(!IS_CHMAP_PROTOCOL)						//not a protocol supporting ch map to be disabled
-    //	DISABLE_CH_MAP_off;
-    if(prev_ch_mapping != IS_DISABLE_CH_MAP_on)
-    {
-        prev_ch_mapping = IS_DISABLE_CH_MAP_on;
-        if(IS_DISABLE_CH_MAP_on)
-        {
-            for(uint8_t i=0;i<4;i++)
-                CH_AETR[i] = CH_TAER[i] = CH_EATR[i] = i;
-            DBG_PRINT("DISABLE_CH_MAP_on\n");
-        }
-        else
-        {
-            CH_AETR[0]=AILERON;CH_AETR[1]=ELEVATOR;CH_AETR[2]=THROTTLE;CH_AETR[3]=RUDDER;
-            CH_TAER[0]=THROTTLE;CH_TAER[1]=AILERON;CH_TAER[2]=ELEVATOR;CH_TAER[3]=RUDDER;
-            CH_EATR[0]=ELEVATOR;CH_EATR[1]=AILERON;CH_EATR[2]=THROTTLE;CH_EATR[3]=RUDDER;
-            DBG_PRINT("DISABLE_CH_MAP_off\n");
-        }
-    }
-    
-    // decode channel/failsafe values
-    volatile uint8_t *p = radio.rx_ok_buff + 3;
-    uint8_t dec=-3;
-    for(uint8_t i=0;i<NUM_CHN;i++)
-    {
-        dec+=3;
-        if(dec>=8)
-        {
-            dec-=8;
-            p++;
-        }
-        p++;
-        uint16_t temp=((*((uint32_t *)p))>>dec)&0x7FF;
-        #ifdef FAILSAFE_ENABLE
-            if(failsafe)
-                Failsafe_data[i]=temp;			//value range 0..2047, 0=no pulse, 2047=hold
-            else
-        #endif
-                radio.channel_data[i] = temp;			//value range 0..2047, 0=-125%, 2047=+125%
-    }
-
-    #ifdef HOTT_FW_TELEMETRY
-        HoTT_SerialRX=false;
-    #endif
-    if(radio.rx_len > 27)
-    { // Data available for the current protocol
-        #ifdef SPORT_SEND
-            if(protocol==PROTO_FRSKYX && rx_len==35)
-            {//Protocol waiting for 8 bytes
-                #define BYTE_STUFF	0x7D
-                #define STUFF_MASK	0x20
-                //debug("SPort_in: ");
-                SportData[SportTail]=0x7E;
-                SportTail = (SportTail+1) & (MAX_SPORT_BUFFER-1);
-                SportData[SportTail]=rx_ok_buff[27]&0x1F;
-                SportTail = (SportTail+1) & (MAX_SPORT_BUFFER-1);
-                for(uint8_t i=28;i<28+7;i++)
-                {
-                    if(rx_ok_buff[i]==BYTE_STUFF)
-                    {//stuff
-                        SportData[SportTail]=BYTE_STUFF;
-                        SportTail = (SportTail+1) & (MAX_SPORT_BUFFER-1);
-                        SportData[SportTail]=rx_ok_buff[i]^STUFF_MASK;
-                    }
-                    else
-                        SportData[SportTail]=rx_ok_buff[i];
-                    //debug("%02X ",SportData[SportTail]);
-                    SportTail = (SportTail+1) & (MAX_SPORT_BUFFER-1);
-                }
-                uint8_t used = SportTail;
-                if ( SportHead > SportTail )
-                    used += MAX_SPORT_BUFFER - SportHead ;
-                else
-                    used -= SportHead ;
-                if ( used >= MAX_SPORT_BUFFER-(MAX_SPORT_BUFFER>>2) )
-                {
-                    DATA_BUFFER_LOW_on;
-                    SEND_MULTI_STATUS_on;	//Send Multi Status ASAP to inform the TX
-                    debugln("Low buf=%d,h=%d,t=%d",used,SportHead,SportTail);
-                }
-            }
-        #endif //SPORT_SEND
-        #ifdef HOTT_FW_TELEMETRY
-            if(protocol==PROTO_HOTT && rx_len==28)
-            {//Protocol waiting for 1 byte
-                HoTT_SerialRX_val=rx_ok_buff[27];
-                HoTT_SerialRX=true;
-            }
-        #endif
-    }
-
-    RX_DONOTUPDATE_off;
-    #ifdef ORANGE_TX
-        cli();
-    #else
-        UCSR0B &= ~_BV(RXCIE0);					// RX interrupt disable
-    #endif
-    if(IS_RX_MISSED_BUFF_on)					// If the buffer is still valid
-    {	
-        if(radio.rx_idx >= 26 && radio.rx_idx<RXBUFFER_SIZE)
-        {
-            radio.rx_len = radio.rx_idx;
-            memcpy((void*)radio.rx_ok_buff,(const void*)radio.rx_buff, radio.rx_len);// Duplicate the buffer
-            RX_FLAG_on;							// Data to be processed next time...
-        }
-        RX_MISSED_BUFF_off;
-    }
-    #ifdef ORANGE_TX
-        sei();
-    #else
-        UCSR0B |= _BV(RXCIE0) ;					// RX interrupt enable
-    #endif
-}
-#endif /* ENABLE_SERIAL */
-
 static void update_channels_aux(void){
     //Calc AUX flags
     radio.channel_aux=0;
@@ -789,15 +470,11 @@ void PPM_decode(){	// Interrupt on PPM pin
     Prev_TCNT1 += Cur_TCNT1;
 }
 
-#ifdef MOCK_PPM
-extern "C" void TIM3_IRQHandler(void){
-    TIM3->SR = ~TIM3->SR;    
+void multiprotocol_mock_ppm(void){
     radio.ppm_chan_max = 4;
-    for (uint32_t i = 0; i < radio.ppm_chan_max; i++)
-    {
+    for (uint32_t i = 0; i < radio.ppm_chan_max; i++){
         radio.ppm_data[i] = 1500;
     }
     PPM_FLAG_on;    
 }
-#endif
 #endif //ENABLE_PPM

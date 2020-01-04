@@ -6,13 +6,13 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "board.h"
 #include <nvdata.h>
 #include <stdout.h>
 #include <fifo.h>
-
-#ifdef ENABLE_CONSOLE
 #include <console.h>
+#include "board.h"
+
+#ifdef ENABLE_VCOM
 #include "usbd_cdc_if.h"
 #endif
 
@@ -24,19 +24,14 @@ extern "C" {
 //#define USE_FREERTOS
 
 #ifdef DEBUG_SERIAL
-#ifdef ENABLE_CONSOLE
+#if defined(ENABLE_CONSOLE)
     #define DBG_PRINT con.print
 #else
-//#include <stdio.h>
-    #define DBG_PRINT(...) //printf
+    #define DBG_PRINT(...)
 #endif
 #else
 #define DBG_PRINT(...)
 #endif
-
-void app_setup(void);
-void app_loop(void *ptr);
-extern void (*device_process)(void);
 
 #if defined(ENABLE_VCOM)
 extern stdout_t vcom;
@@ -48,9 +43,10 @@ extern stdout_t pcom;
 
 #ifdef __cplusplus
 #ifdef ENABLE_CONSOLE
+extern Console con;
 extern ConsoleCommand *laser4_commands[];
-#endif
+#endif /* ENABLE_CONSOLE */
 }
 #endif
 
-#endif
+#endif /* _APP_H_ */
