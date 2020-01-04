@@ -127,12 +127,8 @@ volatile uint32_t *src, *dest;
 
     SystemCoreClock = 72000000UL;
 
-    SysTick_Config(SystemCoreClock/1000U);
-    NVIC_SetPriority(SysTick_IRQn, 15);         // Maximum priority
-    NVIC_EnableIRQ(SysTick_IRQn);
-
 #if defined(USE_FREERTOS)
-    asm volatile("sub sp, sp, #16");         // Give some stack for function parameters
+    asm volatile("sub sp, sp, #128");         // Give some heap for function parameters
     __libc_init_array();
     app_setup();
     /* Configure tasks*/
