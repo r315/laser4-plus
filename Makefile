@@ -223,9 +223,10 @@ C_DEFS += \
 -DFRSKYD_CC2500_INO \
 -DAETR \
 -DENABLE_PPM \
--DDEBUG_SERIAL \
 -DENABLE_USART \
+-DDEBUG_SERIAL \
 -DENABLE_CONSOLE \
+-DUSE_MY_CONFIG \
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
