@@ -30,8 +30,10 @@ OPT = -Og
 # source path
 
 APP_SRC_PATH :=$(CURDIR)/app
-LIB_USB_PATH :=$(CURDIR)/lib/stm32-usb-cdc
+LIB_USB_CDC_PATH :=$(CURDIR)/lib/stm32-usb-cdc
+LIB_USB_HID_PATH :=$(CURDIR)/lib/stm32-usb-hid
 LIB_DFU_PATH :=$(CURDIR)/lib/stm32-dfu-bootloader
+LIB_SERIAL_PATH :=$(CURDIR)/lib/stm32-serial
 LIB_MULTIPROTOCOL_PATH :=$(CURDIR)/lib/multiprotocol
 #LIB_MULTIPROTOCOL_PATH :=$(CURDIR)/lib/cc2500
 STARTUP_PATH :=$(CURDIR)/startup
@@ -47,13 +49,11 @@ endif
 FREERTOS_DIR :=$(REPOSITORY)Middlewares/Third_Party/FreeRTOS/Source
 
 SOURCES_PATH =  \
-$(LIB_USB_PATH) \
 $(STARTUP_PATH) \
 $(APP_SRC_PATH) \
 $(REPOSITORY)Drivers/CMSIS \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/ \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/ \
 $(LIBEMB_PATH)/button \
 $(LIBEMB_PATH)/misc \
 $(LIBEMB_PATH)/console \
@@ -63,6 +63,9 @@ $(FREERTOS_DIR)/portable/GCC/ARM_CM3 \
 $(FREERTOS_DIR)/portable/MemMang \
 $(FREERTOS_DIR)/CMSIS_RTOS \
 $(LIB_MULTIPROTOCOL_PATH) \
+$(LIB_USB_HID_PATH) \
+$(LIB_USB_CDC_PATH) \
+$(LIB_SERIAL_PATH) \
 
 # firmware library path
 PERIFLIB_PATH = 
@@ -76,27 +79,14 @@ BUILD_DIR :=build
 
 # C sources
 C_SOURCES =  \
-$(STARTUP_PATH)/startup_stm32f103.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c \
-$(LIBEMB_PATH)/misc/strfunc.c \
 $(wildcard $(APP_SRC_PATH)/*.c) \
+$(STARTUP_PATH)/startup_stm32f103.c \
 $(LIB_MULTIPROTOCOL_PATH)/cc2500_spi.c \
 $(LIB_MULTIPROTOCOL_PATH)/FrSkyDVX_Common.c \
 $(LIB_MULTIPROTOCOL_PATH)/FrSkyD_cc2500.c \
-#$(wildcard $(LIB_MULTIPROTOCOL_PATH)/*.c) \
-#$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pwr.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc_ex.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_rcc.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_adc_ex.c \
+$(LIB_SERIAL_PATH)/usart.c \
+$(LIBEMB_PATH)/misc/nvdata.c \
+$(LIBEMB_PATH)/misc/strfunc.c \
 
 C_SOURCES +=  \
 $(FREERTOS_DIR)/portable/GCC/ARM_CM3/port.c \
@@ -108,28 +98,53 @@ $(FREERTOS_DIR)/tasks.c \
 $(FREERTOS_DIR)/timers.c \
 $(FREERTOS_DIR)/CMSIS_RTOS/cmsis_os.c \
 
+ifneq ($(USB_DEVICE),)
 C_SOURCES += \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_ll_usb.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd_ex.c \
-$(LIB_USB_PATH)/usbd_conf.c \
-$(LIB_USB_PATH)/usbd_desc.c \
-$(LIB_USB_PATH)/usbd_cdc_if.c \
+
+endif
+
+ifeq ($(USB_DEVICE),HID)
+C_SOURCES += \
+$(LIB_USB_HID_PATH)/usbd_conf.c \
+$(LIB_USB_HID_PATH)/usbd_desc.c \
+$(LIB_USB_HID_PATH)/usbd_hid_if.c \
+$(LIB_USB_HID_PATH)/game_controller.c
+
+SOURCES_PATH += \
+$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/HID/Src/ \
+
+C_DEFS :=-DENABLE_GAME_CONTROLLER
+endif
+
+ifeq ($(USB_DEVICE),CDC)
+C_SOURCES += \
+$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
+$(LIB_USB_CDC_PATH)/usbd_conf.c \
+$(LIB_USB_CDC_PATH)/usbd_desc.c \
+$(LIB_USB_CDC_PATH)/usbd_cdc_if.c \
+
+SOURCES_PATH += \
+$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/ \
+
+C_DEFS :=-DENABLE_VCOM
+endif
 
 C_SOURCES += \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c \
+$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c \
+$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c \
+$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c \
 
 # CPP sources
-CPP_SOURCES = \
-$(LIBEMB_PATH)/console/console.cpp \
+CPP_SOURCES += \
 $(wildcard $(APP_SRC_PATH)/*.cpp) \
-#$(wildcard $(APP_SRC_DIR)/*.cpp) \
-$(wildcard $(APP_SRC_DIR)/console/*.cpp) \
+$(LIBEMB_PATH)/console/console.cpp \
 
 # ASM sources
 ASM_SOURCES =  \
@@ -144,26 +159,21 @@ AS_INCLUDES =
 
 # C includes
 C_INCLUDES =  \
--I$(APP_SRC_PATH) \
--I$(LIB_USB_PATH) \
--I$(LIBEMB_PATH)/include \
--I$(REPOSITORY)Drivers/CMSIS/Include \
--I$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Inc \
--I$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Inc/Legacy \
--I$(REPOSITORY)Drivers/CMSIS/Device/ST/STM32F1xx/Include \
--I$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Inc \
--I$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
--I$(FREERTOS_DIR)/include \
--I$(FREERTOS_DIR)/CMSIS_RTOS \
--I$(FREERTOS_DIR)/portable/GCC/ARM_CM3 \
--I$(LIB_MULTIPROTOCOL_PATH) \
-
-
-######################################
-# firmware library
-######################################
-PERIFLIB_SOURCES = 
-
+$(APP_SRC_PATH) \
+$(LIB_USB_CDC_PATH) \
+$(LIB_USB_HID_PATH) \
+$(LIBEMB_PATH)/include \
+$(REPOSITORY)Drivers/CMSIS/Include \
+$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Inc \
+$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Inc/Legacy \
+$(REPOSITORY)Drivers/CMSIS/Device/ST/STM32F1xx/Include \
+$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Inc \
+$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc \
+$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
+$(FREERTOS_DIR)/include \
+$(FREERTOS_DIR)/CMSIS_RTOS \
+$(FREERTOS_DIR)/portable/GCC/ARM_CM3 \
+$(LIB_MULTIPROTOCOL_PATH) \
 
 #######################################
 # binaries
@@ -203,22 +213,23 @@ MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 AS_DEFS = 
 
 # C defines
-C_DEFS =  \
+C_DEFS += \
 -DUSE_HAL_DRIVER \
 -DSTM32F103xB \
 -DSTM32_BOARD \
 -DCC2500_INSTALLED \
 -DFRSKYD_CC2500_INO \
--DDEBUG_SERIAL \
 -DAETR \
 -DENABLE_PPM \
-#-DCONSOLE_BLOCKING \
+-DDEBUG_SERIAL \
+-DENABLE_USART \
+-DENABLE_CONSOLE \
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
-CFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections -std=gnu11
-CPPFLAGS = $(MCU) $(C_DEFS) $(C_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
+CFLAGS = $(MCU) $(C_DEFS) $(addprefix -I, $(C_INCLUDES)) $(OPT) -Wall -fdata-sections -ffunction-sections -std=gnu11
+CPPFLAGS = $(MCU) $(C_DEFS) $(addprefix -I, $(C_INCLUDES)) $(OPT) -Wall -fdata-sections -ffunction-sections
 
 ifeq ($(DEBUG), 1)
 DEBUGFLAGS =-g -gdwarf-2
@@ -250,8 +261,10 @@ LDFLAGS = $(MCU) $(SPECS) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/
 # Rules
 #######################################
 # default action: build all
-all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin #$(BUILD_DIR)/$(TARGET).hex
-#@echo $(OBJECTS)
+all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin size #$(BUILD_DIR)/$(TARGET).hex
+
+hid:
+	$(MAKE) USB_DEVICE=HID
 
 ifeq ($(shell uname -s), Linux)
 $(TARGET).cfg:
@@ -283,9 +296,10 @@ upload: $(BUILD_DIR)/$(TARGET).bin
 	dfu-util -a 0 -s 0x08001000 -D $< -R
 
 test:
-	@echo $(CURDIR)
-	@echo ""; $(foreach d, $(C_INCLUDES), echo $(d);)
+#@echo $(CURDIR)
+	@echo ""; $(foreach d, $(C_SOURCES), echo $(d);)
 #@echo $(C_SOURCES)
+
 #######################################
 # build the application
 #######################################
@@ -315,9 +329,7 @@ $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) #Makefile
 	@echo "--- Linking ---"
 	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
-	@echo "--- Size ---"
-	$(SZ) -A -x $@
-	$(SZ) -B $@
+	
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(HEX) $< $@
@@ -327,6 +339,11 @@ $(BUILD_DIR)/%.bin: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	
 $(BUILD_DIR):
 	mkdir -p $@		
+
+size: $(BUILD_DIR)/$(TARGET).elf
+	@echo "--- Size ---"
+	$(SZ) -A -x $<
+	$(SZ) -B $<
 
 #######################################
 # clean up

@@ -56,7 +56,7 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS ={
   CDC_Receive_FS
 };
 
-static QueueHandle_t chars_queue;
+static QueueHandle_t vcom_queue;
 
 stdout_t vcom = {
     .init = NULL,
@@ -78,20 +78,18 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* Private functions ---------------------------------------------------------*/
 
-static uint8_t vc_getCharNonBlocking(char *c){
-    if(chars_queue == NULL)
-        return 0;
-    return xQueueReceive(chars_queue, c, 0) == pdPASS;
+static uint8_t vc_getCharNonBlocking(char *c){    
+    return xQueueReceive(vcom_queue, c, 0) == pdPASS;
 }
 
 static char vc_getchar(void){
     char c;
-    xQueueReceive(chars_queue, &c, portMAX_DELAY);
+    xQueueReceive(vcom_queue, &c, portMAX_DELAY);
     return c;
 }
 
 static uint8_t vc_kbhit(void){
-    return APP_RX_DATA_SIZE - uxQueueSpacesAvailable(chars_queue);
+    return APP_RX_DATA_SIZE - uxQueueSpacesAvailable(vcom_queue);
 }
 
 static void putAndRetry(uint8_t *data, uint16_t len){
@@ -113,6 +111,26 @@ uint16_t len = 0;
 		len++;	
 	}
 	putAndRetry((uint8_t*)s, len);
+}
+
+/**
+* Vile hack to reenumerate, physically _drag_ d+ low.
+* (need at least 2.5us to trigger usb disconnect)
+* @retval None
+* */
+static void USB_DEVICE_Reenumerate(void){
+    USB->CNTR = USB_CNTR_PDWN;
+    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
+    GPIOA->CRH = (GPIOA->CRH & ~(0x0F << 16)) | (2 << 16);
+    GPIOA->BRR = (1 << 12); //GPIO_PIN_12;
+    asm volatile( 
+                  "mov r0,#2048 \n"
+                  "loop:"
+                  "nop\n"
+                  "subs r0,#1 \n"
+                  "bne loop"
+    );
+    GPIOA->CRH = (GPIOA->CRH & ~(0x0F << 16)) | (4 << 16);
 }
 
 /**
@@ -235,7 +253,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   
   while(size--)    
-    xQueueSendFromISR(chars_queue, Buf++, 0);
+    xQueueSendFromISR(vcom_queue, Buf++, 0);
 
   return (USBD_OK);
   /* USER CODE END 6 */
@@ -267,18 +285,6 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
 }
 
 /**
-* Vile hack to reenumerate, physically _drag_ d+ low.
-* (need at least 2.5us to trigger usb disconnect)
-* @retval None
-* */
-void USB_DEVICE_Reenumerate(void){
-    USB->CNTR = USB_CNTR_PDWN;
-    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
-    GPIOA->CRH = (GPIOA->CRH & ~(0x0F << 16)) | (2 << 16);
-    GPIOA->BRR = (1 << 12); //GPIO_PIN_12;    
-}
-
-/**
  * @brief CDC_Init
  *        Initialyse  Comunications Device Class interface
  *  
@@ -286,8 +292,8 @@ void USB_DEVICE_Reenumerate(void){
 void CDC_Init(void){
 USBD_HandleTypeDef *dev = &hUsbDeviceFS;
     
-    chars_queue = xQueueCreate( APP_RX_DATA_SIZE, VC_QUEUE_ITEM_SIZE );
-    configASSERT( (chars_queue != NULL) );
+    vcom_queue = xQueueCreate( APP_RX_DATA_SIZE, VC_QUEUE_ITEM_SIZE );
+    configASSERT( (vcom_queue != NULL) );
 
     USB_DEVICE_Reenumerate();
 
