@@ -12,6 +12,7 @@ extern "C" {
 #include <queue.h>
 #include <nvdata.h>
 #include <stdout.h>
+#include <fifo.h>
 
 #ifdef ENABLE_CONSOLE
 #include <console.h>
@@ -23,7 +24,7 @@ extern "C" {
 #include "game_controller.h"
 #endif
 
-#define USE_FREERTOS
+//#define USE_FREERTOS
 
 #ifdef DEBUG_SERIAL
 #ifdef ENABLE_CONSOLE

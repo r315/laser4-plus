@@ -87,8 +87,9 @@ $(LIB_MULTIPROTOCOL_PATH)/FrSkyD_cc2500.c \
 $(LIB_SERIAL_PATH)/usart.c \
 $(LIBEMB_PATH)/misc/nvdata.c \
 $(LIBEMB_PATH)/misc/strfunc.c \
+$(LIBEMB_PATH)/misc/fifo.c \
 
-C_SOURCES +=  \
+#C_SOURCES +=  \
 $(FREERTOS_DIR)/portable/GCC/ARM_CM3/port.c \
 $(FREERTOS_DIR)/portable/MemMang/heap_4.c \
 $(FREERTOS_DIR)/croutine.c \

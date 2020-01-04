@@ -7,36 +7,38 @@
 #define USART_RX_DATA_SIZE      128
 #define USART_TX_DATA_SIZE      512
 
-static QueueHandle_t usart_tx_queue;
-static QueueHandle_t usart_rx_queue;
+static fifo_t usart_tx_fifo;
+static fifo_t usart_rx_fifo;
 
 static void usart_putchar(char c){
     //USART1->DR = c;
     //while((USART1->SR & USART_SR_TC) == 0);
-    xQueueSend(usart_tx_queue, &c, 0);
+    fifo_put(&usart_tx_fifo, c);
     USART1->CR1 |= USART_CR1_TXEIE;		          // enable TX interrupt
 }
 
 static void usart_puts(const char* str){
     while(*str){
         //usart_putchar(*str++);
-        xQueueSend(usart_tx_queue, str++, 0);
+        fifo_put(&usart_tx_fifo, *(uint8_t*)str++);
     }
     USART1->CR1 |= USART_CR1_TXEIE;
 }  
 
 static char usart_getchar(void){
-    char c;
-    xQueueReceive(usart_rx_queue, &c, portMAX_DELAY);
-    return c;
+    uint8_t c;
+    fifo_get(&usart_rx_fifo, &c);
+    return (char)c;
 }
 
 static uint8_t usart_getCharNonBlocking(char *c){    
-    return xQueueReceive(usart_rx_queue, c, 0) == pdPASS;
+    if(fifo_avail(&usart_rx_fifo))
+        return fifo_get(&usart_rx_fifo, (uint8_t*)c);
+    return 0;
 }
 
 static uint8_t usart_kbhit(void){
-    return USART_RX_DATA_SIZE - uxQueueSpacesAvailable(usart_rx_queue);
+    return fifo_avail(&usart_rx_fifo);
 }
 
 void usart_init(void){
@@ -55,11 +57,8 @@ void usart_init(void){
     //USART1->CR1 |= USART_CR1_UE;
     //while((USART1->SR & USART_SR_TC) == 0);
 
-    usart_rx_queue = xQueueCreate( USART_RX_DATA_SIZE, USART_QUEUE_ITEM_SIZE );
-    configASSERT( (usart_rx_queue != NULL) );
-    
-    usart_tx_queue = xQueueCreate( USART_TX_DATA_SIZE, USART_QUEUE_ITEM_SIZE );
-    configASSERT( (usart_tx_queue != NULL) );
+    fifo_init(&usart_rx_fifo);
+    fifo_init(&usart_tx_fifo);
 
     NVIC_SetPriority(USART1_IRQn, configMAX_SYSCALL_INTERRUPT_PRIORITY - 2); 
     NVIC_EnableIRQ(USART1_IRQn);
@@ -80,18 +79,17 @@ volatile uint32_t status = USART1->SR;
     // Data received
     if (status & USART_SR_RXNE) {
         USART1->SR &= ~USART_SR_RXNE;
-        xQueueSendFromISR(usart_rx_queue, (void*)&USART1->DR, 0);
+        fifo_put(&usart_rx_fifo, (uint8_t)USART1->DR);
     }
     
     // Check if data transmiter if empty 
     if (status & USART_SR_TXE) {
         USART1->SR &= ~USART_SR_TXE;	          // clear interrupt
         // Check if data is available to send
-        if(uxQueueMessagesWaitingFromISR(usart_tx_queue) > 0){
-            uint32_t data;
-            if(xQueueReceiveFromISR(usart_tx_queue, &data, 0) == pdPASS){
-                USART1->DR = data;
-            }
+        if(fifo_avail(&usart_tx_fifo) > 0){
+            uint8_t data;
+            fifo_get(&usart_tx_fifo, &data);
+            USART1->DR = data;            
         }else{
                // No more data, disable interrupt
             USART1->CR1 &= ~USART_CR1_TXEIE;		      // disable TX interrupt if nothing to send

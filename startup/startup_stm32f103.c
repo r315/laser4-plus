@@ -35,7 +35,7 @@ static void user_task(void *ptr){
     }
 }
 #else
-WEAK void main(void){}
+WEAK int main(void){}
 #endif
 
 NAKED void Reset_Handler(void){
@@ -126,10 +126,10 @@ volatile uint32_t *src, *dest;
     }
 
     SystemCoreClock = 72000000UL;
+    asm volatile("sub sp, sp, #64");         // Give some heap
+    __libc_init_array();
 
 #if defined(USE_FREERTOS)
-    asm volatile("sub sp, sp, #128");         // Give some heap for function parameters
-    __libc_init_array();
     app_setup();
     /* Configure tasks*/
     if(xTaskCreate(user_task, "User Task", USER_TSK_SIZE, USER_TSK_PARAM, USER_TSK_PRIO, USER_TSK_HANDLE) != pdPASS){
