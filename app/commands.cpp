@@ -1,7 +1,7 @@
 
 #include "app.h"
 #include "iface_cc2500.h"
-#include "radio.h"
+#include "multiprotocol.h"
 
 #ifdef ENABLE_CONSOLE
 /**
@@ -145,13 +145,13 @@ public:
 			"Tx pause        [%d]\n"
 			"Input signal    [%d]\n"
 			"\n",
-			IS_RX_FLAG_on(radio.flags),
-			IS_CHANGE_PROTOCOL_FLAG_on(radio.flags),
-			IS_RANGE_FLAG_on(radio.flags),
-			IS_PPM_FLAG_on(radio.flags),
-			IS_BIND_DONE(radio.flags),
-			IS_TX_MAIN_PAUSE_on(radio.flags),
-			IS_INPUT_SIGNAL_on(radio.flags)
+			IS_RX_FLAG_on,
+			IS_CHANGE_PROTOCOL_FLAG_on,
+			IS_RANGE_FLAG_on,
+			IS_PPM_FLAG_on,
+			IS_BIND_DONE,
+			IS_TX_MAIN_PAUSE_on,
+			IS_INPUT_SIGNAL_on
 		);
 	}
     
@@ -167,8 +167,8 @@ public:
 		}
 
 		if(getOptValue((char*)"--bind", argc, argv) != NULL){
-			BIND_BUTTON_FLAG_on(radio.flags);
-			BIND_IN_PROGRESS(radio.flags);	
+			BIND_BUTTON_FLAG_on;
+			BIND_IN_PROGRESS;	
 			return CMD_OK;
 		}
         return CMD_BAD_PARAM;        

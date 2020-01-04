@@ -1,6 +1,29 @@
 
+/*********************************************************
+					Multiprotocol Tx code
+               by Midelic and Pascal Langer(hpnuts)
+	http://www.rcgroups.com/forums/showthread.php?t=2165676
+    https://github.com/pascallanger/DIY-Multiprotocol-TX-Module/edit/master/README.md
+
+	Thanks to PhracturedBlue, Hexfet, Goebish, Victzh and all protocol developers
+				Ported  from deviation firmware 
+
+ This project is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Multiprotocol is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with Multiprotocol.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "app.h"
-#include "radio.h"
+#include "multiprotocol.h"
 #include "FrSkyDVX_Common.h"
 
 #ifdef ENABLE_CONSOLE 
@@ -51,12 +74,12 @@ void setup(void){
     // Read status of bind button
     if(IS_HW_BIND_BUTTON_PRESSED)
     {
-        BIND_BUTTON_FLAG_on(radio.flags);	// If bind button pressed save the status
-        BIND_IN_PROGRESS(radio.flags);		// Request bind
+        BIND_BUTTON_FLAG_on;	// If bind button pressed save the status
+        BIND_IN_PROGRESS;		// Request bind
         DBG_PRINT("Bind button pressed\n");
     }
     else
-        BIND_DONE(radio.flags);
+        BIND_DONE;
 
     radio.mode_select = 10; // 1...14
     DBG_PRINT("Protocol selection switch reads as %d\n", radio.mode_select);	
@@ -94,7 +117,7 @@ void setup(void){
         radio.option = 40;
         radio.chan_order = 0;
 
-        POWER_FLAG_on(radio.flags);
+        POWER_FLAG_on;
         radio.prev_power = 0xFD; // unused power value
 
         protocol_init();
@@ -108,7 +131,7 @@ uint16_t next_callback, diff;
 uint8_t count=0;
     while(1)
     {        
-        while(radio.remote_callback == NULL || IS_WAIT_BIND_on(radio.flags) || IS_INPUT_SIGNAL_off(radio.flags)){		
+        while(radio.remote_callback == NULL || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off){		
             if(!Update_All())
             {
                 cli();								// Disable global int due to RW of 16 bits registers
@@ -120,10 +143,10 @@ uint8_t count=0;
                 sei();								// Enable global int
             }
         }
-        TX_MAIN_PAUSE_on(radio.flags);
+        TX_MAIN_PAUSE_on;
         //tx_pause();
-        next_callback = radio.remote_callback(&radio) << 1;
-        TX_MAIN_PAUSE_off(radio.flags);
+        next_callback = radio.remote_callback() << 1;
+        TX_MAIN_PAUSE_off;
         //tx_resume();
         cli();										// Disable global int due to RW of 16 bits registers
         #ifndef STM32_BOARD			
@@ -140,7 +163,7 @@ uint8_t count=0;
         }
         else
         {
-            if(IS_RX_FLAG_on(radio.flags) || IS_PPM_FLAG_on(radio.flags))
+            if(IS_RX_FLAG_on || IS_PPM_FLAG_on)
             { // Serial or PPM is waiting...
                 if(++count>10)
                 { //The protocol does not leave enough time for an update so forcing it
@@ -186,17 +209,17 @@ uint8_t count=0;
 static uint8_t Update_All(void){
 
     #ifdef ENABLE_SERIAL
-        if(radio.mode_select == MODE_SERIAL && IS_RX_FLAG_on(radio.flags))		// Serial mode and something has been received
+        if(radio.mode_select == MODE_SERIAL && IS_RX_FLAG_on)		// Serial mode and something has been received
         {
             update_serial_data();							// Update protocol and data
             update_channels_aux();
-            INPUT_SIGNAL_on(radio.flags);								//valid signal received
+            INPUT_SIGNAL_on;								//valid signal received
             radio.last_signal = millis();
         }
     #endif //ENABLE_SERIAL
 
     #ifdef ENABLE_PPM
-        if(radio.mode_select != MODE_SERIAL && IS_PPM_FLAG_on(radio.flags))		// PPM mode and a full frame has been received
+        if(radio.mode_select != MODE_SERIAL && IS_PPM_FLAG_on)		// PPM mode and a full frame has been received
         {
             uint32_t chan_or = radio.chan_order;
             uint8_t ch;
@@ -226,12 +249,12 @@ static uint8_t Update_All(void){
                 else
                     radio.channel_data[i]=val;
             }
-            PPM_FLAG_off(radio.flags);									// wait for next frame before update
+            PPM_FLAG_off;									// wait for next frame before update
             #ifdef FAILSAFE_ENABLE
                 PPM_failsafe();
             #endif
             update_channels_aux();
-            INPUT_SIGNAL_on(radio.flags);								// valid signal received
+            INPUT_SIGNAL_on;								// valid signal received
             radio.last_signal = millis();
         }
     #endif //ENABLE_PPM
@@ -243,7 +266,7 @@ static uint8_t Update_All(void){
         device_process();
     }
     
-    if(IS_CHANGE_PROTOCOL_FLAG_on(radio.flags))
+    if(IS_CHANGE_PROTOCOL_FLAG_on)
     { // Protocol needs to be changed or relaunched for bind
         protocol_init();									//init new protocol
         return 1;
@@ -253,15 +276,15 @@ static uint8_t Update_All(void){
 
 static void update_led_status(void)
 {
-    if(IS_INPUT_SIGNAL_on(radio.flags))
+    if(IS_INPUT_SIGNAL_on)
         if(millis() - radio.last_signal > 70)
         {
-            INPUT_SIGNAL_off(radio.flags);							//no valid signal (PPM or Serial) received for 70ms
+            INPUT_SIGNAL_off;							//no valid signal (PPM or Serial) received for 70ms
             DBG_PRINT("No input signal\n");
         }
     if(radio.blink < millis())
     {
-        if(IS_INPUT_SIGNAL_off(radio.flags))
+        if(IS_INPUT_SIGNAL_off)
         {
             if(radio.mode_select == MODE_SERIAL)
                 radio.blink += BLINK_SERIAL_TIME;				//blink slowly if no valid serial input
@@ -278,7 +301,7 @@ static void update_led_status(void)
             }
             else
             {
-                if(IS_WAIT_BIND_on(radio.flags))
+                if(IS_WAIT_BIND_on)
                 {
                     if(IS_LED_on)							//flash to indicate WAIT_BIND
                         radio.blink += BLINK_WAIT_BIND_TIME_LOW;
@@ -287,7 +310,7 @@ static void update_led_status(void)
                 }
                 else
                 {
-                    if(IS_BIND_DONE(radio.flags))
+                    if(IS_BIND_DONE)
                         LED_off;							//bind completed force led on
                     radio.blink += BLINK_BIND_TIME;					//blink fastly during binding
                 }
@@ -310,7 +333,7 @@ static void set_rx_tx_addr(uint32_t id)
 static void protocol_init(void){
 static uint16_t next_callback;
 
-    if(IS_WAIT_BIND_off(radio.flags))
+    if(IS_WAIT_BIND_off)
     {
         radio.remote_callback = NULL;	// No protocol
         next_callback = 0;				// Default is immediate call back
@@ -324,7 +347,7 @@ static uint16_t next_callback;
         #ifdef FAILSAFE_ENABLE
             FAILSAFE_VALUES_off;
         #endif
-        DATA_BUFFER_LOW_off(radio.flags);
+        DATA_BUFFER_LOW_off;
         
         radio.blink = millis();
 
@@ -333,7 +356,7 @@ static uint16_t next_callback;
             #ifdef CC2500_INSTALLED
                 #if defined(FRSKYD_CC2500_INO)
                     case PROTO_FRSKYD:						
-                        next_callback = initFrSky_2way(&radio);
+                        next_callback = initFrSky_2way();
                         radio.remote_callback = ReadFrSky_2way;
                         break;
                 #endif
@@ -350,8 +373,8 @@ static uint16_t next_callback;
         }
     #endif
 
-    WAIT_BIND_off(radio.flags);
-    CHANGE_PROTOCOL_FLAG_off(radio.flags);
+    WAIT_BIND_off;
+    CHANGE_PROTOCOL_FLAG_off;
 
     if(next_callback > 32000)
     { // next_callback should not be more than 32767 so we will wait here...
@@ -363,7 +386,7 @@ static uint16_t next_callback;
     TIMER->CCR1 = TIMER->CNT + next_callback * 2;		// set compare A for callback
     TIMER->SR = 0x1E5F & ~TIM_SR_CC1IF;				// Clear Timer2/Comp1 interrupt flag
     sei();										    // enable global int
-    BIND_BUTTON_FLAG_off(radio.flags);
+    BIND_BUTTON_FLAG_off;
 }
 
 static void modules_reset(void){
@@ -382,8 +405,8 @@ static bool prev_ch_mapping = false;
         #endif
     #endif
 
-    RX_DONOTUPDATE_on(radio.flags);
-    RX_FLAG_off(radio.flags);								//data is being processed
+    RX_DONOTUPDATE_on;
+    RX_FLAG_off;								//data is being processed
 
     #ifdef SAMSON	// Extremely dangerous, do not enable this unless you know what you are doing...
         if( rx_ok_buff[0]==0x55 && (rx_ok_buff[1]&0x1F)==PROTO_FRSKYD && rx_ok_buff[2]==0x7F && rx_ok_buff[24]==217 && rx_ok_buff[25]==202 )
@@ -398,21 +421,21 @@ static bool prev_ch_mapping = false;
     #endif
 
     if(radio.rx_ok_buff[1] & 0x20){             //check range
-        RANGE_FLAG_on(radio.flags);
+        RANGE_FLAG_on;
     }else{
-        RANGE_FLAG_off(radio.flags);
+        RANGE_FLAG_off;
     }
 
     if(radio.rx_ok_buff[1] & 0x40){             //check autobind
-        AUTOBIND_FLAG_on(radio.flags);
+        AUTOBIND_FLAG_on;
     }else{
-        AUTOBIND_FLAG_off(radio.flags);
+        AUTOBIND_FLAG_off;
     }
 
     if(radio.rx_ok_buff[2] & 0x80){             //if rx_ok_buff[2] ==1,power is low ,0-power high
-        POWER_FLAG_off(radio.flags);            //power low
+        POWER_FLAG_off;            //power low
     }else{
-        POWER_FLAG_on(radio.flags);             //power high
+        POWER_FLAG_on;             //power high
     }
 
     //Forced frequency tuning values for CC2500 protocols
@@ -470,16 +493,16 @@ static bool prev_ch_mapping = false;
         }
     #endif
 
-    DISABLE_CH_MAP_off(radio.flags);
-    DISABLE_TELEM_off(radio.flags);
+    DISABLE_CH_MAP_off;
+    DISABLE_TELEM_off;
 
     if(radio.rx_len > 26)
     {//Additional flag received at the end
         radio.rx_ok_buff[0] = ( radio.rx_ok_buff[26]&0xF0) | (radio.rx_ok_buff[0]&0x0F);	// Additional protocol numbers and RX_Num available -> store them in rx_ok_buff[0]
         if(radio.rx_ok_buff[26]&0x02)
-            DISABLE_TELEM_on(radio.flags);
+            DISABLE_TELEM_on;
         if(radio.rx_ok_buff[26]&0x01)
-            DISABLE_CH_MAP_on(radio.flags);
+            DISABLE_CH_MAP_on;
         #if defined(TELEMETRY) && defined(INVERT_TELEMETRY_TX)
             if(((rx_ok_buff[26]&0x08)!=0) ^ prev_inv_telem)
             { //value changed
@@ -510,12 +533,12 @@ static bool prev_ch_mapping = false;
 
     if( (radio.rx_ok_buff[0] != radio.cur_protocol[0]) || ((radio.rx_ok_buff[1]&0x5F) != (radio.cur_protocol[1]&0x5F)) || ( (radio.rx_ok_buff[2]&0x7F) != (radio.cur_protocol[2]&0x7F) ) )
     { // New model has been selected
-        CHANGE_PROTOCOL_FLAG_on(radio.flags);				//change protocol
-        WAIT_BIND_off(radio.flags);
-        if((radio.rx_ok_buff[1]&0x80)!=0 || IS_AUTOBIND_FLAG_on(radio.flags))
-            BIND_IN_PROGRESS(radio.flags);					//launch bind right away if in autobind mode or bind is set
+        CHANGE_PROTOCOL_FLAG_on;				//change protocol
+        WAIT_BIND_off;
+        if((radio.rx_ok_buff[1]&0x80)!=0 || IS_AUTOBIND_FLAG_on)
+            BIND_IN_PROGRESS;					//launch bind right away if in autobind mode or bind is set
         else
-            BIND_DONE(radio.flags);
+            BIND_DONE;
         radio.protocol = radio.rx_ok_buff[1]&0x1F;			//protocol no (0-31)
         if(!(radio.rx_ok_buff[0]&1))
             radio.protocol+=32;						//protocol no (0-63)
@@ -529,15 +552,15 @@ static bool prev_ch_mapping = false;
     else
         if( ((radio.rx_ok_buff[1]&0x80)!=0) && ((radio.cur_protocol[1]&0x80)==0) )		// Bind flag has been set
         { // Restart protocol with bind
-            CHANGE_PROTOCOL_FLAG_on(radio.flags);
-            BIND_IN_PROGRESS(radio.flags);
+            CHANGE_PROTOCOL_FLAG_on;
+            BIND_IN_PROGRESS;
         }
         else
             if( ((radio.rx_ok_buff[1]&0x80)==0) && ((radio.cur_protocol[1]&0x80)!=0) )	// Bind flag has been reset
             { // Request protocol to end bind
                 #if defined(FRSKYD_CC2500_INO) || defined(FRSKYX_CC2500_INO) || defined(FRSKYV_CC2500_INO) || defined(AFHDS2A_A7105_INO)
                 if(radio.protocol==PROTO_FRSKYD || radio.protocol == PROTO_FRSKYX || radio.protocol == PROTO_FRSKYV || radio.protocol == PROTO_AFHDS2A )
-                    BIND_DONE(radio.flags);
+                    BIND_DONE;
                 else
                 #endif
                 if(radio.bind_counter > 2)
@@ -549,12 +572,12 @@ static bool prev_ch_mapping = false;
         radio.cur_protocol[i] =  radio.rx_ok_buff[i];
 
     //disable channel mapping
-    //if(!IS_CHMAP_PROTOCOL(radio.flags))						//not a protocol supporting ch map to be disabled
-    //	DISABLE_CH_MAP_off(radio.flags);
-    if(prev_ch_mapping != IS_DISABLE_CH_MAP_on(radio.flags))
+    //if(!IS_CHMAP_PROTOCOL)						//not a protocol supporting ch map to be disabled
+    //	DISABLE_CH_MAP_off;
+    if(prev_ch_mapping != IS_DISABLE_CH_MAP_on)
     {
-        prev_ch_mapping = IS_DISABLE_CH_MAP_on(radio.flags);
-        if(IS_DISABLE_CH_MAP_on(radio.flags))
+        prev_ch_mapping = IS_DISABLE_CH_MAP_on;
+        if(IS_DISABLE_CH_MAP_on)
         {
             for(uint8_t i=0;i<4;i++)
                 CH_AETR[i] = CH_TAER[i] = CH_EATR[i] = i;
@@ -640,21 +663,21 @@ static bool prev_ch_mapping = false;
         #endif
     }
 
-    RX_DONOTUPDATE_off(radio.flags);
+    RX_DONOTUPDATE_off;
     #ifdef ORANGE_TX
         cli();
     #else
         UCSR0B &= ~_BV(RXCIE0);					// RX interrupt disable
     #endif
-    if(IS_RX_MISSED_BUFF_on(radio.flags))					// If the buffer is still valid
+    if(IS_RX_MISSED_BUFF_on)					// If the buffer is still valid
     {	
         if(radio.rx_idx >= 26 && radio.rx_idx<RXBUFFER_SIZE)
         {
             radio.rx_len = radio.rx_idx;
             memcpy((void*)radio.rx_ok_buff,(const void*)radio.rx_buff, radio.rx_len);// Duplicate the buffer
-            RX_FLAG_on(radio.flags);							// Data to be processed next time...
+            RX_FLAG_on;							// Data to be processed next time...
         }
-        RX_MISSED_BUFF_off(radio.flags);
+        RX_MISSED_BUFF_off;
     }
     #ifdef ORANGE_TX
         sei();
@@ -749,7 +772,7 @@ void PPM_decode(){	// Interrupt on PPM pin
         {  //start of frame
             if(chan >= MIN_PPM_CHANNELS)
             {
-                PPM_FLAG_on(radio.flags);		// good frame received if at least 4 channels have been seen
+                PPM_FLAG_on;		// good frame received if at least 4 channels have been seen
                 if(chan > radio.ppm_chan_max) 
                     radio.ppm_chan_max = chan;	// Saving the number of channels received
             }
@@ -774,7 +797,7 @@ extern "C" void TIM3_IRQHandler(void){
     {
         radio.ppm_data[i] = 1500;
     }
-    PPM_FLAG_on(radio.flags);    
+    PPM_FLAG_on;    
 }
 #endif
 #endif //ENABLE_PPM
