@@ -4,10 +4,12 @@
 #include <stdout.h>
 
 static SPI_HandleTypeDef hspi;
-volatile uint32_t ticks;
+static volatile uint32_t ticks;
+static void(*timer_callback)(void) = NULL;
 
 static void spiInit(void);
 static void timInit(void);
+
 
 void Error_Handler(char * file, int line){
   while(1){
@@ -101,15 +103,6 @@ static void timInit(void){
 	TIM1->DIER &= ~TIM_DIER_CC2IE;				// Disable Timer/Comp2 interrupt
 	TIM1->EGR |= TIM_EGR_UG;					// Refresh the timer's count, prescale, and overflow
 	TIM1->CR1 |= TIM_CR1_CEN;
-
-#ifdef MOCK_PPM
-    // PPM Mock timer
-    TIM3->PSC = (SystemCoreClock/1000000) - 1;  // Set Timer clock
-    TIM3->ARR = 6000 - 1;                       // PPM 4ch*1500us 
-    TIM3->DIER = TIM_DIER_UIE;
-    TIM3->CR1 |= TIM_CR1_CEN;
-    NVIC_EnableIRQ(TIM3_IRQn);
-#endif
 }
 
 void BOARD_DelayMs(uint32_t ms){
@@ -148,4 +141,57 @@ uint32_t res, address = (uint32_t)dst;
     }
     HAL_FLASH_Lock();
     return res;
+}
+
+void setTimer(uint32_t interval, void(*cb)(void)){
+    // PPM Mock timer
+    TIM3->PSC = (SystemCoreClock/1000000) - 1;  // Set Timer clock 1MHz
+    TIM3->ARR = interval - 1;
+    TIM3->DIER = TIM_DIER_UIE;
+    timer_callback = cb;
+    NVIC_EnableIRQ(TIM3_IRQn);
+    TIM3->CR1 |= TIM_CR1_CEN;
+}
+
+void stopTimer(){
+    TIM3->CR1 &= ~TIM_CR1_CEN;
+    timer_callback = NULL;
+}
+
+void TIM3_IRQHandler(void){
+    TIM3->SR = ~TIM3->SR;
+    if(timer_callback != NULL){
+        timer_callback();
+    }
+}
+
+void enableWatchDog(uint32_t interval){
+uint32_t timeout = 4096;
+uint8_t pres = 0;
+
+    interval *= 10;
+
+    if(interval > 0xFFFF){
+        interval = 0xFFFF;
+    }    
+
+    while( interval > timeout){
+        timeout <<= 1;
+        pres++;
+    }
+
+    if(IWDG->SR != 0){
+        // other update is in progress
+        return;
+    }
+
+    IWDG->KR = 0x5555; // Enable access to PR and RLR registers
+    IWDG->PR = pres;
+    IWDG->RLR = (interval * 0xFFFF) / timeout;
+    IWDG->KR = 0xAAAA;  // Reload
+    IWDG->KR = 0xCCCC;  // Start IWDG
+}
+
+void reloadWatchDog(void){
+    IWDG->KR = 0xAAAA; // Reload RLR on counter
 }

@@ -126,17 +126,15 @@ public:
 	}	
 }cmdcc25;
 
-extern radio_t radio;
-class CmdRadio : public ConsoleCommand {
+class CmdStatus : public ConsoleCommand {
 	Console *console;
     
 public:
-    CmdRadio() : ConsoleCommand("radio") {}	
+    CmdStatus() : ConsoleCommand("status") {}	
 	void init(void *params) { console = static_cast<Console*>(params); }
-	void help(void) {}
-
-	void printFlags(void){
-		console->print("\n"
+	void help(void) {}   
+	char execute(void *ptr) {
+        console->print("\n"
 			"Rx              [%d]\n"
 			"Change protocol [%d]\n"
 			"Range           [%d]\n"
@@ -153,27 +151,28 @@ public:
 			IS_TX_MAIN_PAUSE_on,
 			IS_INPUT_SIGNAL_on
 		);
-	}
-    
-	char execute(void *ptr) {
-        char *argv[4];
-        uint32_t argc;
-
-        argc = strToArray((char*)ptr, argv);
-
-		if(argc == 0){
-			printFlags();
-			return CMD_OK;
-		}
-
-		if(getOptValue((char*)"--bind", argc, argv) != NULL){
-			BIND_BUTTON_FLAG_on;
-			BIND_IN_PROGRESS;	
-			return CMD_OK;
-		}
-        return CMD_BAD_PARAM;        
+        return CMD_OK;        
 	}	
-}cmdradio;
+}cmdstatus;
+
+class CmdMockPPM : public ConsoleCommand {
+	Console *console;    
+public:
+    CmdMockPPM() : ConsoleCommand("mock-ppm") {}
+	void help(void) {}
+	char execute(void *ptr) {
+		uint32_t int_value;
+		if(nextHex((char**)&ptr, &int_value)){
+			if(int_value == 1){
+				setTimer(6000, multiprotocol_mock_ppm);
+			}else{
+				stopTimer();
+			}
+			return CMD_OK;
+		}
+		return CMD_BAD_PARAM;
+	}
+}cmdmockppm;	
 
 class CmdReset : public ConsoleCommand {
 	Console *console;    
@@ -181,16 +180,27 @@ public:
     CmdReset() : ConsoleCommand("reset") {}
 	void help(void) {}
 	char execute(void *ptr) {NVIC_SystemReset();}
-}cmdreset;	
+}cmdreset;
+
+class CmdBind : public ConsoleCommand {
+	Console *console;    
+public:
+    CmdBind() : ConsoleCommand("bind") {}
+	void help(void) {}
+	char execute(void *ptr) {
+		BIND_BUTTON_FLAG_on;
+		BIND_IN_PROGRESS;	
+		return CMD_OK;
+	}
+}cmdbind;
 
 ConsoleCommand *laser4_commands[]{
     &cmdhelp,
     &cmdcc25,
-	&cmdradio,
 	&cmdreset,
+	&cmdmockppm,
+	&cmdbind,
+	&cmdstatus,
     NULL
 };
-
-
-
 #endif

@@ -27,11 +27,13 @@ void setup(void){
 
     multiprotocol_setup();
 
+    enableWatchDog(2000);
 }
 
 void loop(void){
     multiprotocol_loop();
     con.process();
+    reloadWatchDog();
 }
 
 

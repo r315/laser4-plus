@@ -108,6 +108,12 @@ uint8_t SPI_Read(void);
 uint32_t flash_write(uint8_t *dst, uint8_t *data, uint16_t count);
 void FLASH_PageErase(uint32_t PageAddress);
 
+void setTimer(uint32_t interval, void(*cb)(void));
+void stopTimer(void);
+
+void enableWatchDog(uint32_t interval);
+void reloadWatchDog(void);
+
 #ifdef ENABLE_USART
 void usart_init(void);
 #endif
