@@ -15,6 +15,8 @@
 
 uint32_t SystemCoreClock = 8000000UL;
 extern uint32_t _sidata, _sdata, _edata, _sbss, _ebss, _stack, _estack;
+extern uint32_t _siram_code, _sram_code, _eram_code;
+
 static void errorHandler(void);
 extern void __libc_init_array(void);
 
@@ -39,10 +41,16 @@ WEAK void main(void){}
 NAKED void Reset_Handler(void){
 volatile uint32_t *src, *dest;
 
-    /* Copy .data section */
+    /* Copy initialize variables with .data section values*/
     for (src = &_sidata, dest = &_sdata; dest < &_edata; src++, dest++){
         *dest = *src;
     }
+
+    /* Copy .ram_code section to ram*/
+    for (src = &_siram_code, dest = &_sram_code; dest < &_eram_code; src++, dest++)
+    {
+       *dest = *src;
+    }    
 
     /* Clear .bss */
     dest = &_sbss;
@@ -106,7 +114,7 @@ volatile uint32_t *src, *dest;
     /* Configure flash latency */
     FLASH->ACR |= 2;                        // Two wait states
 
-    /* Switch  sysclk*/
+    /* Switch  sysclk */
     RCC->CFGR |= (1 << 1);                  // select PLL as system clock
     timeout = CLOCK_CFG_TIMEOUT;
     while ((RCC->CFGR & (1 << 3)) == 0){
