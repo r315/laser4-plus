@@ -6,7 +6,17 @@ Console con;
 #endif
 
 void setup(void){
+    GPIO_ENABLE;
+    DBG_PIN_INIT;
+    CC25_CS_INIT;
+    HW_BIND_BUTTON_INIT;
+    LED_INIT;
+
     BOARD_Init();
+
+#ifdef ENABLE_USART
+    usart_init();
+#endif  
     //MCO_EN;
     #ifdef ENABLE_VCOM
     CDC_Init();
@@ -23,6 +33,9 @@ void setup(void){
     con.registerCommandList(laser4_commands);
     #endif
 
+    HW_PPM_INPUT_INIT;
+    BOARD_GPIO_Interrupt(GPIOB, HW_PPM_INPUT_PIN, 0, PPM_decode);
+
     NV_Init();
 
     multiprotocol_setup();
@@ -32,8 +45,9 @@ void setup(void){
 
 void loop(void){
     multiprotocol_loop();
+    #ifdef ENABLE_CONSOLE
     con.process();
-    reloadWatchDog();
+    #endif
 }
 
 
