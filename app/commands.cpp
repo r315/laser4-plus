@@ -159,6 +159,7 @@ class CmdMockPPM : public ConsoleCommand {
 	Console *console;    
 public:
     CmdMockPPM() : ConsoleCommand("mock-ppm") {}
+	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(void *ptr) {
 		uint32_t int_value;
@@ -167,6 +168,8 @@ public:
 				setTimer(6000, multiprotocol_mock_ppm);
 			}else{
 				stopTimer();
+				HW_PPM_INPUT_INIT;
+				BOARD_GPIO_Interrupt(GPIOB, HW_PPM_INPUT_PIN, 0, PPM_decode);
 			}
 			return CMD_OK;
 		}
@@ -178,6 +181,7 @@ class CmdReset : public ConsoleCommand {
 	Console *console;    
 public:
     CmdReset() : ConsoleCommand("reset") {}
+	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(void *ptr) {NVIC_SystemReset();}
 }cmdreset;
@@ -186,6 +190,7 @@ class CmdBind : public ConsoleCommand {
 	Console *console;    
 public:
     CmdBind() : ConsoleCommand("bind") {}
+	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(void *ptr) {
 		BIND_BUTTON_FLAG_on;
@@ -194,6 +199,24 @@ public:
 	}
 }cmdbind;
 
+class CmdTest : public ConsoleCommand {
+	Console *console;    
+public:
+    CmdTest() : ConsoleCommand("test") {}
+	void init(void *params) { console = static_cast<Console*>(params); }
+	void help(void) {}
+	char execute(void *ptr) {
+		uint8_t i;
+		uint32_t (*fr)(void) = (uint32_t (*)(void))pcom.user_ctx;
+		console->print("Fifo: %u\n", fr());
+		for(i = 0; i < MAX_PPM_CHANNELS; i++ ){
+			console->print("\nChannel[%u]: %u", i, radio.channel_data[i]);
+		}
+		console->xputchar('\n');
+		return CMD_OK;
+	}
+}cmdtest;
+
 ConsoleCommand *laser4_commands[]{
     &cmdhelp,
     &cmdcc25,
@@ -201,6 +224,7 @@ ConsoleCommand *laser4_commands[]{
 	&cmdmockppm,
 	&cmdbind,
 	&cmdstatus,
+	&cmdtest,
     NULL
 };
 #endif
