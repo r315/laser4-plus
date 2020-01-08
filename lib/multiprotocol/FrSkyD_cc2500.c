@@ -79,8 +79,8 @@ static void __attribute__((unused)) frsky2way_data_frame(void)
 	radio.packet[17] = 0;
 	for(uint8_t i = 0; i < 8; i++)
 	{
-		uint16_t value;
-			value = convert_channel_frsky(i);
+		uint16_t value = convert_channel_frsky(i);
+		
 		if(i < 4)
 		{
 			radio.packet[6+i] = value & 0xff;

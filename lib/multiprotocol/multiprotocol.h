@@ -166,6 +166,7 @@ extern "C" {
 	#define PPM_MAX_100 2012	//	100%
 	#define PPM_MIN_100 988		//	100%
 //#endif
+#define PPM_DEFAULT_VALUE 0
 
 #define EEPROM_ID_OFFSET 0
 #define _FLAGS_ radio.flags
@@ -308,8 +309,8 @@ extern radio_t radio;
 
 void multiprotocol_setup(void);
 void multiprotocol_loop(void);
+void PPM_decode(void);
 void multiprotocol_mock_ppm(void);
-
 
 #ifdef __cplusplus
 }

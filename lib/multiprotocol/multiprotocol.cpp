@@ -67,7 +67,7 @@ void multiprotocol_setup(void){
     DBG_PRINT("Protocol selection switch reads as %d\n", radio.mode_select);	
 
     for(int8_t i = 0; i < NUM_CHN; i++){
-        radio.channel_data[i] = 1024;
+        radio.channel_data[i] = PPM_DEFAULT_VALUE;
     }
 
     radio.channel_data[THROTTLE] = 0;
@@ -75,9 +75,9 @@ void multiprotocol_setup(void){
     #ifdef ENABLE_PPM
         // Set default PPMs' value
         for(uint8_t i=0; i < NUM_CHN; i++){
-            radio.ppm_data[i] = PPM_MAX_100+PPM_MIN_100;
+            radio.ppm_data[i] = PPM_MAX_100 + PPM_MIN_100;
         }
-        radio.ppm_data[THROTTLE] = PPM_MIN_100*2;
+        radio.ppm_data[THROTTLE] = PPM_MIN_100 * 2; // We are using 0.5us as time base, so pulses have the double size
         radio.chan_order = 0;
     #endif
 
@@ -219,15 +219,19 @@ static uint8_t Update_All(void){
         {
             uint32_t chan_or = radio.chan_order;
             uint8_t ch;
-            for(uint8_t i=0; i < radio.ppm_chan_max; i++)
+            for(uint8_t i = 0; i < radio.ppm_chan_max; i++)
             { // update servo data without interrupts to prevent bad read
                 uint16_t val;
                 cli();										// disable global int
                 val = radio.ppm_data[i];
                 sei();										// enable global int
-                val = map16b(val,PPM_MIN_100*2,PPM_MAX_100*2,CHANNEL_MIN_100,CHANNEL_MAX_100);
+                val = map16b(val, 
+                            PPM_MIN_100 * 2,
+                            PPM_MAX_100 * 2,
+                            CHANNEL_MIN_100,
+                            CHANNEL_MAX_100);
                 
-                if(val&0x8000){
+                if(val & 0x8000){
                     val = CHANNEL_MIN_125;
                 }else if(val > CHANNEL_MAX_125){
                     val = CHANNEL_MAX_125;
@@ -235,15 +239,15 @@ static uint8_t Update_All(void){
 
                 if(chan_or)
                 {
-                    ch = chan_or>>28;
+                    ch = chan_or >> 28;
                     if(ch)
-                        radio.channel_data[ch-1]=val;
+                        radio.channel_data[ch-1] = val;
                     else
-                        radio.channel_data[i]=val;
+                        radio.channel_data[i] = val;
                     chan_or<<=4;
                 }
                 else
-                    radio.channel_data[i]=val;
+                    radio.channel_data[i] = val;
             }
             PPM_FLAG_off;									// wait for next frame before update
             #ifdef FAILSAFE_ENABLE
@@ -407,7 +411,7 @@ static uint32_t random_id(uint16_t address, uint8_t create_new)
             //}
             EEPROM_Read(address, (uint8_t*)&id, 4);
 
-            if(id!=0x2AD141A7)	//ID with seed=0
+            if(id != 0x2AD141A7)	//ID with seed=0
             {
                 DBG_PRINT("Read ID from EEPROM\n");
                 return id;
