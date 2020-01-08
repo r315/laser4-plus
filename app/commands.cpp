@@ -206,9 +206,7 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(void *ptr) {
-		uint8_t i;
-		uint32_t (*fr)(void) = (uint32_t (*)(void))pcom.user_ctx;
-		console->print("Fifo: %u\n", fr());
+		uint8_t i;		
 		for(i = 0; i < MAX_PPM_CHANNELS; i++ ){
 			console->print("\nChannel[%u]: %u", i, radio.channel_data[i]);
 		}

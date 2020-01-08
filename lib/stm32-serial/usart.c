@@ -3,17 +3,13 @@
 
 #ifdef ENABLE_USART
 
-#define USART_QUEUE_ITEM_SIZE   1
-#define USART_RX_DATA_SIZE      128
-#define USART_TX_DATA_SIZE      512
-
 static fifo_t usart_tx_fifo;
 static fifo_t usart_rx_fifo;
 
 static void usart_putchar(char c){
     //USART1->DR = c;
     //while((USART1->SR & USART_SR_TC) == 0);
-    fifo_put(&usart_tx_fifo, c);
+    if(fifo_put(&usart_tx_fifo, c))
     USART1->CR1 |= USART_CR1_TXEIE;		          // enable TX interrupt
 }
 
@@ -69,7 +65,8 @@ stdout_t pcom = {
     .xputchar = usart_putchar,
     .xputs = usart_puts,
     .getCharNonBlocking = usart_getCharNonBlocking,
-    .kbhit = usart_kbhit
+    .kbhit = usart_kbhit,
+    .user_ctx = NULL
 };
 
 void USART1_IRQHandler(void){
