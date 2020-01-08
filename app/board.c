@@ -6,6 +6,7 @@
 static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
 static void(*timer_callback)(void) = NULL;
+static void(*EXTI9_5_callback)(void) = NULL;
 
 static void spiInit(void);
 static void timInit(void);
@@ -17,15 +18,8 @@ void Error_Handler(char * file, int line){
 }
 
 void BOARD_Init(void){
-    GPIO_ENABLE;
-    DBG_LED_INIT;
-    CC25_CS_INIT;
-    HW_BIND_BUTTON_INIT;
     spiInit();
     timInit();
-#ifdef ENABLE_USART
-    usart_init();
-#endif    
 }
 
 void SPI_Write(uint8_t data){
@@ -47,6 +41,15 @@ void BOARD_GPIO_Init(GPIO_TypeDef *port, uint8_t pin, uint8_t mode) {
     }else{ 
         port->CRH = (port->CRH & ~(15 << ((pin - 8) << 2))) | (mode << ((pin - 8) << 2)); 
     }
+}
+
+void BOARD_GPIO_Interrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*cb)(void)){
+
+        AFIO->EXTICR[1] = ( 1 << 4);        // PB5 -> EXTI5
+        EXTI->IMR = ( 1 << 5);              // MR5
+        EXTI->FTSR = (1 << 5);
+        EXTI9_5_callback = cb;
+        NVIC_EnableIRQ(EXTI9_5_IRQn);
 }
 
 /**
@@ -115,12 +118,6 @@ uint32_t BOARD_GetTick(void){
     return ticks;    
 }
 
-void TIM4_IRQHandler(void){
-    TIM4->SR = ~TIM4->SR;
-    ticks++;
-    //DBG_PIN_TOGGLE;
-}
-
 uint32_t HAL_GetTick(void){ return BOARD_GetTick(); }
 
 /**
@@ -158,12 +155,6 @@ void stopTimer(){
     timer_callback = NULL;
 }
 
-void TIM3_IRQHandler(void){
-    TIM3->SR = ~TIM3->SR;
-    if(timer_callback != NULL){
-        timer_callback();
-    }
-}
 
 void enableWatchDog(uint32_t interval){
 uint32_t timeout = 4096;
@@ -194,4 +185,34 @@ uint8_t pres = 0;
 
 void reloadWatchDog(void){
     IWDG->KR = 0xAAAA; // Reload RLR on counter
+}
+
+
+/**
+ * @brief Interrupts handlers
+ * */
+
+void TIM4_IRQHandler(void){
+    TIM4->SR = ~TIM4->SR;
+    ticks++;
+    //DBG_PIN_TOGGLE;
+}
+
+void TIM3_IRQHandler(void){
+    TIM3->SR = ~TIM3->SR;
+    if(timer_callback != NULL){
+        timer_callback();
+    }
+}
+
+void EXTI9_5_IRQHandler(void){
+uint32_t pr = EXTI->PR;
+
+    if((pr & EXTI_PR_PR5) != 0){
+        if(EXTI9_5_callback != NULL){
+            EXTI9_5_callback();
+        }
+    }
+
+    EXTI->PR = pr;
 }

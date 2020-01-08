@@ -10,11 +10,12 @@ extern "C" {
 
 /* GPIO definitions */
 #define GPIO_MODE_MASK          15
+//#define GPIO_MODE_INPUT         (0 << 0) // Input, defined on HAL
 #define GPIO_MODE_O2MHZ         (2 << 0)
 #define GPIO_MODE_O10MHZ        (1 << 0)
 #define GPIO_MODE_O50MHZ        (3 << 0)
-#define GPIO_CNF_OD             (1 << 2)     // Output open drain
-#define GPIO_CNF_AF             (2 << 2)
+#define GPIO_CNF_OD             (1 << 2)     // OUPUT: Open drain, INPUT: Floating
+#define GPIO_CNF_AF             (2 << 2)     // OUTPUT: Alternative function, INPUT: pull-up/pull-down
 
 #define GPIO_ENABLE RCC->APB2ENR |=      \
                       RCC_APB2ENR_IOPCEN \
@@ -42,11 +43,12 @@ extern "C" {
 #define LED_TOGGLE  GPO_TOGGLE(LED_PORT, LED_PIN)
 #endif
 
-#define DBG_LED_TOGGLE  LED_TOGGLE 
-#define DBG_LED_ON      LED_ON
-#define DBG_LED_OFF     LED_OFF
-#define DBG_LED_INIT    LED_INIT
-
+#define DBG_PIN         10
+#define DBG_PORT        GPIOB
+#define DBG_PIN_ON      GPO_SET(DBG_PORT, DBG_PIN)
+#define DBG_PIN_OFF     GPO_CLEAR(DBG_PORT, DBG_PIN)
+#define DBG_PIN_INIT    GPO_INIT(DBG_PORT, DBG_PIN); DBG_PIN_OFF
+#define DBG_PIN_TOGGLE  GPO_TOGGLE(DBG_PORT, DBG_PIN)
 
 /* CC250 Chip select PB6 */
 #define CC25_CS_PIN     6
@@ -54,7 +56,7 @@ extern "C" {
 #define CC25_CS_INIT    GPO_INIT(CC25_CS_PORT, CC25_CS_PIN); CC25_CS_FALSE
 #define CC25_CS_FALSE   GPO_SET(CC25_CS_PORT, CC25_CS_PIN)
 #define CC25_CS_TRUE    GPO_CLEAR(CC25_CS_PORT, CC25_CS_PIN)
-#define DBG_PIN_TOGGLE  GPO_TOGGLE(CC25_CS_PORT, CC25_CS_PIN)
+#define HW_CC2500_MODULE_RESET
 
 
 /* SPI2 */
@@ -64,11 +66,16 @@ extern "C" {
 #define MCO_EN GPIOA->CRH = (GPIOA->CRH & ~(15<<0)) | (11 << 0); \
                RCC->APB2ENR |= (1 << 0)
 
-/* Button pin PB5 */
-#define HW_BIND_BUTTON_PIN        5
+/* Button pin PB4 */
+#define HW_BIND_BUTTON_PIN        4
 #define HW_BIND_BUTTON_INIT       BOARD_GPIO_Init(GPIOB, HW_BIND_BUTTON_PIN, GPIO_CNF_AF); GPIOB->ODR |= (1<<HW_BIND_BUTTON_PIN)
 #define IS_HW_BIND_BUTTON_PRESSED (GPIOB->IDR & (1 << HW_BIND_BUTTON_PIN)) == 0
-#define HW_CC2500_MODULE_RESET
+
+/* PPM input pin PB5 */
+#define HW_PPM_INPUT_PIN          5
+#define HW_PPM_INPUT_INIT         BOARD_GPIO_Init(GPIOB, HW_PPM_INPUT_PIN, GPIO_CNF_AF); \
+                                  GPIOB->ODR |= (1 << HW_PPM_INPUT_PIN); /* Input pull-up */ \
+                                  
 
 /* fast code */
 #define RAM_CODE __attribute__((section(".ram_code")))
@@ -113,6 +120,9 @@ void stopTimer(void);
 
 void enableWatchDog(uint32_t interval);
 void reloadWatchDog(void);
+
+void BOARD_GPIO_Interrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*cb)(void));
+//void attachInterrupt()
 
 #ifdef ENABLE_USART
 void usart_init(void);
