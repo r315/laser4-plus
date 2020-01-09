@@ -306,6 +306,9 @@ typedef struct radio{
 }radio_t;
 
 extern radio_t radio;
+extern uint8_t CH_AETR[];
+extern uint8_t CH_TAER[];
+extern uint8_t CH_EATR[];
 
 void multiprotocol_setup(void);
 void multiprotocol_loop(void);
