@@ -12,7 +12,7 @@ void setup(void){
     HW_BIND_BUTTON_INIT;
     LED_INIT;
 
-    BOARD_Init();
+    laser4Init();
 
 #ifdef ENABLE_USART
     usart_init();

@@ -17,7 +17,7 @@ void Error_Handler(char * file, int line){
   }
 }
 
-void BOARD_Init(void){
+void laser4Init(void){
     spiInit();
     timInit();
 }

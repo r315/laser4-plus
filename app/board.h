@@ -109,7 +109,6 @@ extern uint32_t _seeprom, _eeeprom;     //declared on linker script
 
 
 /* Function prototyes */
-void BOARD_Init(void);
 void BOARD_DelayMs(uint32_t ms);
 uint32_t BOARD_GetTick(void);
 void BOARD_GPIO_Init(GPIO_TypeDef *port, uint8_t pin, uint8_t mode);
@@ -126,6 +125,8 @@ void enableWatchDog(uint32_t interval);
 void reloadWatchDog(void);
 
 void BOARD_GPIO_Interrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*cb)(void));
+
+void laser4Init(void);
 //void attachInterrupt()
 
 #ifdef ENABLE_USART
