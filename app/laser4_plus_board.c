@@ -198,13 +198,6 @@ void TIM4_IRQHandler(void){
     //DBG_PIN_TOGGLE;
 }
 
-void TIM3_IRQHandler(void){
-    TIM3->SR = ~TIM3->SR;
-    if(timer_callback != NULL){
-        timer_callback();
-    }
-}
-
 void EXTI9_5_IRQHandler(void){
 uint32_t pr = EXTI->PR;
 
