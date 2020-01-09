@@ -61,8 +61,8 @@ void multiprotocol_setup(void){
     else
         BIND_DONE;
 
-    radio.mode_select = 10; // 1...14
-    uint8_t bank = 0;
+    radio.mode_select = HW_PROTOCOL_SWITCH;
+    uint8_t bank = HW_BANK_SWITCH;
 
     DBG_PRINT("Protocol selection switch reads as %d\n", radio.mode_select);	
 
@@ -72,6 +72,11 @@ void multiprotocol_setup(void){
 
     radio.channel_data[THROTTLE] = 0;
 
+    modules_reset();
+    
+    radio.protocol_id_master = random_id(EEPROM_ID_OFFSET, 0);
+    DBG_PRINT("Module Id: %lx\n", radio.protocol_id_master);
+
     #ifdef ENABLE_PPM
         // Set default PPMs' value
         for(uint8_t i=0; i < NUM_CHN; i++){
@@ -79,19 +84,9 @@ void multiprotocol_setup(void){
         }
         radio.ppm_data[THROTTLE] = PPM_MIN_100 * 2; // We are using 0.5us as time base, so pulses have the double size
         radio.chan_order = 0;
-    #endif
 
-    modules_reset();
-    
-    radio.protocol_id_master = random_id(EEPROM_ID_OFFSET, 0);
-    DBG_PRINT("Module Id: %lx\n", radio.protocol_id_master);
-
-#ifdef ENABLE_PPM
     if(radio.mode_select != MODE_SERIAL)
     { // PPM
-
-        //uint8_t bank = 0; //bank_switch();
-
         #ifdef MY_PPM_PROT
 			const PPM_Parameters *PPM_prot_line = &My_PPM_prot[ bank * 14 + radio.mode_select -1];
 		#else
