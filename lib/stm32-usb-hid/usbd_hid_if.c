@@ -286,7 +286,7 @@ static uint8_t USBD_HID_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
         ((USBD_HID_HandleTypeDef *)pdev->pClassData)->state = HID_IDLE;
     }
 
-    device_process = CONTROLLER_Process;
+    //device_process = CONTROLLER_Process;
     return ret;
 }
 
@@ -311,7 +311,7 @@ static uint8_t USBD_HID_DeInit(USBD_HandleTypeDef *pdev,
         pdev->pClassData = NULL;
     }
 
-    device_process = NULL;
+    //device_process = NULL;
     return USBD_OK;
 }
 
