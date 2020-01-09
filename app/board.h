@@ -66,6 +66,7 @@ extern "C" {
 #define MCO_EN GPIOA->CRH = (GPIOA->CRH & ~(15<<0)) | (11 << 0); \
                RCC->APB2ENR |= (1 << 0)
 
+/* Definitions for Multiprotocol */
 /* Button pin PB4 */
 #define HW_BIND_BUTTON_PIN        4
 #define HW_BIND_BUTTON_INIT       BOARD_GPIO_Init(GPIOB, HW_BIND_BUTTON_PIN, GPIO_CNF_AF); GPIOB->ODR |= (1<<HW_BIND_BUTTON_PIN)
@@ -75,6 +76,21 @@ extern "C" {
 #define HW_PPM_INPUT_PIN          5
 #define HW_PPM_INPUT_INIT         BOARD_GPIO_Init(GPIOB, HW_PPM_INPUT_PIN, GPIO_CNF_AF); \
                                   GPIOB->ODR |= (1 << HW_PPM_INPUT_PIN); /* Input pull-up */ \
+
+#define delayMilliseconds(x)      BOARD_DelayMs(x)
+#define millis                    BOARD_GetTick
+#define IS_LED_on                 (LED_PORT->IDR & (1<<LED_PIN))
+#define LED_off                   LED_OFF
+#define LED_toggle                LED_TOGGLE
+#define EE_ADDR                   uint16_t
+
+#define cli     __disable_irq
+#define sei     __enable_irq
+
+#define HW_PROTOCOL_SWITCH  10      // 1...14
+#define HW_BANK_SWITCH      0       //bank_switch(); 
+
+#define MOCK_PPM
                                   
 
 /* fast code */
@@ -91,18 +107,6 @@ extern uint32_t _seeprom, _eeeprom;     //declared on linker script
 #define EEPROM_Read             NV_Read
 #define EEPROM_Write(_A,_B,_C)  NV_Write(_A,_B,_C); NV_Sync()
 
-/* Definitions for Multiprotocol */
-#define delayMilliseconds(x) BOARD_DelayMs(x)
-#define millis      BOARD_GetTick
-#define IS_LED_on   (LED_PORT->IDR & (1<<LED_PIN))
-#define LED_off     LED_OFF
-#define LED_toggle  LED_TOGGLE
-#define EE_ADDR     uint16_t
-
-#define cli     __disable_irq
-#define sei     __enable_irq
-
-#define MOCK_PPM
 
 /* Function prototyes */
 void BOARD_Init(void);
