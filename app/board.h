@@ -132,8 +132,6 @@ void stopTimer(void);
 void enableWatchDog(uint32_t interval);
 void reloadWatchDog(void);
 
-void BOARD_GPIO_Interrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*cb)(void));
-
 void laser4Init(void);
 //void attachInterrupt()
 

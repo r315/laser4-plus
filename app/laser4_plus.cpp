@@ -33,11 +33,6 @@ void setup(void){
     con.registerCommandList(laser4_commands);
 #endif
 
-    // Configure PPM pin input pull-up
-    HW_PPM_INPUT_INIT;
-    // Attach falling edge interrupt
-    BOARD_GPIO_Interrupt(GPIOB, HW_PPM_INPUT_PIN, 0, PPM_decode);
-
     NV_Init();
 
     multiprotocol_setup();

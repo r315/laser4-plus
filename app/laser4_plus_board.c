@@ -52,15 +52,6 @@ void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode) {
     }
 }
 
-void BOARD_GPIO_Interrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*cb)(void)){
-
-        AFIO->EXTICR[1] = ( 1 << 4);        // PB5 -> EXTI5
-        EXTI->IMR = ( 1 << 5);              // MR5
-        EXTI->FTSR = (1 << 5);
-        EXTI9_5_callback = cb;
-        NVIC_EnableIRQ(EXTI9_5_IRQn);
-}
-
 /**
  * 
  */
