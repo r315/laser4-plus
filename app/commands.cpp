@@ -165,11 +165,9 @@ public:
 		uint32_t int_value;
 		if(nextHex((char**)&ptr, &int_value)){
 			if(int_value == 1){
-				setTimer(6000, multiprotocol_mock_ppm);
+				//setTimer(6000, multiprotocol_mock_ppm);
 			}else{
-				stopTimer();
-				HW_PPM_INPUT_INIT;
-				BOARD_GPIO_Interrupt(GPIOB, HW_PPM_INPUT_PIN, 0, PPM_decode);
+				//stopTimer();				
 			}
 			return CMD_OK;
 		}

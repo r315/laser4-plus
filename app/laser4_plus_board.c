@@ -32,7 +32,16 @@ uint8_t data;
     return data;
 }
 
-void BOARD_GPIO_Init(GPIO_TypeDef *port, uint8_t pin, uint8_t mode) {
+void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode) {
+
+    
+    if(mode == GPI_PD){
+        port->ODR &= ~(1 << pin);
+    }
+
+    if(mode == GPI_PU){
+        port->ODR |= (1 << pin);
+    }    
 
     mode &= 0x0f;
 
@@ -108,17 +117,17 @@ static void timInit(void){
 	TIM1->CR1 |= TIM_CR1_CEN;
 }
 
-void BOARD_DelayMs(uint32_t ms){
+void delayMs(uint32_t ms){
 uint32_t timeout = ticks + ms;
     while(ticks < timeout){        
     }
 }
 
-uint32_t BOARD_GetTick(void){    
+uint32_t getTick(void){    
     return ticks;    
 }
 
-uint32_t HAL_GetTick(void){ return BOARD_GetTick(); }
+uint32_t HAL_GetTick(void){ return getTick(); }
 
 /**
  * @brief Flash write functions for EEPROM emulation

@@ -44,8 +44,8 @@ void usart_init(void){
     asm("nop");
     RCC->APB2RSTR &= ~RCC_APB2RSTR_USART1RST;
 
-    BOARD_GPIO_Init(GPIOA, 9, GPIO_CNF_AF | GPIO_MODE_O2MHZ);  // TX
-    BOARD_GPIO_Init(GPIOA, 10, GPIO_CNF_AF);  // RX
+    gpioInit(GPIOA, 9, GPO_AF | GPO_2MHZ);  // TX
+    gpioInit(GPIOA, 10, GPI_PU);            // RX
 
     USART1->BRR = 0x271;        //115200
     USART1->CR1 = USART_CR1_RXNEIE | USART_CR1_TE | USART_CR1_RE | USART_CR1_UE;

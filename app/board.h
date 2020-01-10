@@ -17,13 +17,24 @@ extern "C" {
 #define GPIO_CNF_OD             (1 << 2)     // OUPUT: Open drain, INPUT: Floating
 #define GPIO_CNF_AF             (2 << 2)     // OUTPUT: Alternative function, INPUT: pull-up/pull-down
 
+/* Default push-pull */
+#define GPO_2MHZ                GPIO_MODE_O2MHZ 
+#define GPO_10MHZ               GPIO_MODE_O10MHZ
+#define GPO_50MHZ               GPIO_MODE_O50MHZ
+#define GPO_OD                  GPIO_CNF_OD
+#define GPO_AF                  (2 << 2)
+#define GPI_ANALOG              0
+#define GPI_OD                  (1 << 2) // floating
+#define GPI_PD                  (2 << 2)
+#define GPI_PU                  (6 << 2)                
+
 #define GPIO_ENABLE RCC->APB2ENR |=      \
                       RCC_APB2ENR_IOPCEN \
                     | RCC_APB2ENR_IOPBEN \
                     | RCC_APB2ENR_IOPAEN \
                     | RCC_APB2ENR_AFIOEN;
 
-#define GPO_INIT(_IO, _PIN)     BOARD_GPIO_Init(_IO,_PIN, GPIO_MODE_O2MHZ)
+#define GPO_INIT(_IO, _PIN)     gpioInit(_IO, _PIN, GPO_2MHZ)
 #define GPO_SET(_IO, _PIN)      _IO->BSRR = (1 << _PIN)
 #define GPO_CLEAR(_IO, _PIN)    _IO->BRR = (1 << _PIN)
 #define GPO_TOGGLE(_IO, _PIN)   _IO->ODR ^= (1<<_PIN)
@@ -69,16 +80,13 @@ extern "C" {
 /* Definitions for Multiprotocol */
 /* Button pin PB4 */
 #define HW_BIND_BUTTON_PIN        4
-#define HW_BIND_BUTTON_INIT       BOARD_GPIO_Init(GPIOB, HW_BIND_BUTTON_PIN, GPIO_CNF_AF); GPIOB->ODR |= (1<<HW_BIND_BUTTON_PIN)
+#define HW_BIND_BUTTON_INIT       gpioInit(GPIOB, HW_BIND_BUTTON_PIN, GPI_PU);
 #define IS_HW_BIND_BUTTON_PRESSED (GPIOB->IDR & (1 << HW_BIND_BUTTON_PIN)) == 0
 
 /* PPM input pin PB5 */
 #define HW_PPM_INPUT_PIN          5
-#define HW_PPM_INPUT_INIT         BOARD_GPIO_Init(GPIOB, HW_PPM_INPUT_PIN, GPIO_CNF_AF); \
-                                  GPIOB->ODR |= (1 << HW_PPM_INPUT_PIN); /* Input pull-up */ \
-
-#define delayMilliseconds(x)      BOARD_DelayMs(x)
-#define millis                    BOARD_GetTick
+#define HW_PPM_INPUT_PORT         GPIOB
+#define millis                    getTick
 #define IS_LED_on                 (LED_PORT->IDR & (1<<LED_PIN))
 #define LED_off                   LED_OFF
 #define LED_toggle                LED_TOGGLE
@@ -109,11 +117,11 @@ extern uint32_t _seeprom, _eeeprom;     //declared on linker script
 
 
 /* Function prototyes */
-void BOARD_DelayMs(uint32_t ms);
-uint32_t BOARD_GetTick(void);
-void BOARD_GPIO_Init(GPIO_TypeDef *port, uint8_t pin, uint8_t mode);
+void delayMs(uint32_t ms);
+uint32_t getTick(void);
 void SPI_Write(uint8_t data);
 uint8_t SPI_Read(void);
+void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode);
 
 uint32_t flash_write(uint8_t *dst, uint8_t *data, uint16_t count);
 void FLASH_PageErase(uint32_t PageAddress);

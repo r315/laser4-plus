@@ -269,7 +269,7 @@ static void update_led_status(void)
         if(millis() - radio.last_signal > 70)
         {
             INPUT_SIGNAL_off;							//no valid signal (PPM or Serial) received for 70ms
-            DBG_PRINT("No input signal\n");
+            DBG_PRINT("Lost input signal\n");
         }
     if(radio.blink < millis())
     {
@@ -368,7 +368,7 @@ static uint16_t next_callback;
     if(next_callback > 32000)
     { // next_callback should not be more than 32767 so we will wait here...
         uint16_t temp=(next_callback >> 10) - 2;
-        delayMilliseconds(temp);
+        delayMs(temp);
         next_callback -= temp << 10;            // between 2-3ms left at this stage
     }
     cli();											// disable global int
