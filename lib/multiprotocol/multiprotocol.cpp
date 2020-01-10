@@ -49,6 +49,11 @@ uint8_t CH_TAER[]={THROTTLE, AILERON, ELEVATOR, RUDDER, CH5, CH6, CH7, CH8, CH9,
 //uint8_t CH_RETA[]={RUDDER, ELEVATOR, THROTTLE, AILERON, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 uint8_t CH_EATR[]={ELEVATOR, AILERON, THROTTLE, RUDDER, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 
+static void setPpmFlag(void){
+    PPM_FLAG_on;
+    radio.ppm_chan_max = MIN_PPM_CHANNELS;
+}
+
 void multiprotocol_setup(void){   
 
     // Read status of bind button
@@ -78,6 +83,8 @@ void multiprotocol_setup(void){
     DBG_PRINT("Module Id: %lx\n", radio.protocol_id_master);
 
     #ifdef ENABLE_PPM
+    //ppmSetReadyAction(radio.ppm_data, PPM_decode);
+    ppmSetReadyAction(radio.ppm_data, setPpmFlag);
         // Set default PPMs' value
         for(uint8_t i=0; i < NUM_CHN; i++){
             radio.ppm_data[i] = PPM_MAX_100 + PPM_MIN_100;
@@ -453,8 +460,8 @@ int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int1
     return x  + out_min ;
 }
 
-#ifdef ENABLE_PPM
-void PPM_decode(){	// Interrupt on PPM pin
+#if 0 //def ENABLE_PPM
+RAM_CODE void PPM_decode(){	// Interrupt on PPM pin
     static int8_t chan = 0, bad_frame = 1;
     static uint16_t Prev_TCNT1 = 0;
     uint16_t Cur_TCNT1;
@@ -482,13 +489,5 @@ void PPM_decode(){	// Interrupt on PPM pin
                     bad_frame = 1;		// don't accept any new channels
             }
     Prev_TCNT1 += Cur_TCNT1;
-}
-
-void multiprotocol_mock_ppm(void){
-    radio.ppm_chan_max = 4;
-    for (uint32_t i = 0; i < radio.ppm_chan_max; i++){
-        radio.ppm_data[i] = 1500;
-    }
-    PPM_FLAG_on;    
 }
 #endif //ENABLE_PPM

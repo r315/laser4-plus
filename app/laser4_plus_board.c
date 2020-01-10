@@ -5,12 +5,11 @@
 
 static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
-static void(*timer_callback)(void) = NULL;
-static void(*EXTI9_5_callback)(void) = NULL;
+static volatile uint16_t *ppm_frame_data;
 
 static void spiInit(void);
 static void timInit(void);
-
+static void (*ppmFrameReady)(void);
 
 void Error_Handler(char * file, int line){
   while(1){
@@ -92,12 +91,6 @@ static void timInit(void){
     RCC->APB1RSTR   &= ~(RCC_APB1RSTR_TIM4RST | RCC_APB1RSTR_TIM3RST | RCC_APB1RSTR_TIM2RST);
     RCC->APB2RSTR   |= RCC_APB2RSTR_TIM1RST;
     RCC->APB2RSTR   &= ~RCC_APB2RSTR_TIM1RST;
-    /* Configure 1ms intervals with TIM4 fot HAL  */
-    TIM4->PSC = (SystemCoreClock/1000000) - 1; // Set Timer clock
-    TIM4->ARR = 1000 - 1;
-    TIM4->DIER = TIM_DIER_UIE;
-    TIM4->CR1 |= TIM_CR1_CEN;
-    NVIC_EnableIRQ(TIM4_IRQn);
     /* Configure 0.5us time base with TIM1 for multiprotocol */
 	TIM1->PSC = 35;								// 36-1;for 72 MHZ /0.5sec/(35+1)
 	TIM1->ARR = 0xFFFF;							// Count until 0xFFFF
@@ -106,6 +99,25 @@ static void timInit(void){
 	TIM1->DIER &= ~TIM_DIER_CC2IE;				// Disable Timer/Comp2 interrupt
 	TIM1->EGR |= TIM_EGR_UG;					// Refresh the timer's count, prescale, and overflow
 	TIM1->CR1 |= TIM_CR1_CEN;
+    /* Configure 1ms intervals with TIM4 fot HAL  */
+    TIM4->PSC = (SystemCoreClock/1000000) - 1; // Set Timer clock
+    TIM4->ARR = 1000 - 1;
+    TIM4->DIER = TIM_DIER_UIE;
+    TIM4->CR1 |= TIM_CR1_CEN;
+    NVIC_EnableIRQ(TIM4_IRQn);
+   
+    /* Configure PPM input pin PB5*/
+    gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);
+    /* Partial remap for TIM3 (PB5 -> TI2) */
+    AFIO->MAPR &= ~(3 << 10);      // CLR TIM3_REMAP[1:0]
+    AFIO->MAPR |= (2 << 10);       // Partial remap
+    /* Configure TIM3 CH1 TI2 */
+    PPM_TIM->CR1 = 0;              // Stop counter
+    PPM_TIM->PSC = (SystemCoreClock/2000000) - 1;      // 0.5us    
+    PPM_TIM->CCMR1 = (2 << 0);     // Map IC1 to TI2
+    PPM_TIM->CCER  = (3 << 0);     // CH1 as input capture on falling edge;
+    PPM_TIM->DIER = TIM_DIER_CC1IE;// Enable interrupt for CH1    
+    NVIC_EnableIRQ(PPM_TIM_IRQn);  // Enable timer interupt
 }
 
 void delayMs(uint32_t ms){
@@ -187,25 +199,74 @@ void reloadWatchDog(void){
     IWDG->KR = 0xAAAA; // Reload RLR on counter
 }
 
+void ppmSetReadyAction(volatile uint16_t *buf, void(*cb)(void)){
+    if(cb == NULL || buf == NULL ){
+        return;
+    }
+    PPM_TIM->CR1 &= ~TIM_CR1_CEN;   // Stop counter
+    ppmFrameReady = cb;
+    ppm_frame_data = buf;
+    PPM_TIM->CR1 |= TIM_CR1_CEN;   // Start counter
+    return;
+    // attach interrupt
+    AFIO->EXTICR[1] = ( 1 << 4);        // PB5 -> EXTI5
+    EXTI->IMR = ( 1 << 5);              // MR5
+    EXTI->FTSR = (1 << 5);
+    NVIC_EnableIRQ(EXTI9_5_IRQn);
+}
 
 /**
  * @brief Interrupts handlers
  * */
-
+void EXTI9_5_IRQHandler(void){
+uint32_t pr = EXTI->PR;
+    if((pr & EXTI_PR_PR5) != 0){        
+        ppmFrameReady();
+    }
+    EXTI->PR = pr;
+}
 void TIM4_IRQHandler(void){
     TIM4->SR = ~TIM4->SR;
     ticks++;
     //DBG_PIN_TOGGLE;
 }
+/**
+ * This code is based on multiprotocol PPM_Decode function, but instead of interrups 
+ * it uses the timer capture module.
+ * The capture is performed in every falling edge of the pin
+ * and measured the pulse duration.
+ * 
+ * _______    _________    ______________
+ *        |  |         |  |
+ *        |  |         |  |
+ *         --           --
+ *        ^            ^
+  * */
+RAM_CODE void PPM_TIM_IRQHandler(void){
+static uint8_t channel_counter = 0, frame_ok = 0;
+static uint16_t last_time = 0;
+uint16_t cur_time;
 
-void EXTI9_5_IRQHandler(void){
-uint32_t pr = EXTI->PR;
-
-    if((pr & EXTI_PR_PR5) != 0){
-        if(EXTI9_5_callback != NULL){
-            EXTI9_5_callback();
+    if(PPM_TIM->SR & TIM_SR_CC1IF){
+        PPM_TIM->SR &= ~(TIM_SR_CC1IF);
+        cur_time = PPM_TIM->CCR1 - last_time;
+//DBG_PIN_TOGGLE;
+        if(cur_time < 1600){ //PPM_MIN_PULSE){
+            frame_ok = 0;
+        }else if(cur_time > 4400){ //PPM_MAX_PULSE){
+            // Start of frame
+            if(channel_counter >= MIN_RADIO_CHANNELS){
+                ppmFrameReady();
+            }
+            channel_counter = 0;
+            frame_ok = 1;
+        }else if(frame_ok){
+            ppm_frame_data[channel_counter] = cur_time;
+            if(channel_counter++ >= PPM_MAX_CHANNELS){
+                frame_ok = 0;
+            }
+        }        
+        last_time += cur_time;
         }
     }
 
-    EXTI->PR = pr;
-}

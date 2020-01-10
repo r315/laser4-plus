@@ -69,61 +69,6 @@ void CONTROLLER_Init(void){
     laser4.min_pulse = PPM_MIN_PULSE;
 
     channel_map = CH_AETR;
-
-    // Partial remap for TIM3 (PB5 -> TI2)
-    AFIO->MAPR &= ~(3 << 10);      // CLR TIM3_REMAP[1:0]
-    AFIO->MAPR |= (2 << 10);       // Partial remap
-
-    CLR_PPM_FRAME;
-
-    PPM_TIM->CR1 = 0;              // Stop counter
-    PPM_TIM->PSC = (SystemCoreClock/1000000) - 1;      // 1us    
-    PPM_TIM->CCMR1 = (2 << 0);     // Map IC1 to TI2
-    PPM_TIM->CCER  = (3 << 0);     // CH1 as input capture on falling edge;
-    PPM_TIM->DIER = TIM_DIER_CC1IE;// Enable interrupt for CH1    
-    
-    PPM_TIM->CR1 |= TIM_CR1_CEN;      // Start counter
-    NVIC_EnableIRQ(PPM_TIM_IRQn);  // Enable timer 4 interupt
-}
-
-/**
- * This code is based on multiprotocol PPM_Decode function, but instead of interrups 
- * it uses the timer capture module.
- * The capture is performed in every falling edge of the pin
- * and measured the pulse duration.
- * 
- * _______    _________    ______________
- *        |  |         |  |
- *        |  |         |  |
- *         --           --
- *        ^            ^
-  * */
-RAM_CODE void PPM_TIM_IRQHandler(void){
-static uint8_t channel_counter = 0, frame_ok = 0;
-static uint16_t last_time;
-uint16_t cur_time;
-
-    if(PPM_TIM->SR & TIM_SR_CC1IF){
-        PPM_TIM->SR &= ~(TIM_SR_CC1IF);
-        cur_time = PPM_TIM->CCR1 - last_time;
-        DBG_PIN_TOGGLE;
-        if(cur_time < PPM_MIN_PULSE){
-            frame_ok = 0;
-        }else if(cur_time > PPM_MAX_PULSE){
-            // Start of frame
-            if(channel_counter >= MIN_RADIO_CHANNELS){
-                SET_PPM_FRAME;
-            }
-            channel_counter = 0;
-            frame_ok = 1;
-        }else if(frame_ok){
-            channel_data[channel_counter] = cur_time;
-            if(channel_counter++ >= PPM_MAX_CHANNELS){
-                frame_ok = 0;
-            }
-        }        
-        last_time += cur_time;
-    }
 }
 #endif /* ENABLE_PPM */
 

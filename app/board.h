@@ -92,6 +92,10 @@ extern "C" {
 #define LED_toggle                LED_TOGGLE
 #define EE_ADDR                   uint16_t
 
+#define PPM_TIM_IRQn              TIM3_IRQn
+#define PPM_TIM                   TIM3          //PB5 -> TIM3_CH2
+#define PPM_TIM_IRQHandler        TIM3_IRQHandler
+
 #define cli     __disable_irq
 #define sei     __enable_irq
 
@@ -100,6 +104,31 @@ extern "C" {
 
 #define MOCK_PPM
                                   
+#define MIN_RADIO_CHANNELS      4
+
+#if defined(ENABLE_PPM)
+#define PPM_MAX_CHANNELS        8
+#define PPM_MAX_PULSE           2100
+#define PPM_MIN_PULSE           900
+#define PPM_CENTER_PULSE      ((PPM_MAX_PULSE - PPM_MIN_PULSE)/2)
+#endif
+
+#if defined(ENABLE_PWM)
+/**
+ * PA0 <- CH1
+ * PA1 <- CH2
+ * PA2 <- CH3
+ * PA3 <- CH4
+ * */
+#define TIM_CAP_POL(ch) (2 << (ch - 1) * 4)
+// in PWM mode half of the buffer is to store
+// the first captured values
+#define THROTTLE_OFFSET       200
+#define PWM_MAX_PULSE         3000
+#define PWM_MIN_PULSE         1000
+#define PWM_CENTER_PULSE      ((PWM_MAX_PULSE - PWM_MIN_PULSE)/2)
+#endif
+
 
 /* fast code */
 #define RAM_CODE __attribute__((section(".ram_code")))
@@ -133,6 +162,7 @@ void enableWatchDog(uint32_t interval);
 void reloadWatchDog(void);
 
 void laser4Init(void);
+void ppmSetReadyAction(volatile uint16_t *buf, void(*cb)(void));
 //void attachInterrupt()
 
 #ifdef ENABLE_USART
