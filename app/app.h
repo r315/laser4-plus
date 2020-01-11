@@ -29,9 +29,11 @@ extern "C" {
 #else
     #define DBG_PRINT(...)
 #endif
-#else
-#define DBG_PRINT(...)
-#endif
+
+enum {
+    MULTIPROTOCOL,
+    HID,
+};
 
 #if defined(ENABLE_VCOM)
 extern stdout_t vcom;
@@ -40,6 +42,8 @@ extern stdout_t vcom;
 extern stdout_t pcom;
 #define IO_CHAR &pcom
 #endif
+
+void changeMode(void *ptr);
 
 #ifdef __cplusplus
 #ifdef ENABLE_CONSOLE

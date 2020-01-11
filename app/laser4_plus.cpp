@@ -1,9 +1,33 @@
 #include "app.h"
 #include "multiprotocol.h"
 
+
+
+static uint8_t mode;
+
 #ifdef ENABLE_CONSOLE 
 Console con;
 #endif
+
+void changeMode(void *ptr){
+uint32_t new_mode = (uint32_t)ptr;
+
+    switch(new_mode){
+        case MULTIPROTOCOL:
+            DBG_PRINT("Starting Multiprotocol\n");
+            multiprotocol_setup();
+            break;
+        case HID:
+#ifdef ENABLE_GAME_CONTROLLER
+            DBG_PRINT("Starting game controller\n");
+            CONTROLLER_Init();
+            break;
+#endif
+        default:
+            return;
+    }
+    mode = new_mode;    
+}
 
 void setup(void){
     GPIO_ENABLE;
@@ -35,20 +59,29 @@ void setup(void){
 
     NV_Init();
 
-    multiprotocol_setup();
-
+    //changeMode((void*)HID);
+    changeMode((void*)MULTIPROTOCOL);
     enableWatchDog(3000);   // 3 seconds
 }
 
 void loop(void){
-    //multiprotocol_loop();
+
+    switch(mode){
+        case MULTIPROTOCOL:
+            multiprotocol_loop();
+            break;
+        case HID:
+#ifdef ENABLE_GAME_CONTROLLER
+            CONTROLLER_Process();
+#endif
+            break;
+        default:
+            break;
+    }
+
     #ifdef ENABLE_CONSOLE
     con.process();
     #endif
-    #ifdef ENABLE_GAME_CONTROLLER
-    CONTROLLER_Process();
-    #endif
-    multiprotocol_loop();
     reloadWatchDog();
 }
 

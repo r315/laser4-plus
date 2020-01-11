@@ -213,6 +213,21 @@ public:
 	}
 }cmdtest;
 
+class CmdMode : public ConsoleCommand {
+	Console *console;    
+public:
+    CmdMode() : ConsoleCommand("mode") {}
+	void init(void *params) { console = static_cast<Console*>(params); }
+	void help(void) {}
+	char execute(void *ptr) {
+		uint32_t int_value;
+		if(nextHex((char**)&ptr, &int_value)){
+			changeMode((void*)int_value);
+		}
+		return CMD_OK;
+	}
+}cmdmode;
+
 ConsoleCommand *laser4_commands[]{
     &cmdhelp,
     &cmdcc25,
@@ -221,6 +236,7 @@ ConsoleCommand *laser4_commands[]{
 	&cmdbind,
 	&cmdstatus,
 	&cmdtest,
+	&cmdmode,
     NULL
 };
 #endif
