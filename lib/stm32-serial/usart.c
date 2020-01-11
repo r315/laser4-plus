@@ -6,12 +6,18 @@
 static fifo_t usart_tx_fifo;
 static fifo_t usart_rx_fifo;
 
-static void usart_putchar(char c){
+void usart_putchar(char c){
     //USART1->DR = c;
     //while((USART1->SR & USART_SR_TC) == 0);
     if(fifo_put(&usart_tx_fifo, c))
     USART1->CR1 |= USART_CR1_TXEIE;		          // enable TX interrupt
 }
+
+#ifdef ENABLE_DEBUG
+void dbg_putc(char c){
+    usart_putchar(c);
+}
+#endif
 
 static void usart_puts(const char* str){
     while(*str){

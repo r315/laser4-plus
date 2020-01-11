@@ -10,6 +10,7 @@ extern "C" {
 #include <stdout.h>
 #include <fifo.h>
 #include <console.h>
+#include <dbg.h>
 #include "board.h"
 
 #ifdef ENABLE_VCOM
@@ -23,9 +24,10 @@ extern "C" {
 
 //#define USE_FREERTOS
 
-#ifdef DEBUG_SERIAL
-#if defined(ENABLE_CONSOLE)
+#if defined(ENABLE_DEBUG) && defined(DEBUG_TO_CONSOLE)
     #define DBG_PRINT con.print
+#elif defined(ENABLE_DEBUG)
+    #define DBG_PRINT dbg_printf
 #else
     #define DBG_PRINT(...)
 #endif

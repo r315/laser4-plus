@@ -88,6 +88,7 @@ $(LIB_SERIAL_PATH)/usart.c \
 $(LIBEMB_PATH)/misc/nvdata.c \
 $(LIBEMB_PATH)/misc/strfunc.c \
 $(LIBEMB_PATH)/misc/fifo.c \
+$(LIBEMB_PATH)/misc/debug.c \
 
 #C_SOURCES +=  \
 $(FREERTOS_DIR)/portable/GCC/ARM_CM3/port.c \
