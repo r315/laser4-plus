@@ -26,7 +26,6 @@
 #include "multiprotocol.h"
 #include "FrSkyDVX_Common.h"
 
-#define TIMER_BASE TIM1
 //Personal config file
 #if defined(USE_MY_CONFIG)
 #include "_MyConfig.h"
@@ -49,12 +48,16 @@ uint8_t CH_TAER[]={THROTTLE, AILERON, ELEVATOR, RUDDER, CH5, CH6, CH7, CH8, CH9,
 //uint8_t CH_RETA[]={RUDDER, ELEVATOR, THROTTLE, AILERON, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 uint8_t CH_EATR[]={ELEVATOR, AILERON, THROTTLE, RUDDER, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 
-static void setPpmFlag(void){
-    PPM_FLAG_on;
-    radio.ppm_chan_max = MIN_PPM_CHANNELS;
-}
+static void (*ppmFrameCB)(uint8_t chan);
+static volatile uint16_t *ppm_frame_data;
+static void setPpmFlag(uint8_t chan);
+static void PPM_decode(void);
 
 void multiprotocol_setup(void){   
+
+    /* Configure PPM input pin PB5*/
+    gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);
+       
 
     // Read status of bind button
     if(IS_HW_BIND_BUTTON_PRESSED)
@@ -83,8 +86,9 @@ void multiprotocol_setup(void){
     DBG_PRINT("Module Id: %lx\n", radio.protocol_id_master);
 
     #ifdef ENABLE_PPM
-    //ppmSetReadyAction(radio.ppm_data, PPM_decode);
-    ppmSetReadyAction(radio.ppm_data, setPpmFlag);
+
+    multiprotocol_frameReadyAction(radio.ppm_data, setPpmFlag);
+
         // Set default PPMs' value
         for(uint8_t i=0; i < NUM_CHN; i++){
             radio.ppm_data[i] = PPM_MAX_100 + PPM_MIN_100;
@@ -147,15 +151,15 @@ uint8_t count=0;
     next_callback = radio.remote_callback() << 1;
     TX_MAIN_PAUSE_off;
     //tx_resume();
-    cli();										// Disable global int due to RW of 16 bits registers
+    cli();										    // Disable global int due to RW of 16 bits registers
     #ifndef STM32_BOARD			
-        TIFR1=OCF1A_bm;							// Clear compare A=callback flag
+    TIFR1=OCF1A_bm;							        // Clear compare A=callback flag
     #else
-        TIMER_BASE->CCR1 += next_callback;			// Calc when next_callback should happen
-        TIMER_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;		// Clear Timer2/Comp1 interrupt flag
-        diff = TIMER_BASE->CCR1 - TIMER_BASE->CNT;			// Calc the time difference
+    TIMER_BASE->CCR1 += next_callback;			    // Calc when next_callback should happen
+    TIMER_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;	    // Clear Timer2/Comp1 interrupt flag
+    diff = TIMER_BASE->CCR1 - TIMER_BASE->CNT;	    // Calc the time difference
     #endif		
-    sei();										// Enable global int
+    sei();										    // Enable global int
     if((diff&0x8000) && !(next_callback&0x8000))
     { // Negative result=callback should already have been called... 
         DBG_PRINT("Short CB:%d\n", next_callback);
@@ -174,7 +178,7 @@ uint8_t count=0;
         #ifndef STM32_BOARD
             while((TIFR1 & OCF1A_bm) == 0)
         #else
-            while((TIMER_BASE->SR & TIM_SR_CC1IF )==0)
+        while((TIMER_BASE->SR & TIM_SR_CC1IF ) == 0)
         #endif
         {
             if(diff > (900*2))
@@ -186,7 +190,7 @@ uint8_t count=0;
                 }
                 count=0;
                 Update_All();
-                #ifdef DEBUG_SERIAL
+            #ifdef ENABLE_DEBUG
                     if(TIMER_BASE->SR & TIM_SR_CC1IF )
                         DBG_PRINT("Long update\n");
                 #endif
@@ -376,12 +380,12 @@ static uint16_t next_callback;
     { // next_callback should not be more than 32767 so we will wait here...
         uint16_t temp=(next_callback >> 10) - 2;
         delayMs(temp);
-        next_callback -= temp << 10;            // between 2-3ms left at this stage
+        next_callback -= temp << 10;                        // between 2-3ms left at this stage
     }
-    cli();											// disable global int
-    TIMER_BASE->CCR1 = TIMER_BASE->CNT + next_callback * 2;		// set compare A for callback
+    cli();											        // disable global int
+    TIMER_BASE->CCR1 = TIMER_BASE->CNT + next_callback * 2;	// set compare A for callback
     TIMER_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;				// Clear Timer2/Comp1 interrupt flag
-    sei();										    // enable global int
+    sei();										            // enable global int
     BIND_BUTTON_FLAG_off;
 }
 
@@ -460,34 +464,44 @@ int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int1
     return x  + out_min ;
 }
 
-#if 0 //def ENABLE_PPM
+void multiprotocol_frameReadyAction(volatile uint16_t *buf, void(*cb)(uint8_t)){
+
+     if(cb == NULL){
+        return;
+    }
+    gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);    
+    ppmFrameCB = cb;
+    ppm_frame_data = buf;
+    gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, PPM_decode);    
+}
+
+static void setPpmFlag(uint8_t chan){
+    PPM_FLAG_on;
+    if(chan > radio.ppm_chan_max) 
+        radio.ppm_chan_max = chan;	// Saving the number of channels received
+}
+
 RAM_CODE void PPM_decode(){	// Interrupt on PPM pin
     static int8_t chan = 0, bad_frame = 1;
     static uint16_t Prev_TCNT1 = 0;
     uint16_t Cur_TCNT1;
-
-    Cur_TCNT1 = TIMER_BASE->CNT - Prev_TCNT1 ;	// Capture current Timer1 value
+    // Capture current Timer value
+    Cur_TCNT1 = TIMER_BASE->CNT - Prev_TCNT1 ;
     if(Cur_TCNT1 < 1600)
         bad_frame = 1;					// bad frame
-    else
-        if(Cur_TCNT1 > 4400)
-        {  //start of frame
-            if(chan >= MIN_PPM_CHANNELS)
-            {
-                PPM_FLAG_on;		// good frame received if at least 4 channels have been seen
-                if(chan > radio.ppm_chan_max) 
-                    radio.ppm_chan_max = chan;	// Saving the number of channels received
+    else if(Cur_TCNT1 > 4400){
+        //start of frame
+        if(chan >= MIN_PPM_CHANNELS){
+            //DBG_PIN_TOGGLE;                
+            ppmFrameCB(chan);
             }
-            chan = 0;								// reset channel counter
+        chan = 0;						// reset channel counter
             bad_frame = 0;
-        }
-        else
-            if(bad_frame == 0)			// need to wait for start of frame
-            {  //servo values between 800us and 2200us will end up here
-                radio.ppm_data[chan] = Cur_TCNT1;
+    }else if(bad_frame == 0){			// need to wait for start of frame
+        //servo values between 800us and 2200us will end up here
+        ppm_frame_data[chan] = Cur_TCNT1;
                 if(chan++ >= MAX_PPM_CHANNELS)
                     bad_frame = 1;		// don't accept any new channels
             }
     Prev_TCNT1 += Cur_TCNT1;
 }
-#endif //ENABLE_PPM

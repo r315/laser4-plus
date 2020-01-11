@@ -312,8 +312,7 @@ extern uint8_t CH_EATR[];
 
 void multiprotocol_setup(void);
 void multiprotocol_loop(void);
-void PPM_decode(void);
-void multiprotocol_mock_ppm(void);
+void multiprotocol_frameReadyAction(volatile uint16_t *buf, void(*cb)(uint8_t));
 
 #ifdef __cplusplus
 }

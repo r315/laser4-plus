@@ -6,7 +6,6 @@
 
 //#define DEMO_CONTROLLER
 
-static uint8_t *channel_map;
 static controller_t laser4;
 volatile uint16_t channel_data[MIN_RADIO_CHANNELS];
 volatile uint32_t gflags;
@@ -14,19 +13,25 @@ volatile uint32_t gflags;
 #ifdef DEMO_CONTROLLER
 #undef ENABLE_PPM
 static uint32_t angle;
-#endif
-
+#else
+static uint8_t *channel_map;
 static int16_t map(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max){
   return ((x - in_min) * (out_max - out_min) / (in_max - in_min)) + out_min;
 }
+
+static void setPpmFlag(uint8_t chan){
+    SET_PPM_FRAME;    
+}
+#endif
 
 RAM_CODE void CONTROLLER_Process(void){
 
     if(IS_PPM_FRAME_READY)
     {            
 #if !defined(DEMO_CONTROLLER)
+        uint8_t i;
         uint8_t *data = (uint8_t*)&laser4.pitch;
-        for(uint8_t i = 0; i < MIN_RADIO_CHANNELS; i++){
+        for(i = 0; i < MIN_RADIO_CHANNELS; i++){
             //PAUSE_CAPTURE;
             uint16_t val = channel_data[i];
             //RESUME_CAPTURE;
@@ -65,10 +70,12 @@ void CONTROLLER_Init(void){
     laser4.aux1 = LOGICAL_MAXIMUM/2;
     laser4.aux2 = LOGICAL_MAXIMUM/2;
     laser4.buttons = 1;
-    laser4.max_pulse = PPM_MAX_PULSE;
-    laser4.min_pulse = PPM_MIN_PULSE;
+    laser4.max_pulse = PPM_MAX_PULSE * 2;
+    laser4.min_pulse = PPM_MIN_PULSE * 2;
 
     channel_map = CH_AETR;
+
+    multiprotocol_frameReadyAction(channel_data, setPpmFlag);
 }
 #endif /* ENABLE_PPM */
 
@@ -153,15 +160,15 @@ RAM_CODE void TIM2_IRQHandler(void){
 
 #ifdef DEMO_CONTROLLER
 void CONTROLLER_Init(void){
-    PPM_TIM->PSC = (SystemCoreClock/1000000) - 1;
-    PPM_TIM->ARR = 1000 - 1;
-    PPM_TIM->DIER = TIM_DIER_UIE;
-    PPM_TIM->CR1 |= TIM_CR1_CEN;
-    NVIC_EnableIRQ(PPM_TIM_IRQn);
+    DEMO_TIM->PSC = (SystemCoreClock/1000000) - 1;
+    DEMO_TIM->ARR = 1000 - 1;
+    DEMO_TIM->DIER = TIM_DIER_UIE;
+    DEMO_TIM->CR1 |= TIM_CR1_CEN;
+    NVIC_EnableIRQ(DEMO_TIM_IRQn);
 }
 
-void PPM_TIM_IRQHandler(void){
-    PPM_TIM->SR = ~TIM3->SR;    
+void DEMO_TIM_IRQHandler(void){
+    DEMO_TIM->SR &= ~DEMO_TIM->SR;    
     angle ++;
     SET_PPM_FRAME;
 }

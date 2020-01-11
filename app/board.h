@@ -95,6 +95,10 @@ extern "C" {
 #define PPM_TIM_IRQn              TIM3_IRQn
 #define PPM_TIM                   TIM3          //PB5 -> TIM3_CH2
 #define PPM_TIM_IRQHandler        TIM3_IRQHandler
+#define TIMER_BASE                PPM_TIM
+#define DEMO_TIM_IRQn             TIM2_IRQn
+#define DEMO_TIM                  TIM2
+#define DEMO_TIM_IRQHandler       TIM2_IRQHandler
 
 #define cli     __disable_irq
 #define sei     __enable_irq
@@ -151,6 +155,8 @@ uint32_t getTick(void);
 void SPI_Write(uint8_t data);
 uint8_t SPI_Read(void);
 void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode);
+void gpioAttachInterrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*)(void));
+void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin);
 
 uint32_t flash_write(uint8_t *dst, uint8_t *data, uint16_t count);
 void FLASH_PageErase(uint32_t PageAddress);
