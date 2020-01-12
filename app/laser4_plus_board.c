@@ -139,7 +139,7 @@ uint32_t HAL_GetTick(void){ return getTick(); }
 /**
  * @brief Flash write functions for EEPROM emulation
  */
-uint32_t flash_write(uint8_t *dst, uint8_t *data, uint16_t count){
+uint32_t flashWrite(uint8_t *dst, uint8_t *data, uint16_t count){
 uint16_t *src = (uint16_t*)data;
 uint32_t res, address = (uint32_t)dst;
 
@@ -156,21 +156,23 @@ uint32_t res, address = (uint32_t)dst;
     return res;
 }
 
-void setTimer(uint32_t interval, void(*cb)(void)){
-    // PPM Mock timer
-    TIM3->PSC = (SystemCoreClock/1000000) - 1;  // Set Timer clock 1MHz
-    TIM3->ARR = interval - 1;
-    TIM3->DIER = TIM_DIER_UIE;
-    timer_callback = cb;
-    NVIC_EnableIRQ(TIM3_IRQn);
-    TIM3->CR1 |= TIM_CR1_CEN;
-}
+/**
+ * @brief Erase 1k selctor on flash
+ * @param address:  start address for erasing
+ * @return : 0 on fail
+ * */
+uint32_t flashPageErase(uint32_t address){
+uint32_t res;
 
-void stopTimer(){
-    TIM3->CR1 &= ~TIM_CR1_CEN;
-    timer_callback = NULL;
-}
+    res = HAL_FLASH_Unlock();
 
+    if( res == HAL_OK){
+        FLASH_PageErase(address);
+    }
+    
+    HAL_FLASH_Lock();
+    return 1;
+}
 
 void enableWatchDog(uint32_t interval){
 uint32_t timeout = 4096;

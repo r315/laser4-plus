@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "stm32f1xx.h"
+#include "stm32f1xx_hal.h"
 
 /* GPIO definitions */
 #define GPIO_MODE_MASK          15
@@ -143,10 +143,11 @@ extern uint32_t _seeprom, _eeeprom;     //declared on linker script
 #define NVDATA_SECTOR_START     &_seeprom
 #define NVDATA_SECTOR_END       &_eeeprom
 #define NVDATA_SECTOR_READ      memcpy
-#define NVDATA_SECTOR_WRITE     flash_write
-#define NVDATA_SECTOR_ERASE     FLASH_PageErase
+#define NVDATA_SECTOR_WRITE     flashWrite
+#define NVDATA_SECTOR_ERASE     flashPageErase
 #define EEPROM_Read             NV_Read
-#define EEPROM_Write(_A,_B,_C)  NV_Write(_A,_B,_C); NV_Sync()
+#define EEPROM_Write(_A,_B,_C)  NV_Write(_A,_B,_C)
+#define EEPROM_Sync             NV_Sync
 
 
 /* Function prototyes */
@@ -158,11 +159,9 @@ void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode);
 void gpioAttachInterrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*)(void));
 void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin);
 
-uint32_t flash_write(uint8_t *dst, uint8_t *data, uint16_t count);
-void FLASH_PageErase(uint32_t PageAddress);
-
-void setTimer(uint32_t interval, void(*cb)(void));
-void stopTimer(void);
+uint32_t flashWrite(uint8_t *dst, uint8_t *data, uint16_t count);
+uint32_t flashPageErase(uint32_t PageAddress);
+void FLASH_PageErase(uint32_t PageAddress);       // HAL Function
 
 void enableWatchDog(uint32_t interval);
 void reloadWatchDog(void);
