@@ -48,11 +48,15 @@ uint8_t CH_TAER[]={THROTTLE, AILERON, ELEVATOR, RUDDER, CH5, CH6, CH7, CH8, CH9,
 //uint8_t CH_RETA[]={RUDDER, ELEVATOR, THROTTLE, AILERON, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 uint8_t CH_EATR[]={ELEVATOR, AILERON, THROTTLE, RUDDER, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 
-static void (*ppmFrameCB)(uint8_t chan);
 static volatile uint16_t *ppm_frame_data;
+static void (*ppmFrameCB)(uint8_t chan);
 static void setPpmFlag(uint8_t chan);
 static void PPM_decode(void);
+static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
 
+/**
+ * @brief 
+ * */
 void multiprotocol_setup(void){   
 
     /* Configure PPM input pin PB5*/
@@ -128,7 +132,9 @@ void multiprotocol_setup(void){
 #endif    
     DBG_PRINT("Laser4+ version: %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
 }
-
+/**
+ * @brief main loop for multiprotocol mode
+ * */
 void multiprotocol_loop(void){
 uint16_t next_callback, diff;
 uint8_t count=0;
@@ -319,15 +325,6 @@ static void update_led_status(void)
     }
 }
 
-// Convert 32b id to rx_tx_addr
-static void set_rx_tx_addr(uint32_t id)
-{ // Used by almost all protocols
-    radio.rx_tx_addr[0] = (id >> 24) & 0xFF;
-    radio.rx_tx_addr[1] = (id >> 16) & 0xFF;
-    radio.rx_tx_addr[2] = (id >>  8) & 0xFF;
-    radio.rx_tx_addr[3] = (id >>  0) & 0xFF;
-    radio.rx_tx_addr[4] = (radio.rx_tx_addr[2]&0xF0)|(radio.rx_tx_addr[3]&0x0F);
-}
 
 
 static void protocol_init(void){
@@ -342,7 +339,7 @@ static uint16_t next_callback;
 
         //Set global ID and rx_tx_addr
         radio.protocol_id = radio.rx_num + radio.protocol_id_master;
-        set_rx_tx_addr(radio.protocol_id);
+        set_rx_tx_addr(radio.rx_tx_addr, radio.protocol_id);
         
         #ifdef FAILSAFE_ENABLE
             FAILSAFE_VALUES_off;
@@ -389,9 +386,6 @@ static uint16_t next_callback;
     BIND_BUTTON_FLAG_off;
 }
 
-static void modules_reset(void){
-    HW_CC2500_MODULE_RESET;
-}
 
 static void update_channels_aux(void){
     //Calc AUX flags
@@ -407,7 +401,10 @@ static uint32_t random_id(uint16_t address, uint8_t create_new)
         uint32_t id = 0;
         uint8_t tmp;
 
-        EEPROM_Read((address + 10), &tmp, 1);
+        if(EEPROM_Read((address + 10), &tmp, 1) != 1){
+            DBG_PRINT("Invalid data on EEPROM");
+        }
+
         if(tmp == 0xf0 && !create_new)
         //if(eeprom_read_byte((EE_ADDR)(address + 10)) == 0xf0 && !create_new)
         {  // TXID exists in EEPROM
@@ -445,23 +442,16 @@ static uint32_t random_id(uint16_t address, uint8_t create_new)
         //eeprom_write_byte((EE_ADDR)(address+10),0xf0);//write bind flag in eeprom.
         tmp = 0xf0;
         EEPROM_Write((address+10), &tmp, 1);
+
+        if(!EEPROM_Sync()){
+            DBG_PRINT("!! Fail to sync EEPROM !!\n");
+        }
         return id;
     #else
         (void)address;
         (void)create_new;
         return FORCE_GLOBAL_ID;
     #endif
-}
-
-int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max)
-{
-//  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-    long y ;
-    x -= in_min ;
-    y = out_max - out_min ;
-    y *= x ;
-    x = y / (in_max - in_min) ;
-    return x  + out_min ;
 }
 
 void multiprotocol_frameReadyAction(volatile uint16_t *buf, void(*cb)(uint8_t)){
@@ -473,12 +463,6 @@ void multiprotocol_frameReadyAction(volatile uint16_t *buf, void(*cb)(uint8_t)){
     ppmFrameCB = cb;
     ppm_frame_data = buf;
     gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, PPM_decode);    
-}
-
-static void setPpmFlag(uint8_t chan){
-    PPM_FLAG_on;
-    if(chan > radio.ppm_chan_max) 
-        radio.ppm_chan_max = chan;	// Saving the number of channels received
 }
 
 RAM_CODE void PPM_decode(){	// Interrupt on PPM pin
@@ -504,4 +488,48 @@ RAM_CODE void PPM_decode(){	// Interrupt on PPM pin
                     bad_frame = 1;		// don't accept any new channels
             }
     Prev_TCNT1 += Cur_TCNT1;
+}
+
+/**
+ *  Private Functions, maybe move them to own file?
+ * */
+
+/**
+ * @brief Convert 32b id to rx_tx_addr
+ * */
+static void set_rx_tx_addr(uint8_t *dst, uint32_t id)
+{ // Used by almost all protocols
+    dst[0] = (id >> 24) & 0xFF;
+    dst[1] = (id >> 16) & 0xFF;
+    dst[2] = (id >>  8) & 0xFF;
+    dst[3] = (id >>  0) & 0xFF;
+    dst[4] = (dst[2]&0xF0)|(dst[3]&0x0F);
+}
+
+/**
+ * @brief Callback for PPM_decode
+ * */
+static void setPpmFlag(uint8_t chan){
+    PPM_FLAG_on;
+    if(chan > radio.ppm_chan_max) 
+        radio.ppm_chan_max = chan;	// Saving the number of channels received
+}
+/**
+ * 
+ * */
+int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max)
+{
+//  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+    long y ;
+    x -= in_min ;
+    y = out_max - out_min ;
+    y *= x ;
+    x = y / (in_max - in_min) ;
+    return x  + out_min ;
+}
+/**
+ * 
+ * */
+static void modules_reset(void){
+    HW_CC2500_MODULE_RESET;
 }
