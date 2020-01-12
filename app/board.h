@@ -167,8 +167,6 @@ void enableWatchDog(uint32_t interval);
 void reloadWatchDog(void);
 
 void laser4Init(void);
-void ppmSetReadyAction(volatile uint16_t *buf, void(*cb)(void));
-//void attachInterrupt()
 
 #ifdef ENABLE_USART
 void usart_init(void);
