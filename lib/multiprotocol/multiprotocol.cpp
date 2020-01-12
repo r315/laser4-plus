@@ -360,6 +360,9 @@ static uint16_t next_callback;
             #endif				
         }
         DBG_PRINT("Protocol selected: %d, sub proto %d, rxnum %d, option %d\n", radio.protocol, radio.sub_protocol, radio.rx_num, radio.option);
+        if(IS_BIND_IN_PROGRESS){
+            DBG_PRINT("Bind started\n");
+    }
     }
     
     #if defined(WAIT_FOR_BIND) && defined(ENABLE_BIND_CH)

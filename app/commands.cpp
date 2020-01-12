@@ -135,11 +135,12 @@ public:
 	void help(void) {}   
 	char execute(void *ptr) {
         console->print("\n"
-			"Rx              [%d]\n"
+			"RX              [%d]\n"
 			"Change protocol [%d]\n"
 			"Range           [%d]\n"
 			"PPM             [%d]\n"
 			"Bind done       [%d]\n"
+			"Wait bind       [%d]\n"
 			"Tx pause        [%d]\n"
 			"Input signal    [%d]\n"
 			"\n",
@@ -148,6 +149,7 @@ public:
 			IS_RANGE_FLAG_on,
 			IS_PPM_FLAG_on,
 			IS_BIND_DONE,
+			IS_WAIT_BIND_on,
 			IS_TX_MAIN_PAUSE_on,
 			IS_INPUT_SIGNAL_on
 		);
@@ -191,7 +193,7 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(void *ptr) {
-		BIND_BUTTON_FLAG_on;
+		CHANGE_PROTOCOL_FLAG_on;
 		BIND_IN_PROGRESS;	
 		return CMD_OK;
 	}
