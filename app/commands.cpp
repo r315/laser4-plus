@@ -224,7 +224,7 @@ public:
 	char execute(void *ptr) {
 		uint32_t int_value;
 		if(nextHex((char**)&ptr, &int_value)){
-			changeMode((void*)int_value);
+			reqModeChange((void*)int_value);
 		}
 		return CMD_OK;
 	}

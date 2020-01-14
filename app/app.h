@@ -35,6 +35,7 @@ extern "C" {
 enum {
     MULTIPROTOCOL,
     HID,
+    REQ_MODE_CHANGE,
 };
 
 #if defined(ENABLE_VCOM)
@@ -45,7 +46,7 @@ extern stdout_t pcom;
 #define IO_CHAR &pcom
 #endif
 
-void changeMode(void *ptr);
+void reqModeChange(void *ptr);
 
 #ifdef __cplusplus
 #ifdef ENABLE_CONSOLE

@@ -4,14 +4,18 @@
 
 
 static uint8_t mode;
+volatile uint8_t state;
 
 #ifdef ENABLE_CONSOLE 
 Console con;
 #endif
 
-void changeMode(void *ptr){
-uint32_t new_mode = (uint32_t)ptr;
+void reqModeChange(void *ptr){
+    mode = (uint32_t)ptr;
+    state = REQ_MODE_CHANGE;
+}
 
+static void changeMode(uint8_t new_mode){
     switch(new_mode){
         case MULTIPROTOCOL:
             DBG_PRINT("Starting Multiprotocol\n");
@@ -26,7 +30,7 @@ uint32_t new_mode = (uint32_t)ptr;
         default:
             return;
     }
-    mode = new_mode;    
+    mode = state = new_mode;
 }
 
 void setup(void){
@@ -58,15 +62,14 @@ void setup(void){
 #endif
 
     NV_Init();
-
-    //changeMode((void*)HID);
-    changeMode((void*)MULTIPROTOCOL);
+        
+    reqModeChange((void*)MULTIPROTOCOL);
     enableWatchDog(3000);   // 3 seconds
 }
 
 void loop(void){
 
-    switch(mode){
+    switch(state){
         case MULTIPROTOCOL:
             multiprotocol_loop();
             break;
@@ -75,6 +78,10 @@ void loop(void){
             CONTROLLER_Process();
 #endif
             break;
+        case REQ_MODE_CHANGE:
+            changeMode(mode);
+            break;
+
         default:
             break;
     }
