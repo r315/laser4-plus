@@ -90,7 +90,7 @@ void multiprotocol_setup(void){
     DBG_PRINT("Module Id: %lx\n", radio.protocol_id_master);
 
     #ifdef ENABLE_PPM
-
+    // Setup callback for ppm frame ready
     multiprotocol_frameReadyAction(radio.ppm_data, setPpmFlag);
 
         // Set default PPMs' value
@@ -398,65 +398,6 @@ static void update_channels_aux(void){
             radio.channel_aux |= 1<<i;
 }
 
-static uint32_t random_id(uint16_t address, uint8_t create_new)
-{
-    #ifndef FORCE_GLOBAL_ID
-        uint32_t id = 0;
-        uint8_t tmp;
-
-        if(EEPROM_Read((address + 10), &tmp, 1) != 1){
-            DBG_PRINT("Invalid data on EEPROM");
-        }
-
-        if(tmp == 0xf0 && !create_new)
-        //if(eeprom_read_byte((EE_ADDR)(address + 10)) == 0xf0 && !create_new)
-        {  // TXID exists in EEPROM
-            //for(uint8_t i=4;i>0;i--){
-            //	id<<=8;
-            //	id|=eeprom_read_byte((EE_ADDR)address + i-1);
-            //}
-            EEPROM_Read(address, (uint8_t*)&id, 4);
-
-            if(id != 0x2AD141A7)	//ID with seed=0
-            {
-                DBG_PRINT("Read ID from EEPROM\n");
-                return id;
-            }
-        }
-        // Generate a random ID
-        #if defined STM32_BOARD
-            #define STM32_UUID ((uint32_t *)0x1FFFF7E8)
-            if (!create_new)
-            {
-                id = STM32_UUID[0] ^ STM32_UUID[1] ^ STM32_UUID[2];
-                DBG_PRINT("Generated ID from STM32 UUID\n");
-            }
-            else
-        #endif
-            {
-                //TODO: 
-                id ^= 1; //random(0xfefefefe) + ((uint32_t)random(0xfefefefe) << 16);
-            }
-        //for(uint8_t i=0;i<4;i++){
-        //	eeprom_write_byte((EE_ADDR)(address+i), id >> (i*8));
-        //}
-        EEPROM_Write(address, (uint8_t*)&id, 4);
-
-        //eeprom_write_byte((EE_ADDR)(address+10),0xf0);//write bind flag in eeprom.
-        tmp = 0xf0;
-        EEPROM_Write((address+10), &tmp, 1);
-
-        if(!EEPROM_Sync()){
-            DBG_PRINT("!! Fail to sync EEPROM !!\n");
-        }
-        return id;
-    #else
-        (void)address;
-        (void)create_new;
-        return FORCE_GLOBAL_ID;
-    #endif
-}
-
 void multiprotocol_frameReadyAction(volatile uint16_t *buf, void(*cb)(uint8_t)){
 
      if(cb == NULL){
@@ -468,15 +409,15 @@ void multiprotocol_frameReadyAction(volatile uint16_t *buf, void(*cb)(uint8_t)){
     gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, PPM_decode);    
 }
 
-RAM_CODE void PPM_decode(){	// Interrupt on PPM pin
+RAM_CODE static void PPM_decode(){	// Interrupt on PPM pin
     static int8_t chan = 0, bad_frame = 1;
     static uint16_t Prev_TCNT1 = 0;
     uint16_t Cur_TCNT1;
     // Capture current Timer value
-    Cur_TCNT1 = TIMER_BASE->CNT - Prev_TCNT1 ;
-    if(Cur_TCNT1 < 1600)
+    Cur_TCNT1 = TIMER_BASE->CNT - Prev_TCNT1;
+    if(Cur_TCNT1 < 1600){
         bad_frame = 1;					// bad frame
-    else if(Cur_TCNT1 > 4400){
+    }else if(Cur_TCNT1 > 4400){
         //start of frame
         if(chan >= MIN_PPM_CHANNELS){
             //DBG_PIN_TOGGLE;                
@@ -535,4 +476,67 @@ int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int1
  * */
 static void modules_reset(void){
     HW_CC2500_MODULE_RESET;
+}
+/**
+ * 
+ * */
+static uint32_t random_id(uint16_t address, uint8_t create_new)
+{
+    #ifndef FORCE_GLOBAL_ID
+        uint32_t id = 0;
+        uint8_t tmp;
+
+        if(EEPROM_Read((address + 10), &tmp, 1) != 1){
+            DBG_PRINT("Invalid data on EEPROM");
+        }
+
+        if(tmp == 0xf0 && !create_new)
+        //if(eeprom_read_byte((EE_ADDR)(address + 10)) == 0xf0 && !create_new)
+        {  // TXID exists in EEPROM
+            //for(uint8_t i=4;i>0;i--){
+            //	id<<=8;
+            //	id|=eeprom_read_byte((EE_ADDR)address + i-1);
+            //}
+            EEPROM_Read(address, (uint8_t*)&id, 4);
+
+            if(id != 0x2AD141A7)	//ID with seed=0
+            {
+                DBG_PRINT("Read ID from EEPROM\n");
+                return id;
+            }
+        }
+        // Generate a random ID
+        #if defined STM32_BOARD
+            #define STM32_UUID ((uint32_t *)0x1FFFF7E8)
+            if (!create_new)
+            {
+                id = STM32_UUID[0] ^ STM32_UUID[1] ^ STM32_UUID[2];
+                DBG_PRINT("Generated ID from STM32 UUID\n");
+            }
+            else
+        #endif
+            {
+                //TODO: 
+                id ^= 1; //random(0xfefefefe) + ((uint32_t)random(0xfefefefe) << 16);
+            }
+        //for(uint8_t i=0;i<4;i++){
+        //	eeprom_write_byte((EE_ADDR)(address+i), id >> (i*8));
+        //}
+        EEPROM_Write(address, (uint8_t*)&id, 4);
+
+        //eeprom_write_byte((EE_ADDR)(address+10),0xf0);//write bind flag in eeprom.
+        tmp = 0xf0;
+        EEPROM_Write((address+10), &tmp, 1);
+
+        if(!EEPROM_Sync()){
+            DBG_PRINT("!! Fail to sync EEPROM !!\n");
+        }else{
+            DBG_PRINT("ID Saved to EEPROM\n");
+        }
+        return id;
+    #else
+        (void)address;
+        (void)create_new;
+        return FORCE_GLOBAL_ID;
+    #endif
 }
