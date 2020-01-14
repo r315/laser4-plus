@@ -158,6 +158,7 @@ uint32_t res, address = (uint32_t)dst;
 
 /**
  * @brief Erase 1k selctor on flash
+ * 
  * @param address:  start address for erasing
  * @return : 0 on fail
  * */

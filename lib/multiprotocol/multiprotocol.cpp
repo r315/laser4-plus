@@ -422,15 +422,15 @@ RAM_CODE static void PPM_decode(){	// Interrupt on PPM pin
         if(chan >= MIN_PPM_CHANNELS){
             //DBG_PIN_TOGGLE;                
             ppmFrameCB(chan);
-            }
+        }
         chan = 0;						// reset channel counter
-            bad_frame = 0;
+        bad_frame = 0;
     }else if(bad_frame == 0){			// need to wait for start of frame
         //servo values between 800us and 2200us will end up here
         ppm_frame_data[chan] = Cur_TCNT1;
-                if(chan++ >= MAX_PPM_CHANNELS)
-                    bad_frame = 1;		// don't accept any new channels
-            }
+        if(chan++ >= MAX_PPM_CHANNELS)
+            bad_frame = 1;		// don't accept any new channels
+    }
     Prev_TCNT1 += Cur_TCNT1;
 }
 

@@ -206,11 +206,26 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(void *ptr) {
-		uint8_t i;		
-		for(i = 0; i < MAX_PPM_CHANNELS; i++ ){
-			console->print("\nChannel[%u]: %u", i, radio.channel_data[i]);
+		uint32_t test;
+		if(!nextHex((char**)&ptr, &test)){
+
+			return CMD_OK;
 		}
-		console->xputchar('\n');
+
+		switch(test){
+			case 0:
+				for(uint8_t i = 0; i < MAX_PPM_CHANNELS; i++ ){
+					console->print("\nChannel[%u]: %u", i, radio.channel_data[i]);
+				}
+				console->xputchar('\n');
+				break;
+			case 1:
+				DBG_PRINT("Erasing NV Data: %s\n", NV_Erase() == 0? "Fail": "ok");
+				break;
+		}
+
+			
+		
 		return CMD_OK;
 	}
 }cmdtest;
