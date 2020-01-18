@@ -244,6 +244,7 @@ struct PPM_Parameters
 	uint32_t chan_order;
 };
 
+#pragma pack (1)
 typedef struct radio{
     uint32_t flags;       
     uint8_t mode_select;    
