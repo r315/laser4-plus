@@ -8,6 +8,7 @@ extern "C" {
 
 #include <stdint.h>
 #include "multiprotocol.h"
+#include "app.h"
 
 #ifdef STM32_BOARD
 #define PROGMEM

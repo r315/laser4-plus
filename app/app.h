@@ -28,6 +28,7 @@ extern "C" {
     #define DBG_PRINT con.print
 #elif defined(ENABLE_DEBUG)
     #define DBG_PRINT dbg_printf
+    #define DBG_DUMP_LINE dbgHexDumpLine
 #else
     #define DBG_PRINT(...)
 #endif

@@ -226,8 +226,8 @@ C_DEFS += \
 -DENABLE_PPM \
 -DUSE_MY_CONFIG \
 -DENABLE_USART \
--DDEBUG_SERIAL \
 -DENABLE_CONSOLE \
+-DENABLE_DEBUG \
 -DUSE_MY_CONFIG \
 
 # compile gcc flags
@@ -333,7 +333,7 @@ $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
 
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) #Makefile
 	@echo "--- Linking ---"
-	$(CC) $(OBJECTS) $(LDFLAGS) -o $@
+	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
 	
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
