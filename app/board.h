@@ -36,7 +36,7 @@ extern "C" {
 
 #define GPO_INIT(_IO, _PIN)     gpioInit(_IO, _PIN, GPO_2MHZ)
 #define GPO_SET(_IO, _PIN)      _IO->BSRR = (1 << _PIN)
-#define GPO_CLEAR(_IO, _PIN)    _IO->BRR = (1 << _PIN)
+#define GPO_CLR(_IO, _PIN)      _IO->BRR = (1 << _PIN)
 #define GPO_TOGGLE(_IO, _PIN)   _IO->ODR ^= (1<<_PIN)
 
 #if 0
@@ -49,7 +49,7 @@ extern "C" {
 #define LED_PORT    GPIOC
 #define LED_PIN     13
 #define LED_ON      GPO_SET(LED_PORT, LED_PIN)
-#define LED_OFF     GPO_CLEAR(LED_PORT, LED_PIN)
+#define LED_OFF     GPO_CLR(LED_PORT, LED_PIN)
 #define LED_INIT    GPO_INIT(LED_PORT, LED_PIN); LED_OFF
 #define LED_TOGGLE  GPO_TOGGLE(LED_PORT, LED_PIN)
 #endif
@@ -57,7 +57,7 @@ extern "C" {
 #define DBG_PIN         10
 #define DBG_PORT        GPIOB
 #define DBG_PIN_ON      GPO_SET(DBG_PORT, DBG_PIN)
-#define DBG_PIN_OFF     GPO_CLEAR(DBG_PORT, DBG_PIN)
+#define DBG_PIN_OFF     GPO_CLR(DBG_PORT, DBG_PIN)
 #define DBG_PIN_INIT    GPO_INIT(DBG_PORT, DBG_PIN); DBG_PIN_OFF
 #define DBG_PIN_TOGGLE  GPO_TOGGLE(DBG_PORT, DBG_PIN)
 
@@ -66,7 +66,7 @@ extern "C" {
 #define CC25_CS_PORT    GPIOB
 #define CC25_CS_INIT    GPO_INIT(CC25_CS_PORT, CC25_CS_PIN); CC25_CS_FALSE
 #define CC25_CS_FALSE   GPO_SET(CC25_CS_PORT, CC25_CS_PIN)
-#define CC25_CS_TRUE    GPO_CLEAR(CC25_CS_PORT, CC25_CS_PIN)
+#define CC25_CS_TRUE    GPO_CLR(CC25_CS_PORT, CC25_CS_PIN)
 #define HW_CC2500_MODULE_RESET
 
 
@@ -105,7 +105,12 @@ extern "C" {
 #define HW_SW_PORT                ~(GPIOA->IDR >> 4)
 #define HW_SW_INIT                GPIOA->CRL = (GPIOB->CRL & ~(0xFFFF << 16)) | (0x8888 << 16); \
                                   GPIOA->BSRR =  HW_SW_MASK << 4;   /* Input pull-down */
-
+/** RF enable for 35MHz transmiter */
+#define HW_TX_35MHZ_EN_PIN        2
+#define HW_TX_35MHZ_EN_PORT       GPIOA
+#define HW_TX_35MHZ_EN_INIT       gpioInit(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN, GPO_2MHZ)
+#define HW_TX_35MHZ_ON            GPO_SET(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN)
+#define HW_TX_35MHZ_OFF           GPO_CLR(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN)
 
 /* PPM input pin PB5 */
 #define HW_PPM_INPUT_PIN          5
@@ -157,6 +162,9 @@ extern "C" {
 #define PWM_CENTER_PULSE      ((PWM_MAX_PULSE - PWM_MIN_PULSE)/2)
 #endif
 
+/* Analog input */
+#define ADC_VREF              1500 // mV
+#define HW_VBAT_CHANNEL       0
 
 /* fast code */
 #define RAM_CODE __attribute__((section(".ram_code")))
@@ -193,6 +201,7 @@ void reloadWatchDog(void);
 void laser4Init(void);
 
 uint32_t readSwitches(void);
+uint32_t readBatteryVoltage(void);
 
 #ifdef ENABLE_USART
 void usart_init(void);

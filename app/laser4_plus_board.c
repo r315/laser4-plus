@@ -7,9 +7,11 @@
 static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
 static void (*pinIntCB)(void);
+static volatile uint16_t adc_result;
 
 static void spiInit(void);
 static void timInit(void);
+static void adcInit(void);
 
 void Error_Handler(char * file, int line){
   while(1){
@@ -19,7 +21,10 @@ void Error_Handler(char * file, int line){
 void laser4Init(void){
     spiInit();
     timInit();
+    adcInit();
     HW_SW_INIT;
+    HW_TX_35MHZ_EN_INIT;
+    HW_TX_35MHZ_OFF;
 }
 
 void SPI_Write(uint8_t data){
@@ -176,6 +181,12 @@ uint32_t res;
     return 1;
 }
 
+/**
+ * @brief Configure watchdog timer according a given interval
+ *  in wich the timer will expire and a system reset is performed
+ * 
+ * @param interval : Interval in wich the watchdog will perform a system reset
+ * */
 void enableWatchDog(uint32_t interval){
 uint32_t timeout = 4096;
 uint8_t pres = 0;
@@ -202,7 +213,11 @@ uint8_t pres = 0;
     IWDG->KR = 0xAAAA;  // Reload
     IWDG->KR = 0xCCCC;  // Start IWDG
 }
-
+/**
+ * @brief Watchdog reset that mus be called before the interval
+ *          specified on configuration
+ * 
+ * */
 void reloadWatchDog(void){
     IWDG->KR = 0xAAAA; // Reload RLR on counter
 }
@@ -218,6 +233,51 @@ uint32_t state;
     state = (HW_SW_PORT & HW_SW_MASK);
 
     return state;
+}
+/**
+ * @brief Configure ADC for a defined channel in interrupt mode and initiates a convertion.
+ *  After convertion the result is stored locally through interrupt
+ * 
+ * 
+ * @param ch : Channel to perform convertion
+ * */
+static void adcInit(void){
+    RCC->APB2ENR  |= RCC_APB2ENR_ADC1EN;     // Enable Adc1
+    RCC->APB2RSTR |= RCC_APB2ENR_ADC1EN;
+    RCC->APB2RSTR &= ~RCC_APB2ENR_ADC1EN;
+
+    ADC1->CR2 = (15 << 17) | ADC_CR2_ADON;     // Enable ADC, trigger by software
+    ADC1->CR1 = ADC_CR1_EOCIE;    // Enable end of convertion interrupt
+    ADC1->SMPR2 = (4 << (3 * HW_VBAT_CHANNEL));   // Sample time = 41.5 cycles, AN9-0
+    NVIC_EnableIRQ(ADC1_IRQn);
+    ADC1->SQR3 = HW_VBAT_CHANNEL;   // Configure channel for first conversion on sequence 
+    ADC1->CR2 |= ADC_CR2_SWSTART; 
+
+    gpioInit(GPIOA, HW_VBAT_CHANNEL, GPI_ANALOG);
+}
+
+/**
+ * @brief Return the value os the last convertion and
+ * initiates a new convertion.
+ * 
+ * */
+uint16_t readAdcChannel(void){
+    return 0;
+}
+
+/**
+ * @brief Read battery voltage, a new battery 
+ *      measurement is performed on function call exit
+ * 
+ * @return : battery voltage in mV
+ * */
+uint32_t readBatteryVoltage(void){
+uint32_t result;
+    // Calculate voltage
+    result = adc_result * (4096.0 / ADC_VREF);
+    // Start a new convertion
+    ADC1->CR2 |= ADC_CR2_SWSTART;
+    return result;
 }
 
 /**
@@ -235,4 +295,8 @@ void TIM4_IRQHandler(void){
     TIM4->SR = ~TIM4->SR;
     ticks++;
     //DBG_PIN_TOGGLE;
+}
+
+void ADC1_IRQHandler(void){
+    adc_result = (uint16_t)ADC1->DR;
 }
