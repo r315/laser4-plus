@@ -19,12 +19,17 @@ void Error_Handler(char * file, int line){
 }
 
 void laser4Init(void){
+    GPIO_ENABLE;
+    DBG_PIN_INIT;
+    CC25_CS_INIT;
+    HW_BIND_BUTTON_INIT;
+    LED_INIT;
+    HW_SW_INIT;
+    HW_TX_35MHZ_EN_INIT;
+    
     spiInit();
     timInit();
     adcInit();
-    HW_SW_INIT;
-    HW_TX_35MHZ_EN_INIT;
-    HW_TX_35MHZ_OFF;
 }
 
 void SPI_Write(uint8_t data){

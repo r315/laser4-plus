@@ -33,12 +33,7 @@ static void changeMode(uint8_t new_mode){
     mode = state = new_mode;
 }
 
-void setup(void){
-    GPIO_ENABLE;
-    DBG_PIN_INIT;
-    CC25_CS_INIT;
-    HW_BIND_BUTTON_INIT;
-    LED_INIT;
+void setup(void){    
 
     laser4Init();
 

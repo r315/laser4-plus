@@ -108,7 +108,7 @@ extern "C" {
 /** RF enable for 35MHz transmiter */
 #define HW_TX_35MHZ_EN_PIN        2
 #define HW_TX_35MHZ_EN_PORT       GPIOA
-#define HW_TX_35MHZ_EN_INIT       gpioInit(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN, GPO_2MHZ)
+#define HW_TX_35MHZ_EN_INIT       gpioInit(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN, GPO_2MHZ); HW_TX_35MHZ_OFF
 #define HW_TX_35MHZ_ON            GPO_SET(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN)
 #define HW_TX_35MHZ_OFF           GPO_CLR(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN)
 
