@@ -58,7 +58,7 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
  * @brief 
  * */
 void multiprotocol_setup(void){   
-
+    DBG_PRINT("Laser4+ version: %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
     /* Configure PPM input pin PB5*/
     gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);
        
@@ -130,7 +130,7 @@ void multiprotocol_setup(void){
         protocol_init();
     }
 #endif    
-    DBG_PRINT("Laser4+ version: %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+    
 }
 /**
  * @brief main loop for multiprotocol mode
@@ -325,8 +325,6 @@ static void update_led_status(void)
     }
 }
 
-
-
 static void protocol_init(void){
 static uint16_t next_callback;
 
@@ -378,7 +376,7 @@ static uint16_t next_callback;
 
     if(next_callback > 32000)
     { // next_callback should not be more than 32767 so we will wait here...
-        uint16_t temp=(next_callback >> 10) - 2;
+        uint16_t temp = (next_callback >> 10) - 2;
         delayMs(temp);
         next_callback -= temp << 10;                        // between 2-3ms left at this stage
     }
@@ -390,12 +388,11 @@ static uint16_t next_callback;
 }
 
 
-static void update_channels_aux(void){
-    //Calc AUX flags
-    radio.channel_aux=0;
-    for(uint8_t i=0;i<8;i++)
-        if(radio.channel_data[CH5+i] > CHANNEL_SWITCH)
-            radio.channel_aux |= 1<<i;
+static void update_channels_aux(void){    
+    radio.channel_aux = HW_READ_SWITCHES;
+    for(uint8_t i = 0; i < 8; i++){
+        radio.channel_data[CH5 + i] = (radio.channel_aux & (1<<i)) == 0 ? CHANNEL_MIN_100 : CHANNEL_MED_50;        
+    }
 }
 
 void multiprotocol_frameReadyAction(volatile uint16_t *buf, void(*cb)(uint8_t)){

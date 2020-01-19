@@ -70,7 +70,14 @@ extern "C" {
 #define HW_CC2500_MODULE_RESET
 
 
-/* SPI2 */
+/** 
+ * SPI2
+ * 
+ * PB13 (SCK)
+ * PB14 (MISO)
+ * PB15 (MOSI)
+ * 
+ * */
 #define SPI_PINS_INIT GPIOB->CRH = (GPIOB->CRH & ~(0xFFF << 20)) | (0xB4B << 20); //Output AF_PP, IN no pull
 
 //Main Clock Output, requires prior MCO bit in RCC_CFG
@@ -82,6 +89,23 @@ extern "C" {
 #define HW_BIND_BUTTON_PIN        4
 #define HW_BIND_BUTTON_INIT       gpioInit(GPIOB, HW_BIND_BUTTON_PIN, GPI_PU);
 #define IS_HW_BIND_BUTTON_PRESSED (GPIOB->IDR & (1 << HW_BIND_BUTTON_PIN)) == 0
+/**
+ * Switches 
+ * PA4 AUX1
+ * PA5 AUX2
+ * PA6 AUX3
+ * PA7 AUX4
+ * */
+#define HW_READ_SWITCHES          readSwitches()
+#define HW_SW_AUX1                (1 << 0)
+#define HW_SW_AUX2                (1 << 1)
+#define HW_SW_AUX3                (1 << 2)
+#define HW_SW_AUX4                (1 << 3)
+#define HW_SW_MASK                (HW_SW_AUX1 | HW_SW_AUX2 | HW_SW_AUX3 | HW_SW_AUX4)
+#define HW_SW_PORT                ~(GPIOA->IDR >> 4)
+#define HW_SW_INIT                GPIOA->CRL = (GPIOB->CRL & ~(0xFFFF << 16)) | (0x8888 << 16); \
+                                  GPIOA->BSRR =  HW_SW_MASK << 4;   /* Input pull-down */
+
 
 /* PPM input pin PB5 */
 #define HW_PPM_INPUT_PIN          5
@@ -167,6 +191,8 @@ void enableWatchDog(uint32_t interval);
 void reloadWatchDog(void);
 
 void laser4Init(void);
+
+uint32_t readSwitches(void);
 
 #ifdef ENABLE_USART
 void usart_init(void);

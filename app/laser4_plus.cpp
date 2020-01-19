@@ -57,8 +57,8 @@ void setup(void){
 
 #ifdef ENABLE_CONSOLE
     con.init(IO_CHAR, "laser4+ >");
-    con.print("\b\b\b\b\b\b\b\b\b\b");
     con.registerCommandList(laser4_commands);
+    con.cls();
 #endif
 
     NV_Init();

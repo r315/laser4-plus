@@ -157,6 +157,7 @@ extern "C" {
 #define CHANNEL_MAX_100	1844	//	100%
 #define CHANNEL_MIN_100	204		//	100%
 #define CHANNEL_MAX_125	2047	//	125%
+#define CHANNEL_MED_50	((CHANNEL_MAX_100 - CHANNEL_MIN_100) / 2)	//	50%
 #define CHANNEL_MIN_125	0
 #define CHANNEL_SWITCH  1104    // 1550us	
 
@@ -267,8 +268,6 @@ typedef struct radio{
     uint8_t  len;
     uint8_t  packet_count;
     uint16_t bind_counter;
-
-    // Serial
     uint8_t sub_protocol;
     uint8_t protocol;
     uint8_t option;
@@ -276,12 +275,15 @@ typedef struct radio{
     uint8_t prev_option;
     uint8_t prev_power; 
     uint8_t rx_num;
+
+#ifdef ENABLE_SERIAL
     // Serial RX
     volatile uint8_t rx_buff[RXBUFFER_SIZE];
     volatile uint8_t rx_ok_buff[RXBUFFER_SIZE];
     volatile uint8_t discard_frame;
     volatile uint8_t rx_idx;
     volatile uint8_t rx_len;    
+#endif
 
 #ifdef ENABLE_PPM
     // PPM variable
@@ -289,10 +291,10 @@ typedef struct radio{
     volatile uint8_t  ppm_chan_max;
     uint32_t chan_order;
 #endif
-
-    //Telemetry
-    uint8_t packet_in[TELEMETRY_BUFFER_SIZE];//telemetry receiving packets
+    //Received packets buffer
+    uint8_t packet_in[TELEMETRY_BUFFER_SIZE];
 #if defined(TELEMETRY)
+    //Telemetry
 #endif
     //general variables
     uint16_t counter;

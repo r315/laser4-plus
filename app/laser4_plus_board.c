@@ -19,6 +19,7 @@ void Error_Handler(char * file, int line){
 void laser4Init(void){
     spiInit();
     timInit();
+    HW_SW_INIT;
 }
 
 void SPI_Write(uint8_t data){
@@ -204,6 +205,19 @@ uint8_t pres = 0;
 
 void reloadWatchDog(void){
     IWDG->KR = 0xAAAA; // Reload RLR on counter
+}
+
+/**
+ * @brief Read digital switches values
+ * 
+ * @return : bitmask with active switches
+ * */
+uint32_t readSwitches(void){
+uint32_t state;
+
+    state = (HW_SW_PORT & HW_SW_MASK);
+
+    return state;
 }
 
 /**
