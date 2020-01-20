@@ -117,13 +117,17 @@ static void timInit(void){
     RCC->APB1RSTR   &= ~(RCC_APB1RSTR_TIM4RST | RCC_APB1RSTR_TIM3RST | RCC_APB1RSTR_TIM2RST);
     RCC->APB2RSTR   |= RCC_APB2RSTR_TIM1RST;
     RCC->APB2RSTR   &= ~RCC_APB2RSTR_TIM1RST;
-    /* Configure 1ms intervals with TIM4 fot HAL  */
+    /* Configure 1ms timer*/
+#if NO_SYS_TICK
     TIM4->PSC = (SystemCoreClock/1000000) - 1; // Set Timer clock
     TIM4->ARR = 1000 - 1;
     TIM4->DIER = TIM_DIER_UIE;
     TIM4->CR1 |= TIM_CR1_CEN;
     NVIC_EnableIRQ(TIM4_IRQn);
-   
+#else
+    SysTick_Config(SystemCoreClock / 1000);
+    NVIC_EnableIRQ(SysTick_IRQn);
+#endif   
     /* Configure 0.5us time base for multiprotocol */
     PPM_TIM->CR1 = 0;                               // Stop counter
     PPM_TIM->PSC = (SystemCoreClock/2000000) - 1;	// 36-1;for 72 MHZ /0.5sec/(35+1)
@@ -296,11 +300,17 @@ uint32_t pr = EXTI->PR;
     EXTI->PR = pr;
 }
 
+#ifdef NO_SYS_TICK
 void TIM4_IRQHandler(void){
     TIM4->SR = ~TIM4->SR;
     ticks++;
     //DBG_PIN_TOGGLE;
 }
+#else
+void SysTick_Handler(void){
+    ticks++;
+}
+#endif
 
 void ADC1_IRQHandler(void){
     adc_result = (uint16_t)ADC1->DR;
