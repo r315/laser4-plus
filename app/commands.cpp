@@ -239,7 +239,8 @@ public:
 	char execute(void *ptr) {
 		uint32_t int_value;
 		if(nextHex((char**)&ptr, &int_value)){
-			reqModeChange((void*)int_value);
+			reqModeChange((uint8_t)int_value);
+			return CMD_OK_NO_PRT;
 		}
 		return CMD_OK;
 	}

@@ -3,25 +3,23 @@
 
 
 
-static uint8_t mode;
 volatile uint8_t state;
 
 #ifdef ENABLE_CONSOLE 
 Console con;
 #endif
 
-void reqModeChange(void *ptr){
-    mode = (uint32_t)ptr;
-    state = REQ_MODE_CHANGE;
+void reqModeChange(uint8_t new_mode){
+    state = (new_mode << STATE_BITS) | REQ_MODE_CHANGE;
 }
 
 static void changeMode(uint8_t new_mode){
     switch(new_mode){
-        case MULTIPROTOCOL:
+        case MODE_MULTIPROTOCOL:
             DBG_PRINT("Starting Multiprotocol\n");
             multiprotocol_setup();
             break;
-        case HID:
+        case MODE_HID:
 #ifdef ENABLE_GAME_CONTROLLER
             DBG_PRINT("Starting game controller\n");
             CONTROLLER_Init();
@@ -30,7 +28,6 @@ static void changeMode(uint8_t new_mode){
         default:
             return;
     }
-    mode = state = new_mode;
 }
 
 void setup(void){    
@@ -58,23 +55,24 @@ void setup(void){
 
     NV_Init();
         
-    reqModeChange((void*)MULTIPROTOCOL);
+    reqModeChange(MODE_MULTIPROTOCOL);
     enableWatchDog(3000);   // 3 seconds
 }
 
 void loop(void){
 
-    switch(state){
-        case MULTIPROTOCOL:
+    switch(state & STATE_MASK){
+        case MODE_MULTIPROTOCOL:
             multiprotocol_loop();
             break;
-        case HID:
+        case MODE_HID:
 #ifdef ENABLE_GAME_CONTROLLER
             CONTROLLER_Process();
 #endif
             break;
         case REQ_MODE_CHANGE:
-            changeMode(mode);
+            state = state >> STATE_BITS;
+            changeMode(state);
             break;
 
         default:

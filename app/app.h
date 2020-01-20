@@ -34,10 +34,13 @@ extern "C" {
 #endif
 
 enum {
-    MULTIPROTOCOL,
-    HID,
+    MODE_MULTIPROTOCOL = 0,
+    MODE_HID,
     REQ_MODE_CHANGE,
 };
+
+#define STATE_BITS          4
+#define STATE_MASK          ((1<<STATE_BITS) - 1)
 
 #if defined(ENABLE_VCOM)
 extern stdout_t vcom;
@@ -47,7 +50,7 @@ extern stdout_t pcom;
 #define IO_CHAR &pcom
 #endif
 
-void reqModeChange(void *ptr);
+void reqModeChange(uint8_t new_mode);
 
 #ifdef __cplusplus
 #ifdef ENABLE_CONSOLE
