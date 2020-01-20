@@ -9,12 +9,12 @@
 static controller_t laser4;
 volatile uint16_t channel_data[MIN_RADIO_CHANNELS];
 volatile uint32_t gflags;
+static uint8_t *channel_map;
 
 #ifdef DEMO_CONTROLLER
 #undef ENABLE_PPM
-static uint32_t angle;
+static float angle = 0;
 #else
-static uint8_t *channel_map;
 static int16_t map(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max){
   return ((x - in_min) * (out_max - out_min) / (in_max - in_min)) + out_min;
 }
@@ -25,6 +25,13 @@ static void setPpmFlag(uint8_t chan){
 #endif
 
 RAM_CODE void CONTROLLER_Process(void){
+
+#if defined(DEMO_CONTROLLER)
+    angle += 0.1;
+    SET_PPM_FRAME;
+    delayMs(100);
+
+#endif
 
     if(IS_PPM_FRAME_READY)
     {            
@@ -45,8 +52,13 @@ RAM_CODE void CONTROLLER_Process(void){
         }
         //update_channels_aux();
 #else
-        laser4.roll = (LOGICAL_MAXIMUM/2) + cos(((float)angle)*2*3.14) * (LOGICAL_MAXIMUM/2);
-        laser4.pitch = (LOGICAL_MAXIMUM/2) + sin(((float)angle)*2*3.14) * (LOGICAL_MAXIMUM/2);     
+        //float t = angle * 0.15915f;
+        //t = t - (int)t;
+        //float sine = 20.785f * (t - 0.0f) * (t - 0.5f) * (t - 1.0f);
+        int16_t val = sin(angle) * (float)(LOGICAL_MAXIMUM/2);
+        laser4.roll = (LOGICAL_MAXIMUM/2) + val;
+        val = cos(angle) * (float)(LOGICAL_MAXIMUM/2);
+        laser4.pitch = (LOGICAL_MAXIMUM/2) + val;
         
         laser4.throttle = laser4.roll;
         laser4.yaw = laser4.pitch;
@@ -57,7 +69,6 @@ RAM_CODE void CONTROLLER_Process(void){
 }
 
 
-#if defined(ENABLE_PPM)
 /**
  *  Code for PPM input PB5, TIM3_CH1 
  * */
@@ -75,13 +86,9 @@ void CONTROLLER_Init(void){
 
     channel_map = CH_AETR;
 
+#if defined(ENABLE_PPM)
     multiprotocol_frameReadyAction(channel_data, setPpmFlag);
-}
-#endif /* ENABLE_PPM */
-
-#if defined(ENABLE_PWM)
-void CONTROLLER_Init(void){
-
+#elif defined(ENABLE_PWM)
     RCC->APB1ENR |= (1 << 0);   // TIM2EN
 
     TIM2->CR1 = 0;              // Stop counter
@@ -94,8 +101,10 @@ void CONTROLLER_Init(void){
     TIM2->DIER = (0x0f << 1);   // Enable interrupt on capture for all channels
     NVIC_EnableIRQ(TIM2_IRQn);  // Enable timer 2 interupt
     TIM2->CR1 |= (1 << 0);      // Start counter
+#endif /* ENABLE_PPM */
 }
 
+#if defined(ENABLE_PWM)
 /**
  * Handles a radio channel with the cirrespondent captured value from interrupt.
  * Hw capture flag is cleared when the correspondent regiter is read.
@@ -156,20 +165,3 @@ RAM_CODE void TIM2_IRQHandler(void){
     }  
 }
 #endif /* ENABLE_PWM */
-
-
-#ifdef DEMO_CONTROLLER
-void CONTROLLER_Init(void){
-    DEMO_TIM->PSC = (SystemCoreClock/1000000) - 1;
-    DEMO_TIM->ARR = 1000 - 1;
-    DEMO_TIM->DIER = TIM_DIER_UIE;
-    DEMO_TIM->CR1 |= TIM_CR1_CEN;
-    NVIC_EnableIRQ(DEMO_TIM_IRQn);
-}
-
-void DEMO_TIM_IRQHandler(void){
-    DEMO_TIM->SR &= ~DEMO_TIM->SR;    
-    angle ++;
-    SET_PPM_FRAME;
-}
-#endif
