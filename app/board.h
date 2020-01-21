@@ -91,20 +91,22 @@ extern "C" {
 #define IS_HW_BIND_BUTTON_PRESSED (GPIOB->IDR & (1 << HW_BIND_BUTTON_PIN)) == 0
 /**
  * Switches 
- * PA4 AUX1
- * PA5 AUX2
- * PA6 AUX3
- * PA7 AUX4
+ * PB4  AUX1
+ * PB12 AUX2
+ * PA8  AUX3
  * */
+#define HW_SW_AUX1_PIN            4
+#define HW_SW_AUX2_PIN            12
+#define HW_SW_AUX3_PIN            8   
+#define HW_SW_INIT                gpioInit(GPIOB, HW_SW_AUX1_PIN, GPI_PU); \
+                                  gpioInit(GPIOB, HW_SW_AUX2_PIN, GPI_PU); \
+                                  gpioInit(GPIOA, HW_SW_AUX3_PIN, GPI_PU); \
+
 #define HW_READ_SWITCHES          readSwitches()
-#define HW_SW_AUX1                (1 << 0)
-#define HW_SW_AUX2                (1 << 1)
-#define HW_SW_AUX3                (1 << 2)
-#define HW_SW_AUX4                (1 << 3)
-#define HW_SW_MASK                (HW_SW_AUX1 | HW_SW_AUX2 | HW_SW_AUX3 | HW_SW_AUX4)
-#define HW_SW_PORT                ~(GPIOA->IDR >> 4)
-#define HW_SW_INIT                GPIOA->CRL = (GPIOB->CRL & ~(0xFFFF << 16)) | (0x8888 << 16); \
-                                  GPIOA->BSRR =  HW_SW_MASK << 4;   /* Input pull-down */
+#define HW_SW_AUX1_VAL            ((GPIOB->IDR & (1 << HW_SW_AUX1_PIN)) == 0)
+#define HW_SW_AUX2_VAL            ((GPIOB->IDR & (1 << HW_SW_AUX2_PIN)) == 0)
+#define HW_SW_AUX3_VAL            ((GPIOA->IDR & (1 << HW_SW_AUX3_PIN)) == 0)
+
 /** RF enable for 35MHz transmiter */
 #define HW_TX_35MHZ_EN_PIN        2
 #define HW_TX_35MHZ_EN_PORT       GPIOA

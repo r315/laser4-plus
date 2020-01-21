@@ -29,8 +29,7 @@ RAM_CODE void CONTROLLER_Process(void){
 #if defined(DEMO_CONTROLLER)
     angle += 0.1;
     SET_PPM_FRAME;
-    delayMs(100);
-
+    delayMs(20);
 #endif
 
     if(IS_PPM_FRAME_READY)
@@ -52,17 +51,18 @@ RAM_CODE void CONTROLLER_Process(void){
         }
         //update_channels_aux();
 #else
-        //float t = angle * 0.15915f;
+        //float t = angle * 0.15915f; // Normalize t = x/2pi - floor(x/2pi)
         //t = t - (int)t;
         //float sine = 20.785f * (t - 0.0f) * (t - 0.5f) * (t - 1.0f);
-        int16_t val = sin(angle) * (float)(LOGICAL_MAXIMUM/2);
-        laser4.roll = (LOGICAL_MAXIMUM/2) + val;
-        val = cos(angle) * (float)(LOGICAL_MAXIMUM/2);
-        laser4.pitch = (LOGICAL_MAXIMUM/2) + val;
+        //float cosine = 20.785f * (t + 0.25f) * (t - 0.25f) * (t - 0.75f);
+
+        laser4.roll = (LOGICAL_MAXIMUM/2) + sin(angle) * (LOGICAL_MAXIMUM/2);
+        laser4.pitch = (LOGICAL_MAXIMUM/2) + cos(angle) * (LOGICAL_MAXIMUM/2);
         
         laser4.throttle = laser4.roll;
         laser4.yaw = laser4.pitch;
 #endif  
+        laser4.buttons = HW_READ_SWITCHES;
         CLR_PPM_FRAME;
         USBD_HID_SendReport((uint8_t*)&laser4, REPORT_SIZE);
     }
@@ -80,7 +80,7 @@ void CONTROLLER_Init(void){
     laser4.yaw = LOGICAL_MAXIMUM/2;
     laser4.aux1 = LOGICAL_MAXIMUM/2;
     laser4.aux2 = LOGICAL_MAXIMUM/2;
-    laser4.buttons = 1;
+    laser4.buttons = 0;
     laser4.max_pulse = PPM_MAX_PULSE * 2;
     laser4.min_pulse = PPM_MIN_PULSE * 2;
 

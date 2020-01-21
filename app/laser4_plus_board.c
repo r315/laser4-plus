@@ -46,11 +46,11 @@ void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode) {
 
     
     if(mode == GPI_PD){
-        port->ODR &= ~(1 << pin);
+        port->BRR = (1 << pin);
     }
 
     if(mode == GPI_PU){
-        port->ODR |= (1 << pin);
+        port->BSRR = (1 << pin);
     }    
 
     mode &= 0x0f;
@@ -237,9 +237,9 @@ void reloadWatchDog(void){
  * @return : bitmask with active switches
  * */
 uint32_t readSwitches(void){
-uint32_t state;
+uint16_t state = 0;
 
-    state = (HW_SW_PORT & HW_SW_MASK);
+    state = (HW_SW_AUX1_VAL << 0) | (HW_SW_AUX2_VAL << 1) | (HW_SW_AUX3_VAL << 2);
 
     return state;
 }
