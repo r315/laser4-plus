@@ -152,11 +152,9 @@ uint8_t count=0;
         }
         return;
     }
-    TX_MAIN_PAUSE_on;
-    //tx_pause();
+    
     next_callback = radio.remote_callback() << 1;
-    TX_MAIN_PAUSE_off;
-    //tx_resume();
+ 
     cli();										    // Disable global int due to RW of 16 bits registers
     #ifndef STM32_BOARD			
     TIFR1=OCF1A_bm;							        // Clear compare A=callback flag
@@ -390,8 +388,8 @@ static uint16_t next_callback;
 
 static void update_channels_aux(void){    
     radio.channel_aux = HW_READ_SWITCHES;
-    for(uint8_t i = 0; i < 8; i++){
-        radio.channel_data[CH5 + i] = (radio.channel_aux & (1<<i)) == 0 ? CHANNEL_MIN_100 : CHANNEL_MED_50;        
+    for(uint8_t i = 0; i < MAX_AUX_CHANNELS; i++){
+        radio.channel_data[radio.ppm_chan_max + i] = (radio.channel_aux & (1<<i)) == 0 ? CHANNEL_MIN_100 : CHANNEL_MED_50;        
     }
 }
 

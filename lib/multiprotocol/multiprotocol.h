@@ -169,6 +169,8 @@ extern "C" {
 //#endif
 #define PPM_DEFAULT_VALUE 0
 
+#define MAX_AUX_CHANNELS 4
+
 #define EEPROM_ID_OFFSET 0
 #define _FLAGS_ radio.flags
 

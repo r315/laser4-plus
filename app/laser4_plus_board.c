@@ -12,6 +12,7 @@ static volatile uint16_t adc_result;
 static void spiInit(void);
 static void timInit(void);
 static void adcInit(void);
+static void encInit(void);
 
 void Error_Handler(char * file, int line){
   while(1){
@@ -20,6 +21,7 @@ void Error_Handler(char * file, int line){
 
 void laser4Init(void){
     GPIO_ENABLE;
+    AFIO->MAPR = (2 << 24); // SW-DP Enabled
     DBG_PIN_INIT;
     CC25_CS_INIT;
     HW_BIND_BUTTON_INIT;
@@ -30,6 +32,7 @@ void laser4Init(void){
     spiInit();
     timInit();
     adcInit();
+    encInit();
 }
 
 void SPI_Write(uint8_t data){
@@ -145,10 +148,7 @@ uint32_t timeout = ticks + ms;
     }
 }
 
-uint32_t getTick(void){    
-    return ticks;    
-}
-
+uint32_t getTick(void){ return ticks; }
 uint32_t HAL_GetTick(void){ return getTick(); }
 
 /**
@@ -287,6 +287,25 @@ uint32_t result;
     // Start a new convertion
     ADC1->CR2 |= ADC_CR2_SWSTART;
     return result;
+}
+
+/**
+ * @brief Rotary encorder init
+ *  Configures a timer as pulse counter, the counter is incremented/decremented
+ *  on edges from the two signals from the encoder
+ * 
+ * Using TIM2 CH1 and CH2 as TI1 and TI2, also filter is configured
+ * */
+void encInit(void){
+    gpioInit(GPIOB, 3, GPI_PU);
+    gpioInit(GPIOA, 15, GPI_PU);
+    AFIO->MAPR = (AFIO->MAPR & ~(3 << 8)) | (1 << 8);   // Partial remap for TIM2; PA15 -> CH1, PB3 -> CH2 
+
+    TIM2->CR2 = 
+    TIM2->SMCR = TIM_SMCR_ECE | (3 << 0); // External clock, Encoder mode 3
+    TIM2->CCMR1 = (15 << 12) | (1 << 8) | (15 << 4) | (1 << 0);  // Map TIxFP1 to TIx
+    TIM2->CR1 = TIM_CR1_CEN;
+    TIM2->SR = 0;
 }
 
 /**
