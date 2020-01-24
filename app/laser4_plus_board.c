@@ -302,8 +302,11 @@ void encInit(void){
     AFIO->MAPR = (AFIO->MAPR & ~(3 << 8)) | (1 << 8);   // Partial remap for TIM2; PA15 -> CH1, PB3 -> CH2 
 
     TIM2->CR2 = 
-    TIM2->SMCR = TIM_SMCR_ECE | (3 << 0); // External clock, Encoder mode 3
-    TIM2->CCMR1 = (15 << 12) | (1 << 8) | (15 << 4) | (1 << 0);  // Map TIxFP1 to TIx
+    TIM2->SMCR = TIM_SMCR_SMS_1 | TIM_SMCR_SMS_0;       // External clock, Encoder mode 3
+    TIM2->CCMR1 = (15 << 12) | (15 << 4)                // Map TIxFP1 to TIx,
+                  | TIM_CCMR1_CC2S_0 | TIM_CCMR1_CC1S_0  // and max length if input filter
+                  | TIM_CCMR1_IC2PSC_1 | TIM_CCMR1_IC1PSC_1;
+    TIM2->CCER = 0;                                     // Falling polarity
     TIM2->CR1 = TIM_CR1_CEN;
     TIM2->SR = 0;
 }
