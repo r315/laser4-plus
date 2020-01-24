@@ -153,6 +153,14 @@ public:
 			IS_TX_MAIN_PAUSE_on,
 			IS_INPUT_SIGNAL_on
 		);
+
+		for(uint8_t i = 0; i < radio.ppm_chan_max; i++){
+			DBG_PRINT("CH[%u]:\t%u\n", i, radio.channel_data[i]);
+		}
+		for(uint8_t i = radio.ppm_chan_max; i < radio.ppm_chan_max + MAX_AUX_CHANNELS; i++){
+        	DBG_PRINT("CH[%u]:\t%u\n", i, radio.channel_data[i]);
+    	}
+		DBG_PRINT("\n");
         return CMD_OK;        
 	}	
 }cmdstatus;
