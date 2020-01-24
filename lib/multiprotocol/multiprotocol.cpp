@@ -78,8 +78,8 @@ void multiprotocol_setup(void){
 
     DBG_PRINT("Protocol selection switch reads as %d\n", radio.mode_select);	
 
-    for(int8_t i = 0; i < NUM_CHN; i++){
-        radio.channel_data[i] = PPM_DEFAULT_VALUE;
+    for(uint8_t i = 0; i < NUM_CHN; i++){
+        radio.channel_data[i] = CHANNEL_MIN_100;
     }
 
     radio.channel_data[THROTTLE] = 0;
@@ -385,12 +385,33 @@ static uint16_t next_callback;
     BIND_BUTTON_FLAG_off;
 }
 
-
+/**
+ * After ppm sincronization, this function is called every ~20mS
+ * */
 static void update_channels_aux(void){    
+static uint16_t last_tim;
+    
     radio.channel_aux = HW_READ_SWITCHES;
-    for(uint8_t i = 0; i < MAX_AUX_CHANNELS; i++){
+    //if(radio.channel_aux){
+    //    DBG_PRINT("AUX: %x\n", radio.channel_aux);
+    //}
+    for(uint8_t i = 0; i < MAX_AUX_CHANNELS - 1; i++){
         radio.channel_data[radio.ppm_chan_max + i] = (radio.channel_aux & (1<<i)) == 0 ? CHANNEL_MIN_100 : CHANNEL_MED_50;        
     }
+
+    int16_t diff = TIM2->CNT - last_tim;
+    if(diff != 0){
+        uint16_t tmp = radio.channel_data[radio.ppm_chan_max + MAX_AUX_CHANNELS - 1];
+        tmp += diff*10;
+        if(tmp > CHANNEL_MAX_100){
+            tmp = CHANNEL_MAX_100;
+        }else if(tmp < CHANNEL_MIN_100){
+            tmp = CHANNEL_MIN_100;
+        }
+        radio.channel_data[radio.ppm_chan_max + MAX_AUX_CHANNELS - 1] = tmp;        
+        last_tim += diff;
+    }
+
 }
 
 void multiprotocol_frameReadyAction(volatile uint16_t *buf, void(*cb)(uint8_t)){
