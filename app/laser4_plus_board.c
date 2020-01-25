@@ -132,14 +132,14 @@ static void timInit(void){
     NVIC_EnableIRQ(SysTick_IRQn);
 #endif   
     /* Configure 0.5us time base for multiprotocol */
-    PPM_TIM->CR1 = 0;                               // Stop counter
-    PPM_TIM->PSC = (SystemCoreClock/2000000) - 1;	// 36-1;for 72 MHZ /0.5sec/(35+1)
-    PPM_TIM->ARR = 0xFFFF;							// Count until 0xFFFF
-    PPM_TIM->CCMR1 = (1<<4);	                    // Main scheduler
-	PPM_TIM->SR = 0x1E5F & ~TIM_SR_CC1IF;			// Clear Timer/Comp2 interrupt flag
-    PPM_TIM->DIER = 0;               				// Disable Timer/Comp2 interrupts
-    PPM_TIM->EGR |= TIM_EGR_UG;					    // Refresh the timer's count, prescale, and overflow
-    PPM_TIM->CR1 |= TIM_CR1_CEN;                    // Enable counter
+    TIMER_BASE->CR1 = 0;                               // Stop counter
+    TIMER_BASE->PSC = (SystemCoreClock/2000000) - 1;	// 36-1;for 72 MHZ /0.5sec/(35+1)
+    TIMER_BASE->ARR = 0xFFFF;							// Count until 0xFFFF
+    TIMER_BASE->CCMR1 = (1<<4);	                    // Main scheduler
+	TIMER_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;			// Clear Timer/Comp2 interrupt flag
+    TIMER_BASE->DIER = 0;               				// Disable Timer/Comp2 interrupts
+    TIMER_BASE->EGR |= TIM_EGR_UG;					    // Refresh the timer's count, prescale, and overflow
+    TIMER_BASE->CR1 |= TIM_CR1_CEN;                    // Enable counter
 }
 
 void delayMs(uint32_t ms){
@@ -299,16 +299,17 @@ uint32_t result;
 void encInit(void){
     gpioInit(GPIOB, 3, GPI_PU);
     gpioInit(GPIOA, 15, GPI_PU);
-    AFIO->MAPR = (AFIO->MAPR & ~(3 << 8)) | (1 << 8);   // Partial remap for TIM2; PA15 -> CH1, PB3 -> CH2 
+    AFIO->MAPR = (AFIO->MAPR & ~(3 << 8)) | (1 << 8);       // Partial remap for TIM2; PA15 -> CH1, PB3 -> CH2 
 
-    TIM2->CR2 = 
-    TIM2->SMCR = TIM_SMCR_SMS_1 | TIM_SMCR_SMS_0;       // External clock, Encoder mode 3
-    TIM2->CCMR1 = (15 << 12) | (15 << 4)                // Map TIxFP1 to TIx,
-                  | TIM_CCMR1_CC2S_0 | TIM_CCMR1_CC1S_0  // and max length if input filter
+    ENC_TIM->CR2 = 
+    ENC_TIM->SMCR = TIM_SMCR_SMS_1 | TIM_SMCR_SMS_0;        // External clock, Encoder mode 3
+    ENC_TIM->CCMR1 = (15 << 12) | (15 << 4)                 // Map TIxFP1 to TIx,
+                  | TIM_CCMR1_CC2S_0 | TIM_CCMR1_CC1S_0     // and max length if input filter
                   | TIM_CCMR1_IC2PSC_1 | TIM_CCMR1_IC1PSC_1;
-    TIM2->CCER = 0;                                     // Falling polarity
-    TIM2->CR1 = TIM_CR1_CEN;
-    TIM2->SR = 0;
+    ENC_TIM->CCER = 0;                                      // Falling polarity
+    ENC_TIM->CR1 = TIM_CR1_CEN;
+    ENC_TIM->SR = 0;
+    
 }
 
 /**

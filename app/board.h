@@ -123,14 +123,17 @@ extern "C" {
 #define LED_toggle                LED_TOGGLE
 #define EE_ADDR                   uint16_t
 
-#define PPM_TIM                   TIM3          //PB5 -> TIM3_CH2
-#define PPM_TIM_IRQn              TIM3_IRQn
-#define PPM_TIM_IRQHandler        TIM3_IRQHandler
-#define TIMER_BASE                PPM_TIM
+#define TIMER_BASE                TIM3          //PB5 -> TIM3_CH2
+#define TIMER_BASE_IRQn           TIM3_IRQn
+#define TIMER_BASE_IRQHandler     TIM3_IRQHandler
 
-#define DEMO_TIM_IRQn             TIM2_IRQn
-#define DEMO_TIM                  TIM2
-#define DEMO_TIM_IRQHandler       TIM2_IRQHandler
+#define ENC_TIM_IRQn              TIM2_IRQn
+#define ENC_TIM                   TIM2
+#define ENC_TIM_IRQHandler        TIM2_IRQHandler
+
+#define PPM_TIM                   TIM4
+
+
 
 #define cli     __disable_irq
 #define sei     __enable_irq
