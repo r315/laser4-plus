@@ -207,6 +207,7 @@ void laser4Init(void);
 
 uint32_t readSwitches(void);
 uint32_t readBatteryVoltage(void);
+void ppmOut(uint16_t *data);
 
 #ifdef ENABLE_USART
 void usart_init(void);
