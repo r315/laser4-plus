@@ -23,6 +23,7 @@ static void changeMode(uint8_t new_mode){
 #ifdef ENABLE_GAME_CONTROLLER
             DBG_PRINT("Starting game controller\n");
             CONTROLLER_Init();
+            LED_OFF;
             break;
 #endif
         default:
