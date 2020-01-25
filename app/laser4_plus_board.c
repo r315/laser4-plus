@@ -311,7 +311,6 @@ void encInit(void){
     ENC_TIM->CCER = 0;                                      // Falling polarity
     ENC_TIM->CR1 = TIM_CR1_CEN;
     ENC_TIM->SR = 0;
-    
 }
 
 /**
@@ -346,7 +345,7 @@ static uint16_t ppm_data[MAX_PPM_CHANNELS + 2];
     DMA1_Channel7->CCR |= DMA_CCR_EN;   
     // Resume timer
     PPM_TIM->CR1 |= TIM_CR1_CEN;
-    DBG_PIN_HIGH;
+    //DBG_PIN_HIGH;
 }
 
 /**
@@ -414,7 +413,7 @@ void DMA1_Channel7_IRQHandler(void){
         // As the timer is stoped we get only a rising edge due to update event
         // and cancel the last channel transmission.
         PPM_TIM->CR1 &= ~TIM_CR1_CEN;
-        DBG_PIN_LOW;        
+        //DBG_PIN_LOW;        
     }
     DMA1->IFCR |= DMA_IFCR_CGIF7;  // Clear DMA Flags TODO: ADD DMA Error handling ?
 }
