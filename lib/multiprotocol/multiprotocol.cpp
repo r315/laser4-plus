@@ -396,7 +396,13 @@ static uint16_t last_tim;
     //    DBG_PRINT("AUX: %x\n", radio.channel_aux);
     //}
     for(uint8_t i = 0; i < MAX_AUX_CHANNELS - 1; i++){
-        radio.channel_data[radio.ppm_chan_max + i] = (radio.channel_aux & (1<<i)) == 0 ? CHANNEL_MIN_100 : CHANNEL_MED_50;        
+        if((radio.channel_aux & (1<<i)) == 0){
+            radio.channel_data[radio.ppm_chan_max + i] = CHANNEL_MIN_100;
+            radio.ppm_data[radio.ppm_chan_max + i] = PPM_MIN_PERIOD;
+        }else{
+            radio.channel_data[radio.ppm_chan_max + i] = CHANNEL_MED_50;
+            radio.ppm_data[radio.ppm_chan_max + i] = PPM_MED_PERIOD;
+        }        
     }
 
     int16_t diff = ENC_TIM->CNT - last_tim;
