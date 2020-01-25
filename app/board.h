@@ -139,17 +139,16 @@ extern "C" {
 #define sei     __enable_irq
 
 #define HW_PROTOCOL_SWITCH  10      // 1...14
-#define HW_BANK_SWITCH      0       //bank_switch(); 
-
-#define MOCK_PPM
-                                  
-#define MIN_RADIO_CHANNELS      4
+#define HW_BANK_SWITCH      0       //bank_switch();                           
 
 #if defined(ENABLE_PPM)
-#define PPM_MAX_CHANNELS        8
-#define PPM_MAX_PULSE           2100
-#define PPM_MIN_PULSE           900
-#define PPM_CENTER_PULSE      ((PPM_MAX_PULSE - PPM_MIN_PULSE)/2)
+#define MIN_PPM_CHANNELS        4
+#define MAX_PPM_CHANNELS        6
+#define PPM_MAX_PERIOD          4400 // 2200
+#define PPM_MIN_PERIOD          1600 // 800
+#define PPM_MED_PERIOD          (PPM_MAX_PERIOD - PPM_MIN_PERIOD)
+
+#define PPM_PULSE_WIDTH         600     // 300us
 #endif
 
 #if defined(ENABLE_PWM)

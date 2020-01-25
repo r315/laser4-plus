@@ -7,7 +7,7 @@
 //#define DEMO_CONTROLLER
 
 static controller_t laser4;
-volatile uint16_t channel_data[MIN_RADIO_CHANNELS];
+volatile uint16_t channel_data[MIN_CHN_NUM];
 volatile uint32_t gflags;
 static uint8_t *channel_map;
 
@@ -37,7 +37,7 @@ RAM_CODE void CONTROLLER_Process(void){
 #if !defined(DEMO_CONTROLLER)
         uint8_t i;
         uint8_t *data = (uint8_t*)&laser4.pitch;
-        for(i = 0; i < MIN_RADIO_CHANNELS; i++){
+        for(i = 0; i < MIN_PPM_CHANNELS; i++){
             //PAUSE_CAPTURE;
             uint16_t val = channel_data[i];
             //RESUME_CAPTURE;
@@ -81,8 +81,8 @@ void CONTROLLER_Init(void){
     laser4.aux1 = LOGICAL_MAXIMUM/2;
     laser4.aux2 = LOGICAL_MAXIMUM/2;
     laser4.buttons = 0;
-    laser4.max_pulse = PPM_MAX_PULSE * 2;
-    laser4.min_pulse = PPM_MIN_PULSE * 2;
+    laser4.max_pulse = PPM_MAX_PERIOD;
+    laser4.min_pulse = PPM_MIN_PERIOD;
 
     channel_map = CH_AETR;
 

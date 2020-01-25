@@ -29,7 +29,7 @@ extern "C" {
 
 #define BAUD                        100000
 #define RXBUFFER_SIZE               36	// 26 + 1 + 9
-#define NUM_CHN                     16
+#define MAX_CHN_NUM                 16
 #define TELEMETRY_BUFFER_SIZE       30
 
 //********************
@@ -161,8 +161,6 @@ extern "C" {
 #define CHANNEL_MIN_125	0
 #define CHANNEL_SWITCH  1104    // 1550us	
 
-#define MIN_PPM_CHANNELS 4
-#define MAX_PPM_CHANNELS 16
 //#if defined(TX_ER9X)
 	#define PPM_MAX_100 2012	//	100%
 	#define PPM_MIN_100 988		//	100%
@@ -253,7 +251,7 @@ typedef struct radio{
     uint8_t mode_select;    
 
     // Servo data 
-    uint16_t channel_data[NUM_CHN];
+    uint16_t channel_data[MAX_CHN_NUM];
     uint8_t  channel_aux;
 #ifdef FAILSAFE_ENABLE
 	uint16_t Failsafe_data[NUM_CHN];
@@ -289,7 +287,7 @@ typedef struct radio{
 
 #ifdef ENABLE_PPM
     // PPM variable
-    volatile uint16_t ppm_data[NUM_CHN];
+    volatile uint16_t ppm_data[MAX_CHN_NUM];
     volatile uint8_t  ppm_chan_max;
     uint32_t chan_order;
 #endif

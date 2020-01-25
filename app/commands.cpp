@@ -222,7 +222,7 @@ public:
 
 		switch(test){
 			case 0:
-				for(uint8_t i = 0; i < MAX_PPM_CHANNELS; i++ ){
+				for(uint8_t i = 0; i < MAX_CHN_NUM; i++ ){
 					console->print("\nChannel[%u]: %u", i, radio.channel_data[i]);
 				}
 				console->xputchar('\n');

@@ -78,7 +78,7 @@ void multiprotocol_setup(void){
 
     DBG_PRINT("Protocol selection switch reads as %d\n", radio.mode_select);	
 
-    for(uint8_t i = 0; i < NUM_CHN; i++){
+    for(uint8_t i = 0; i < MAX_CHN_NUM; i++){
         radio.channel_data[i] = CHANNEL_MIN_100;
     }
 
@@ -94,7 +94,7 @@ void multiprotocol_setup(void){
     multiprotocol_frameReadyAction(radio.ppm_data, setPpmFlag);
 
         // Set default PPMs' value
-        for(uint8_t i=0; i < NUM_CHN; i++){
+        for(uint8_t i=0; i < MAX_CHN_NUM; i++){
             radio.ppm_data[i] = PPM_MAX_100 + PPM_MIN_100;
         }
         radio.ppm_data[THROTTLE] = PPM_MIN_100 * 2; // We are using 0.5us as time base, so pulses have the double size
@@ -399,7 +399,7 @@ static uint16_t last_tim;
         radio.channel_data[radio.ppm_chan_max + i] = (radio.channel_aux & (1<<i)) == 0 ? CHANNEL_MIN_100 : CHANNEL_MED_50;        
     }
 
-    int16_t diff = TIM2->CNT - last_tim;
+    int16_t diff = ENC_TIM->CNT - last_tim;
     if(diff != 0){
         uint16_t tmp = radio.channel_data[radio.ppm_chan_max + MAX_AUX_CHANNELS - 1];
         tmp += diff*10;
@@ -425,15 +425,15 @@ void multiprotocol_frameReadyAction(volatile uint16_t *buf, void(*cb)(uint8_t)){
     gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, PPM_decode);    
 }
 
-RAM_CODE static void PPM_decode(){	// Interrupt on PPM pin
+RAM_CODE static void PPM_decode(void){	// Interrupt on PPM pin
     static int8_t chan = 0, bad_frame = 1;
     static uint16_t Prev_TCNT1 = 0;
     uint16_t Cur_TCNT1;
     // Capture current Timer value
     Cur_TCNT1 = TIMER_BASE->CNT - Prev_TCNT1;
-    if(Cur_TCNT1 < 1600){
+    if(Cur_TCNT1 < PPM_MIN_PERIOD){
         bad_frame = 1;					// bad frame
-    }else if(Cur_TCNT1 > 4400){
+    }else if(Cur_TCNT1 > PPM_MAX_PERIOD){
         //start of frame
         if(chan >= MIN_PPM_CHANNELS){
             //DBG_PIN_TOGGLE;                
