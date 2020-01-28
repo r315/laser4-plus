@@ -7,7 +7,7 @@
 //#define DEMO_CONTROLLER
 
 static controller_t laser4;
-volatile uint16_t channel_data[MIN_CHN_NUM];
+volatile uint16_t ppm_data[MIN_PPM_CHANNELS];
 volatile uint32_t gflags;
 static uint8_t *channel_map;
 
@@ -39,7 +39,7 @@ RAM_CODE void CONTROLLER_Process(void){
         uint8_t *data = (uint8_t*)&laser4.pitch;
         for(i = 0; i < MIN_PPM_CHANNELS; i++){
             //PAUSE_CAPTURE;
-            uint16_t val = channel_data[i];
+            uint16_t val = ppm_data[i];
             //RESUME_CAPTURE;
 
             if(val < laser4.min_pulse || val > laser4.max_pulse){
@@ -87,7 +87,7 @@ void CONTROLLER_Init(void){
     channel_map = CH_AETR;
 
 #if defined(ENABLE_PPM)
-    multiprotocol_frameReadyAction(channel_data, setPpmFlag);
+    multiprotocol_frameReadyAction(ppm_data, setPpmFlag);
 #elif defined(ENABLE_PWM)
     RCC->APB1ENR |= (1 << 0);   // TIM2EN
 
