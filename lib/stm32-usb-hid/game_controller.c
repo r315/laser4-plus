@@ -7,7 +7,7 @@
 //#define DEMO_CONTROLLER
 
 static controller_t laser4;
-volatile uint16_t ppm_data[MIN_PPM_CHANNELS];
+volatile uint16_t ppm_data[MIN_PPM_CHANNELS], last_tim;
 volatile uint32_t gflags;
 static uint8_t *channel_map;
 
@@ -49,7 +49,20 @@ RAM_CODE void CONTROLLER_Process(void){
             *(data + (channel_map[i] * 2)) = val;
             *(data + 1 + (channel_map[i] * 2)) = val >> 8;
         }
-        //update_channels_aux();
+        
+        int16_t diff = ENC_TIM->CNT - last_tim;
+        if(diff != 0){
+            uint16_t tmp = laser4.aux2;
+            tmp += diff*10;
+            if(tmp > CHANNEL_MAX_100){
+                tmp = CHANNEL_MAX_100;
+            }else if(tmp < CHANNEL_MIN_100){
+                tmp = CHANNEL_MIN_100;
+            }
+            laser4.aux2 = tmp;        
+            last_tim += diff;
+        }
+        laser4.buttons = HW_READ_SWITCHES;
 #else
         //float t = angle * 0.15915f; // Normalize t = x/2pi - floor(x/2pi)
         //t = t - (int)t;
@@ -62,7 +75,6 @@ RAM_CODE void CONTROLLER_Process(void){
         laser4.throttle = laser4.roll;
         laser4.yaw = laser4.pitch;
 #endif  
-        laser4.buttons = HW_READ_SWITCHES;
         CLR_PPM_FRAME;
         USBD_HID_SendReport((uint8_t*)&laser4, REPORT_SIZE);
     }
