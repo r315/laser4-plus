@@ -286,7 +286,7 @@ static uint8_t USBD_HID_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
         ((USBD_HID_HandleTypeDef *)pdev->pClassData)->state = HID_IDLE;
     }
 
-    //device_process = CONTROLLER_Process;
+    reqModeChange(MODE_HID);
     return ret;
 }
 
@@ -528,10 +528,10 @@ void HID_Init(void)
     CHECK_FOR_ERROR(USBD_Start(dev));
 }
 
-void USB_LP_CAN1_RX0_IRQHandler(void)
-{
-    HAL_PCD_IRQHandler(&hpcd_USB_FS);
+void USBD_SuspendCallBack(void){
+    reqModeChange(MODE_MULTIPROTOCOL);
 }
+
 
 /**
   * @}

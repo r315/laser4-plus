@@ -215,6 +215,7 @@ void HAL_PCD_SuspendCallback(PCD_HandleTypeDef *hpcd)
     /* Set SLEEPDEEP bit and SleepOnExit of Cortex System Control Register. */
     SCB->SCR |= (uint32_t)((uint32_t)(SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk));
   }
+  USBD_SuspendCallBack();
   /* USER CODE END 2 */
 }
 
@@ -277,6 +278,15 @@ void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
 /*******************************************************************************
                        LL Driver Interface (USB Device Library --> PCD)
 *******************************************************************************/
+/**
+  * @brief  USB Interrupt handler
+  * @param  none
+  * @retval None
+  */
+void USB_LP_CAN1_RX0_IRQHandler(void)
+{
+    HAL_PCD_IRQHandler(&hpcd_USB_FS);
+}
 
 /**
   * @brief  Initializes the low level portion of the device driver.

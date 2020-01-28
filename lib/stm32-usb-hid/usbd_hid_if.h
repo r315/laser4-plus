@@ -131,6 +131,10 @@ uint8_t USBD_HID_SendReport (uint8_t *report, uint16_t len);
   */ 
 void HID_Init(void);
 
+/**
+ * 
+ * */
+void USBD_SuspendCallBack(void);
 
 #ifdef __cplusplus
 }
