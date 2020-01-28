@@ -5,12 +5,20 @@
 
 volatile uint8_t state;
 
+tone_t chime[] = {
+    {1000,200},
+    {2000,300},
+    {500,100},
+    {0,0}
+};
+
 #ifdef ENABLE_CONSOLE 
 Console con;
 #endif
 
 void reqModeChange(uint8_t new_mode){
     state = (new_mode << STATE_BITS) | REQ_MODE_CHANGE;
+    playTone(500,100);
 }
 
 static void changeMode(uint8_t new_mode){
@@ -57,6 +65,8 @@ void setup(void){
     NV_Init();
         
     reqModeChange(MODE_MULTIPROTOCOL);
+    //playTone(1000, 200);
+    playMelody(chime);
     enableWatchDog(3000);   // 3 seconds
 }
 
@@ -84,6 +94,7 @@ void loop(void){
     con.process();
     #endif
     reloadWatchDog();
+    //DBG_PIN_TOGGLE;
 }
 
 

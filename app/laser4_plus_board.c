@@ -8,12 +8,14 @@ static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
 static void (*pinIntCB)(void);
 static volatile uint16_t adc_result;
+static tone_t *ptone, single_tone;
 
 static void spiInit(void);
 static void timInit(void);
 static void adcInit(void);
 static void encInit(void);
 static void ppmOutInit(void);
+static void buzInit(void);
 
 void Error_Handler(char * file, int line){
   while(1){
@@ -35,6 +37,7 @@ void laser4Init(void){
     adcInit();
     encInit();
     ppmOutInit();
+    buzInit();
 }
 
 void SPI_Write(uint8_t data){
@@ -378,6 +381,67 @@ void ppmOutInit(void){
 }
 
 /**
+ * @brief Basic tone generation on pin PA8 using TIM1_CH1
+ * and DMA 
+ * */
+void buzInit(void){
+    gpioInit(GPIOA, 8, GPO_AF | GPO_2MHZ);
+    // Configure DMA
+    RCC->AHBENR |= RCC_AHBENR_DMA1EN;               // Enable DMA1
+    DMA1_Channel5->CPAR = (uint32_t)&BUZ_TIM->ARR;  // Destination peripheral
+    DMA1_Channel5->CCR =
+            DMA_CCR_MSIZE_0 |                       // 16bit Dst size
+            DMA_CCR_PSIZE_0 |                       // 16bit src size
+            DMA_CCR_DIR |                           // Read from memory
+            DMA_CCR_TCIE;                           // Enable end of transfer interrupt
+    NVIC_EnableIRQ(DMA1_Channel5_IRQn);
+
+    // Configure timer    
+#ifdef BUZ_IDLE_HIGH
+    BUZ_TIM->CR1 = 0; 
+    BUZ_TIM->CCMR1 = (7 << 4);                      // PWM mode 2
+#else
+    BUZ_TIM->CR1 = TIM_CR1_DIR; 
+    BUZ_TIM->CCMR1 = (6 << 4);                      // PWM mode 1
+#endif
+    BUZ_TIM->PSC = (SystemCoreClock/1000000) - 1;	// 72-1;for 72 MHZ (1us clock)
+    BUZ_TIM->CCER = TIM_CCER_CC1E;                  // Enable channel
+    BUZ_TIM->BDTR |= TIM_BDTR_MOE;
+    // Force idle state
+    BUZ_TIM->CCR1 = 5;                              // Low volume
+    BUZ_TIM->ARR = 0xFFF;
+    BUZ_TIM->EGR |= TIM_EGR_UG;
+    // Enable DMA Request 
+    BUZ_TIM->DIER |= TIM_DIER_UDE;
+}
+
+static void startTone(tone_t *tone){
+    DMA1_Channel5->CMAR = (uint32_t)(&tone->f);
+    DMA1_Channel5->CNDTR = tone->t;
+    DMA1_Channel5->CCR |= DMA_CCR_EN;
+    PPM_TIM->EGR = TIM_EGR_UG;
+    BUZ_TIM->CR1 |=  TIM_CR1_CEN;
+}
+/**
+ * 
+ * */
+void playTone(uint16_t freq, uint16_t duration){
+    single_tone.f = freq;
+    single_tone.t = duration;
+    ptone = &single_tone;
+    startTone(ptone);
+    ptone->t = 0;       //force tone ending
+}
+/**
+ * */
+void setToneLevel(uint16_t level){
+    BUZ_TIM->CCR1 = level-1;
+}
+void playMelody(tone_t *tones){
+    ptone = tones + 1;
+    startTone(tones);   
+}
+/**
  * @brief Interrupts handlers
  * */
 void EXTI9_5_IRQHandler(void){
@@ -402,6 +466,23 @@ void SysTick_Handler(void){
 
 void ADC1_IRQHandler(void){
     adc_result = (uint16_t)ADC1->DR;
+}
+
+void DMA1_Channel5_IRQHandler(void){
+    if(DMA1->ISR & DMA_ISR_TCIF5){
+        DMA1_Channel5->CCR &= ~DMA_CCR_EN;
+        if(ptone->t != 0){
+            DMA1_Channel5->CMAR = (uint32_t)(&ptone->f);
+            DMA1_Channel5->CNDTR = ptone->t;
+            DMA1_Channel5->CCR |= DMA_CCR_EN;
+            ptone++;
+        }else{
+            BUZ_TIM->CR1 &= ~TIM_CR1_CEN;
+            BUZ_TIM->ARR = 0xFFF;
+            PPM_TIM->EGR = TIM_EGR_UG;
+        }
+    }
+    DMA1->IFCR |= DMA_IFCR_CGIF5;
 }
 
 void DMA1_Channel7_IRQHandler(void){

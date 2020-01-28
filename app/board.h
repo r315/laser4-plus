@@ -187,6 +187,11 @@ extern uint32_t _seeprom, _eeeprom;     //declared on linker script
 #define EEPROM_Write(_A,_B,_C)  NV_Write(_A,_B,_C)
 #define EEPROM_Sync             NV_Sync
 
+typedef struct tone{
+  uint16_t f;
+  uint16_t t;
+}tone_t;
+
 
 /* Function prototyes */
 void delayMs(uint32_t ms);
@@ -209,6 +214,10 @@ void laser4Init(void);
 uint32_t readSwitches(void);
 uint32_t readBatteryVoltage(void);
 void ppmOut(uint16_t *data);
+
+void playTone(uint16_t freq, uint16_t duration);
+void playMelody(tone_t *tones);
+void setToneLevel(uint16_t level);
 
 #ifdef ENABLE_USART
 void usart_init(void);
