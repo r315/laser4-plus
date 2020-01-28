@@ -97,7 +97,7 @@ extern "C" {
  * */
 #define HW_SW_AUX1_PIN            4
 #define HW_SW_AUX2_PIN            12
-#define HW_SW_AUX3_PIN            8   
+#define HW_SW_AUX3_PIN            7   
 #define HW_SW_INIT                gpioInit(GPIOB, HW_SW_AUX1_PIN, GPI_PU); \
                                   gpioInit(GPIOB, HW_SW_AUX2_PIN, GPI_PU); \
                                   gpioInit(GPIOA, HW_SW_AUX3_PIN, GPI_PU); \
@@ -133,6 +133,7 @@ extern "C" {
 
 #define PPM_TIM                   TIM4
 
+#define BUZ_TIM                   TIM1
 
 
 #define cli     __disable_irq

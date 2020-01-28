@@ -246,11 +246,10 @@ uint16_t state = 0;
     return state;
 }
 /**
- * @brief Configure ADC for a defined channel in interrupt mode and initiates a convertion.
- *  After convertion the result is stored locally through interrupt
- * 
- * 
- * @param ch : Channel to perform convertion
+ * @brief Configure ADC for a HW_VBAT_CHANNEL channel in interrupt mode and initiates a convertion.
+ *  After convertion the result is stored locally through the interrupt
+ *  
+ * PA0/AN0 is the default channel
  * */
 static void adcInit(void){
     RCC->APB2ENR  |= RCC_APB2ENR_ADC1EN;     // Enable Adc1
