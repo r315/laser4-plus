@@ -266,6 +266,7 @@ static uint8_t Update_All(void){
             update_channels_aux();
             INPUT_SIGNAL_on;								// valid signal received
             radio.last_signal = millis();
+            ppmOut((uint16_t *)radio.ppm_data);
         }
     #endif //ENABLE_PPM
     update_led_status();
