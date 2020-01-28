@@ -17,8 +17,19 @@ Console con;
 #endif
 
 void reqModeChange(uint8_t new_mode){
+uint8_t cur_state = state & STATE_MASK;
+    // Do nothing if requesting the current mode
+    if(cur_state == new_mode){
+        return;
+    }
+    // Request in progress, if same return
+    if(cur_state == REQ_MODE_CHANGE){
+        if((state >> STATE_BITS) == cur_state){
+            return;
+        } 
+    }
+    // set the requested mode by overlaping the previous
     state = (new_mode << STATE_BITS) | REQ_MODE_CHANGE;
-    playTone(500,100);
 }
 
 static void changeMode(uint8_t new_mode){
@@ -26,12 +37,14 @@ static void changeMode(uint8_t new_mode){
         case MODE_MULTIPROTOCOL:
             DBG_PRINT("Starting Multiprotocol\n");
             multiprotocol_setup();
+            playTone(500,100);
             break;
         case MODE_HID:
 #ifdef ENABLE_GAME_CONTROLLER
             DBG_PRINT("Starting game controller\n");
             CONTROLLER_Init();
             LED_OFF;
+            playTone(400,100);
             break;
 #endif
         default:
@@ -41,7 +54,10 @@ static void changeMode(uint8_t new_mode){
 
 void setup(void){    
 
+    state = STARTING;
+    
     laser4Init();
+    NV_Init();
 
 #ifdef ENABLE_USART
     usart_init();
@@ -60,14 +76,15 @@ void setup(void){
     con.init(IO_CHAR, "laser4+ >");
     con.registerCommandList(laser4_commands);
     con.cls();
-#endif
-
-    NV_Init();
+#endif    
         
     reqModeChange(MODE_MULTIPROTOCOL);
-    //playTone(1000, 200);
+
     playMelody(chime);
-    enableWatchDog(3000);   // 3 seconds
+    // wait for melody to finish
+    delayMs(1500);
+    // 3 seconds watchdog
+    enableWatchDog(3000);
 }
 
 void loop(void){
@@ -76,14 +93,19 @@ void loop(void){
         case MODE_MULTIPROTOCOL:
             multiprotocol_loop();
             break;
+
         case MODE_HID:
 #ifdef ENABLE_GAME_CONTROLLER
             CONTROLLER_Process();
 #endif
             break;
+
         case REQ_MODE_CHANGE:
             state = state >> STATE_BITS;
             changeMode(state);
+            break;
+
+        case STARTING:
             break;
 
         default:

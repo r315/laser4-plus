@@ -34,7 +34,8 @@ extern "C" {
 #endif
 
 enum {
-    MODE_MULTIPROTOCOL = 0,
+    STARTING = 0,
+    MODE_MULTIPROTOCOL,
     MODE_HID,
     REQ_MODE_CHANGE,
 };
