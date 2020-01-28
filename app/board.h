@@ -170,7 +170,9 @@ extern "C" {
 
 /* Analog input */
 #define ADC_VREF              1500 // mV
+#define ADC_RESOLUTION        (4096.0 / ADC_VREF);
 #define HW_VBAT_CHANNEL       0
+#define HW_VBAT_CH_INIT       gpioInit(GPIOA, HW_VBAT_CHANNEL, GPI_ANALOG)
 
 /* fast code */
 #define RAM_CODE __attribute__((section(".ram_code")))
@@ -191,6 +193,9 @@ typedef struct tone{
   uint16_t f;
   uint16_t t;
 }tone_t;
+
+/* Public variables */
+extern uint32_t SystemCoreClock;
 
 
 /* Function prototyes */

@@ -8,7 +8,7 @@ static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
 static void (*pinIntCB)(void);
 static volatile uint16_t adc_result;
-static tone_t *ptone, single_tone;
+static tone_t *ptone;
 
 static void spiInit(void);
 static void timInit(void);
@@ -255,27 +255,22 @@ uint16_t state = 0;
  * PA0/AN0 is the default channel
  * */
 static void adcInit(void){
-    RCC->APB2ENR  |= RCC_APB2ENR_ADC1EN;     // Enable Adc1
+    HW_VBAT_CH_INIT;
+
+    RCC->APB2ENR  |= RCC_APB2ENR_ADC1EN;          // Enable Adc1
     RCC->APB2RSTR |= RCC_APB2ENR_ADC1EN;
     RCC->APB2RSTR &= ~RCC_APB2ENR_ADC1EN;
 
-    ADC1->CR2 = (15 << 17) | ADC_CR2_ADON;     // Enable ADC, trigger by software
-    ADC1->CR1 = ADC_CR1_EOCIE;    // Enable end of convertion interrupt
+    ADC1->CR2 = (15 << 17) | ADC_CR2_ADON;        // Enable ADC, trigger by software
+    ADC1->CR1 = ADC_CR1_EOCIE;                    // Enable end of convertion interrupt
     ADC1->SMPR2 = (4 << (3 * HW_VBAT_CHANNEL));   // Sample time = 41.5 cycles, AN9-0
+    ADC1->SQR3 = HW_VBAT_CHANNEL;                 // Configure channel for first conversion on sequence 
+    ADC1->CR2 |= ADC_CR2_CAL;                     // Perform ADC calibration
+    while(ADC1->CR2 & ADC_CR2_CAL){               
+        asm volatile("nop");
+    }
     NVIC_EnableIRQ(ADC1_IRQn);
-    ADC1->SQR3 = HW_VBAT_CHANNEL;   // Configure channel for first conversion on sequence 
-    ADC1->CR2 |= ADC_CR2_SWSTART; 
-
-    gpioInit(GPIOA, HW_VBAT_CHANNEL, GPI_ANALOG);
-}
-
-/**
- * @brief Return the value os the last convertion and
- * initiates a new convertion.
- * 
- * */
-uint16_t readAdcChannel(void){
-    return 0;
+    ADC1->CR2 |= ADC_CR2_SWSTART;                 // Start convertion 
 }
 
 /**
@@ -287,7 +282,7 @@ uint16_t readAdcChannel(void){
 uint32_t readBatteryVoltage(void){
 uint32_t result;
     // Calculate voltage
-    result = adc_result * (4096.0 / ADC_VREF);
+    result = adc_result * ADC_RESOLUTION;
     // Start a new convertion
     ADC1->CR2 |= ADC_CR2_SWSTART;
     return result;
@@ -415,6 +410,11 @@ void buzInit(void){
     BUZ_TIM->DIER |= TIM_DIER_UDE;
 }
 
+/**
+ * @brief Private helper to initiate tone generation
+ * 
+ * @param tone : pointer to first tone to be played
+ * */
 static void startTone(tone_t *tone){
     DMA1_Channel5->CMAR = (uint32_t)(&tone->f);
     DMA1_Channel5->CNDTR = tone->t;
@@ -422,25 +422,44 @@ static void startTone(tone_t *tone){
     PPM_TIM->EGR = TIM_EGR_UG;
     BUZ_TIM->CR1 |=  TIM_CR1_CEN;
 }
+
 /**
+ * @brief Plays a single tone for a given time
  * 
+ * @param freq     : Tone fundamental frequency
+ * @param duration : duration of tone in cycles
  * */
 void playTone(uint16_t freq, uint16_t duration){
+static tone_t single_tone;
     single_tone.f = freq;
     single_tone.t = duration;
     ptone = &single_tone;
     startTone(ptone);
     ptone->t = 0;       //force tone ending
 }
+
 /**
+ * @brief Plays a melody composed of multiple tones.
+ * The last tone on melody must have duration of zero
+ * 
+ * @param tones : pointer to tones array.
  * */
-void setToneLevel(uint16_t level){
-    BUZ_TIM->CCR1 = level-1;
-}
 void playMelody(tone_t *tones){
     ptone = tones + 1;
     startTone(tones);   
 }
+
+/**
+ * @brief Change tone volume by changing 
+ * duty cycle
+ * 
+ * @param level : Tone volume 0 to tone frequency
+ *  
+ * */
+void setToneLevel(uint16_t level){
+    BUZ_TIM->CCR1 = level-1;
+}
+
 /**
  * @brief Interrupts handlers
  * */
