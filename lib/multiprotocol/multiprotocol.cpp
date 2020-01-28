@@ -61,7 +61,8 @@ void multiprotocol_setup(void){
     DBG_PRINT("Laser4+ version: %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
     /* Configure PPM input pin PB5*/
     gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);
-       
+    /* Get battery voltage */
+    DBG_PRINT("Battery voltage: %dmV\n", readBatteryVoltage());       
 
     // Read status of bind button
     if(IS_HW_BIND_BUTTON_PRESSED)
