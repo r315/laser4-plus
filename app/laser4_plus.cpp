@@ -47,9 +47,6 @@ static void changeMode(uint8_t new_mode){
             playTone(400,100);
             break;
 #endif
-        case MODE_PPM:
-            playTone(600, 100);
-            break;
         default:
             return;
     }
@@ -101,9 +98,6 @@ void loop(void){
 #ifdef ENABLE_GAME_CONTROLLER
             CONTROLLER_Process();
 #endif
-            break;
-
-        case MODE_PPM:
             break;
 
         case REQ_MODE_CHANGE:
