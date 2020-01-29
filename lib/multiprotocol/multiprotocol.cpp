@@ -62,7 +62,7 @@ void multiprotocol_setup(void){
     DBG_PRINT("Battery voltage: %dmV\n", readBatteryVoltage());       
 
     // Read status of bind button
-    if(IS_HW_BIND_BUTTON_PRESSED)
+    if(IS_BIND_BUTTON_PRESSED)
     {
         BIND_BUTTON_FLAG_on;	// If bind button pressed save the status
         BIND_IN_PROGRESS;		// Request bind
@@ -70,7 +70,9 @@ void multiprotocol_setup(void){
     }
     else
         BIND_DONE;
-
+    
+    HW_TX_35MHZ_OFF;
+    
     radio.mode_select = HW_PROTOCOL_SWITCH;
     uint8_t bank = HW_BANK_SWITCH;
 
@@ -390,7 +392,7 @@ static uint16_t next_callback;
 static void update_channels_aux(void){    
 static uint16_t last_tim;
     
-    radio.channel_aux = HW_READ_SWITCHES;
+    radio.channel_aux = HW_SW_READ;
     //if(radio.channel_aux){
     //    DBG_PRINT("AUX: %x\n", radio.channel_aux);
     //}

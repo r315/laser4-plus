@@ -27,7 +27,6 @@ void laser4Init(void){
     AFIO->MAPR = (2 << 24); // SW-DP Enabled
     DBG_PIN_INIT;
     CC25_CS_INIT;
-    HW_BIND_BUTTON_INIT;
     LED_INIT;
     HW_SW_INIT;
     HW_TX_35MHZ_EN_INIT;

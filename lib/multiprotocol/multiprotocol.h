@@ -317,8 +317,6 @@ void multiprotocol_setup(void);
 void multiprotocol_loop(void);
 
 void ppm_setCallBack(void(*cb)(volatile uint16_t*, uint8_t));
-void ppm_setup(void);
-void ppm_loop(void);
 
 #ifdef __cplusplus
 }

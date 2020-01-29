@@ -84,11 +84,6 @@ extern "C" {
 #define MCO_EN GPIOA->CRH = (GPIOA->CRH & ~(15<<0)) | (11 << 0); \
                RCC->APB2ENR |= (1 << 0)
 
-/* Definitions for Multiprotocol */
-/* Button pin PB4 */
-#define HW_BIND_BUTTON_PIN        4
-#define HW_BIND_BUTTON_INIT       gpioInit(GPIOB, HW_BIND_BUTTON_PIN, GPI_PU);
-#define IS_HW_BIND_BUTTON_PRESSED (GPIOB->IDR & (1 << HW_BIND_BUTTON_PIN)) == 0
 /**
  * Switches 
  * PB4  AUX1
@@ -102,12 +97,16 @@ extern "C" {
                                   gpioInit(GPIOB, HW_SW_AUX2_PIN, GPI_PU); \
                                   gpioInit(GPIOA, HW_SW_AUX3_PIN, GPI_PU); \
 
-#define HW_READ_SWITCHES          readSwitches()
+#define HW_SW_READ                readSwitches()
 #define HW_SW_AUX1_VAL            ((GPIOB->IDR & (1 << HW_SW_AUX1_PIN)) == 0)
 #define HW_SW_AUX2_VAL            ((GPIOB->IDR & (1 << HW_SW_AUX2_PIN)) == 0)
 #define HW_SW_AUX3_VAL            ((GPIOA->IDR & (1 << HW_SW_AUX3_PIN)) == 0)
+#define IS_HW_SW_AUX1_PRESSED     (GPIOB->IDR & (1 << HW_SW_AUX1_PIN)) == 0
+#define IS_HW_SW_AUX3_PRESSED     (GPIOA->IDR & (1 << HW_SW_AUX3_PIN)) == 0
+#define IS_BIND_BUTTON_PRESSED    IS_HW_SW_AUX1_PRESSED
 
 /** RF enable for 35MHz transmiter */
+#define TX35_MHZ_INSTALLED
 #define HW_TX_35MHZ_EN_PIN        2
 #define HW_TX_35MHZ_EN_PORT       GPIOA
 #define HW_TX_35MHZ_EN_INIT       gpioInit(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN, GPO_2MHZ); HW_TX_35MHZ_OFF
@@ -139,8 +138,12 @@ extern "C" {
 #define cli     __disable_irq
 #define sei     __enable_irq
 
-#define HW_PROTOCOL_SWITCH  10      // 1...14
-#define HW_BANK_SWITCH      0       //bank_switch();                           
+#ifdef TX35_MHZ_INSTALLED
+#define HW_PROTOCOL_SWITCH        (IS_HW_SW_AUX3_PRESSED)? 14 : 10      // 1...14
+#else
+#define HW_PROTOCOL_SWITCH        10      // 1...14
+#endif
+#define HW_BANK_SWITCH            0       //bank_switch();                           
 
 #if defined(ENABLE_PPM)
 #define MIN_PPM_CHANNELS        4

@@ -63,7 +63,7 @@ RAM_CODE void CONTROLLER_Process(void){
             laser4.aux2 = tmp;        
             last_tim += diff;
         }
-        laser4.buttons = HW_READ_SWITCHES;
+        laser4.buttons = HW_SW_READ;
 #else
         //float t = angle * 0.15915f; // Normalize t = x/2pi - floor(x/2pi)
         //t = t - (int)t;

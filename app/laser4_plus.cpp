@@ -48,7 +48,6 @@ static void changeMode(uint8_t new_mode){
             break;
 #endif
         case MODE_PPM:
-            ppm_setup();
             playTone(600, 100);
             break;
         default:

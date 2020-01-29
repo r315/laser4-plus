@@ -6,14 +6,12 @@ static void (*ppmFrameCB)(volatile uint16_t *, uint8_t);
 
 static void ppm_decode(void);
 
-void ppm_setup(void){
-
-}
-
-void ppm_loop(void){
-
-}
-
+/**
+ * @brief Configure callback for PPM input pin interrupt
+ * 
+ * @param cb : callback function
+ * 
+ * */
 void ppm_setCallBack(void(*cb)(volatile uint16_t*, uint8_t)){
      if(cb == NULL){
         return;
