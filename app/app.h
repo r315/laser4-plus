@@ -37,6 +37,7 @@ enum {
     STARTING = 0,
     MODE_MULTIPROTOCOL,
     MODE_HID,
+    MODE_PPM,
     REQ_MODE_CHANGE,
 };
 
