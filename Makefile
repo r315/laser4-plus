@@ -84,6 +84,7 @@ $(STARTUP_PATH)/startup_stm32f103.c \
 $(LIB_MULTIPROTOCOL_PATH)/cc2500_spi.c \
 $(LIB_MULTIPROTOCOL_PATH)/FrSkyDVX_Common.c \
 $(LIB_MULTIPROTOCOL_PATH)/FrSkyD_cc2500.c \
+$(LIB_MULTIPROTOCOL_PATH)/ppm_decode.c \
 $(LIB_SERIAL_PATH)/usart.c \
 $(LIBEMB_PATH)/misc/nvdata.c \
 $(LIBEMB_PATH)/misc/strfunc.c \
