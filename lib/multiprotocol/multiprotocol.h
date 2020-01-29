@@ -287,7 +287,7 @@ typedef struct radio{
 
 #ifdef ENABLE_PPM
     // PPM variable
-    volatile uint16_t ppm_data[MAX_CHN_NUM];
+    volatile uint16_t *ppm_data;
     volatile uint8_t  ppm_chan_max;
     uint32_t chan_order;
 #endif
@@ -315,7 +315,10 @@ extern uint8_t CH_EATR[];
 
 void multiprotocol_setup(void);
 void multiprotocol_loop(void);
-void multiprotocol_frameReadyAction(volatile uint16_t *buf, void(*cb)(uint8_t));
+
+void ppm_setCallBack(void(*cb)(volatile uint16_t*, uint8_t));
+void ppm_setup(void);
+void ppm_loop(void);
 
 #ifdef __cplusplus
 }

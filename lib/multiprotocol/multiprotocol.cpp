@@ -48,10 +48,7 @@ uint8_t CH_TAER[]={THROTTLE, AILERON, ELEVATOR, RUDDER, CH5, CH6, CH7, CH8, CH9,
 //uint8_t CH_RETA[]={RUDDER, ELEVATOR, THROTTLE, AILERON, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 uint8_t CH_EATR[]={ELEVATOR, AILERON, THROTTLE, RUDDER, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 
-static volatile uint16_t *ppm_frame_data;
-static void (*ppmFrameCB)(uint8_t chan);
-static void setPpmFlag(uint8_t chan);
-static void PPM_decode(void);
+static void setPpmFlag(volatile uint16_t *buf, uint8_t channels);
 static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
 
 /**
@@ -90,16 +87,16 @@ void multiprotocol_setup(void){
     radio.protocol_id_master = random_id(EEPROM_ID_OFFSET, 0);
     DBG_PRINT("Module Id: %lx\n", radio.protocol_id_master);
 
-    #ifdef ENABLE_PPM
+#ifdef ENABLE_PPM
     // Setup callback for ppm frame ready
-    multiprotocol_frameReadyAction(radio.ppm_data, setPpmFlag);
+    ppm_setCallBack(setPpmFlag);
 
-        // Set default PPMs' value
-        for(uint8_t i=0; i < MAX_CHN_NUM; i++){
-            radio.ppm_data[i] = PPM_MAX_100 + PPM_MIN_100;
-        }
-        radio.ppm_data[THROTTLE] = PPM_MIN_100 * 2; // We are using 0.5us as time base, so pulses have the double size
-        radio.chan_order = 0;
+    // Set default PPMs' value
+    for(uint8_t i=0; i < MAX_CHN_NUM; i++){
+        radio.ppm_data[i] = PPM_MAX_100 + PPM_MIN_100;
+    }
+    radio.ppm_data[THROTTLE] = PPM_MIN_100 * 2; // We are using 0.5us as time base, so pulses have the double size
+    radio.chan_order = 0;
 
     if(radio.mode_select != MODE_SERIAL)
     { // PPM
@@ -388,7 +385,7 @@ static uint16_t next_callback;
 }
 
 /**
- * After ppm sincronization, this function is called every ~20mS
+ * After ppm synchronization, this function is called every ~20mS
  * */
 static void update_channels_aux(void){    
 static uint16_t last_tim;
@@ -422,42 +419,6 @@ static uint16_t last_tim;
 
 }
 
-void multiprotocol_frameReadyAction(volatile uint16_t *buf, void(*cb)(uint8_t)){
-
-     if(cb == NULL){
-        return;
-    }
-    gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);    
-    ppmFrameCB = cb;
-    ppm_frame_data = buf;
-    gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, PPM_decode);    
-}
-
-RAM_CODE static void PPM_decode(void){	// Interrupt on PPM pin
-    static int8_t chan = 0, bad_frame = 1;
-    static uint16_t Prev_TCNT1 = 0;
-    uint16_t Cur_TCNT1;
-    // Capture current Timer value
-    Cur_TCNT1 = TIMER_BASE->CNT - Prev_TCNT1;
-    if(Cur_TCNT1 < PPM_MIN_PERIOD){
-        bad_frame = 1;					// bad frame
-    }else if(Cur_TCNT1 > PPM_MAX_PERIOD){
-        //start of frame
-        if(chan >= MIN_PPM_CHANNELS){
-            //DBG_PIN_TOGGLE;                
-            ppmFrameCB(chan);
-        }
-        chan = 0;						// reset channel counter
-        bad_frame = 0;
-    }else if(bad_frame == 0){			// need to wait for start of frame
-        //servo values between 800us and 2200us will end up here
-        ppm_frame_data[chan] = Cur_TCNT1;
-        if(chan++ >= MAX_PPM_CHANNELS)
-            bad_frame = 1;		// don't accept any new channels
-    }
-    Prev_TCNT1 += Cur_TCNT1;
-}
-
 /**
  *  Private Functions, maybe move them to own file?
  * */
@@ -475,13 +436,16 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id)
 }
 
 /**
- * @brief Callback for PPM_decode
+ * @brief Callback from ppm_decode
  * */
-static void setPpmFlag(uint8_t chan){
+static void setPpmFlag(volatile uint16_t *buf, uint8_t chan){
     PPM_FLAG_on;
+    radio.ppm_data = buf;
+    // Saving the number of channels received
     if(chan > radio.ppm_chan_max) 
-        radio.ppm_chan_max = chan;	// Saving the number of channels received
+        radio.ppm_chan_max = chan;
 }
+
 /**
  * 
  * */

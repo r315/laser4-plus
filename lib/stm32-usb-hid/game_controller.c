@@ -7,7 +7,7 @@
 //#define DEMO_CONTROLLER
 
 static controller_t laser4;
-volatile uint16_t ppm_data[MIN_PPM_CHANNELS], last_tim;
+volatile uint16_t *ppm_data, last_tim;
 volatile uint32_t gflags;
 static uint8_t *channel_map;
 
@@ -19,8 +19,9 @@ static int16_t map(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, i
   return ((x - in_min) * (out_max - out_min) / (in_max - in_min)) + out_min;
 }
 
-static void setPpmFlag(uint8_t chan){
-    SET_PPM_FRAME;    
+static void setControllerPpmFlag(volatile uint16_t *buf, uint8_t chan){
+    SET_PPM_FRAME;
+    ppm_data = buf;
 }
 #endif
 
@@ -99,7 +100,7 @@ void CONTROLLER_Init(void){
     channel_map = CH_AETR;
 
 #if defined(ENABLE_PPM)
-    multiprotocol_frameReadyAction(ppm_data, setPpmFlag);
+    ppm_setCallBack(setControllerPpmFlag);
 #elif defined(ENABLE_PWM)
     RCC->APB1ENR |= (1 << 0);   // TIM2EN
 
