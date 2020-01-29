@@ -71,8 +71,6 @@ void multiprotocol_setup(void){
     else
         BIND_DONE;
     
-    HW_TX_35MHZ_OFF;
-    
     radio.mode_select = HW_PROTOCOL_SWITCH;
     uint8_t bank = HW_BANK_SWITCH;
 
@@ -266,7 +264,6 @@ static uint8_t Update_All(void){
             update_channels_aux();
             INPUT_SIGNAL_on;								// valid signal received
             radio.last_signal = millis();
-            ppmOut((uint16_t *)radio.ppm_data);
         }
     #endif //ENABLE_PPM
     update_led_status();
@@ -354,6 +351,15 @@ static uint16_t next_callback;
                         radio.remote_callback = ReadFrSky_2way;
                         break;
                 #endif
+            #endif
+
+            #ifdef TX35_MHZ_INSTALLED
+                    case 255:
+                        next_callback = 10000;
+                        radio.remote_callback = laser4_tx;
+                        HW_TX_35MHZ_ON;
+                        DBG_PRINT("TX 35MHz enabled\n");
+                        break;
             #endif				
         }
         DBG_PRINT("Protocol selected: %d, sub proto %d, rxnum %d, option %d\n", radio.protocol, radio.sub_protocol, radio.rx_num, radio.option);
@@ -466,6 +472,7 @@ int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int1
  * */
 static void modules_reset(void){
     HW_CC2500_MODULE_RESET;
+    HW_TX_35MHZ_OFF;
 }
 /**
  * 
