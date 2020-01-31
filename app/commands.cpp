@@ -245,10 +245,13 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(void *ptr) {
+		if(*(char*)ptr == '\0'){
+			console->print("Current mode: %d\n",getCurrentMode());
+			return CMD_OK;
+		}
 		uint32_t int_value;
 		if(nextHex((char**)&ptr, &int_value)){
 			reqModeChange((uint8_t)int_value);
-			return CMD_OK_NO_PRT;
 		}
 		return CMD_OK;
 	}

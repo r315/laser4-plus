@@ -16,6 +16,10 @@ tone_t chime[] = {
 Console con;
 #endif
 
+uint8_t getCurrentMode(void){
+    return state;
+}
+
 void reqModeChange(uint8_t new_mode){
 uint8_t cur_state = state & STATE_MASK;
     // Do nothing if requesting the current mode

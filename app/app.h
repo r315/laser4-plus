@@ -52,6 +52,7 @@ extern stdout_t pcom;
 #endif
 
 void reqModeChange(uint8_t new_mode);
+uint8_t getCurrentMode(void);
 
 #ifdef __cplusplus
 #ifdef ENABLE_CONSOLE
