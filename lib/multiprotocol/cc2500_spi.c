@@ -154,4 +154,13 @@ void CC2500_SetPower(uint8_t power)
 	CC2500_WriteReg(CC2500_3E_PATABLE, power);
 }
 
+uint8_t CC2500_ReadStatus(uint8_t sreg){
+uint8_t data;
+	CC25_CS_TRUE;
+	SPI_Write(CC2500_READ_BURST | sreg);
+	data = SPI_Read();  
+	CC25_CS_FALSE;
+	return data;
+}
+
 #endif /* CC2500_INSTALLED */

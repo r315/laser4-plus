@@ -78,11 +78,13 @@ public:
 
 class CmdCC25 : public ConsoleCommand {
 	Console *console;
-    
+
 public:
     CmdCC25() : ConsoleCommand("cc2500") {}	
 	void init(void *params) { console = static_cast<Console*>(params); }
-	void help(void) {}
+	void help(void) {
+		console->print("usage: cc2500 <[-r, --reset, -rs, status]>\n");	
+	}
 
 	char reset(void){
 		if(CC2500_Reset()){
@@ -94,21 +96,55 @@ public:
 	}
 
 	char readRegister(uint8_t reg){
-	//uint8_t val;	
-		//val = CC2500_ReadReg(reg);
-		//console->print("Reg[0x%02x] = %x\n", reg, val);
+		uint8_t val;	
+		val = CC2500_ReadReg(reg);
+		console->print("Reg[0x%02x] = %x\n", reg, val);
 		return CMD_OK;
 	}
+	
+	uint32_t dataRate(void){
+		uint8_t drate_m = CC2500_ReadReg(CC2500_11_MDMCFG3);
+		uint8_t drate_e = CC2500_ReadReg(CC2500_10_MDMCFG4) & 15;
+		float rdata = ((256.0 + drate_m) * (1 << drate_e)) / (1 << 28);
+		return (uint32_t)(rdata * 26000000); // Fosc
+	}
+
+	int8_t rssi(uint8_t rssi_offset){
+		uint16_t rssi_dec = CC2500_ReadStatus(CC2500_34_RSSI);
+		if(rssi_dec >= 128)
+			return (rssi_dec - 256) / 2 - rssi_offset;
+		return rssi_dec / 2 - rssi_offset;
+	}
+
     
 	char execute(void *ptr) {
         char *argv[4], *param;
         uint32_t argc, int_value;
 
-
         argc = strToArray((char*)ptr, argv);
 
 		if(argc == 0){
 			return CMD_BAD_PARAM;
+		}
+
+		if(getOptValue((char*)"help", argc, argv) != NULL){
+			help();
+			return CMD_OK;
+		}
+
+		if(getOptValue((char*)"status", argc, argv) != NULL){
+			uint32_t rdata = dataRate();
+			console->print("Data Rate: %dbps\n", rdata);
+			uint8_t rssi_offset;
+			if(rdata < 10000)
+				rssi_offset = 71;
+			else if(rdata < 250000)
+				rssi_offset = 69;
+			else
+				rssi_offset = 72;
+
+			console->print("RSSI: %ddBm\n", rssi(rssi_offset));
+			return CMD_OK;
 		}
 
 		if(getOptValue((char*)"--reset", argc, argv) != NULL){
@@ -119,6 +155,14 @@ public:
 		if(param != NULL){
 			if(nextHex((char**)&param, &int_value)){
 				return readRegister(int_value & 255);
+			}
+		}
+
+		param = getOptValue((char*)"-rs", argc, argv);
+		if(param != NULL){
+			if(nextHex((char**)&param, &int_value)){
+				console->print("Status [0x%02x] = %x\n", int_value, CC2500_ReadStatus(int_value & 255));
+				return CMD_OK;
 			}
 		}
 

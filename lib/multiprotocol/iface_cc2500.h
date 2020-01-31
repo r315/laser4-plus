@@ -155,6 +155,7 @@ void CC2500_WriteData(uint8_t *dpbuffer, uint8_t len);
 void CC2500_ReadData(uint8_t *dpbuffer, uint8_t len);
 void CC2500_SetTxRxMode(uint8_t TXRX_State);
 void CC2500_SetPower(uint8_t power);
+uint8_t CC2500_ReadStatus(uint8_t sreg);
 
 // ---------------------------------------------------------------------------------
 // previouly defined on multiprotocol.h
