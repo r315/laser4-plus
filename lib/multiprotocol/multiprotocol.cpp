@@ -356,7 +356,7 @@ static uint16_t next_callback;
             #ifdef TX35_MHZ_INSTALLED
                     case 255:
                         next_callback = 10000;
-                        radio.remote_callback = laser4_tx;
+                        radio.remote_callback = ppm_tx;
                         HW_TX_35MHZ_ON;
                         DBG_PRINT("TX 35MHz enabled\n");
                         break;

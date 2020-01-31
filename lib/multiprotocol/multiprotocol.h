@@ -317,7 +317,8 @@ void multiprotocol_setup(void);
 void multiprotocol_loop(void);
 
 void ppm_setCallBack(void(*cb)(volatile uint16_t*, uint8_t));
-uint16_t laser4_tx(void);
+uint16_t ppm_tx(void);
+uint16_t *ppm_getData(void);
 
 #ifdef __cplusplus
 }

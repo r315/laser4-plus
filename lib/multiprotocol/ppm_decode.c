@@ -6,9 +6,16 @@ static void (*ppmFrameCB)(volatile uint16_t *, uint8_t);
 
 static void ppm_decode(void);
 
-uint16_t laser4_tx(void){
+uint16_t ppm_tx(void){
     ppmOut((uint16_t *)ppm_data);
     return 9000;
+}
+
+/**
+ * @brief
+ * */
+uint16_t *ppm_getData(void){
+    return (uint16_t*)ppm_data;
 }
 
 /**
