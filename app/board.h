@@ -26,7 +26,7 @@ extern "C" {
 #define GPI_ANALOG              0
 #define GPI_OD                  (1 << 2) // floating
 #define GPI_PD                  (2 << 2)
-#define GPI_PU                  (6 << 2)                
+#define GPI_PU                  (6 << 2) // 2 | 4               
 
 #define GPIO_ENABLE RCC->APB2ENR |=      \
                       RCC_APB2ENR_IOPCEN \
@@ -62,7 +62,7 @@ extern "C" {
 #define DBG_PIN_TOGGLE  GPO_TOGGLE(DBG_PORT, DBG_PIN)
 
 /* CC250 Chip select PB6 */
-#define CC25_CS_PIN     6
+#define CC25_CS_PIN     12
 #define CC25_CS_PORT    GPIOB
 #define CC25_CS_INIT    GPO_INIT(CC25_CS_PORT, CC25_CS_PIN); CC25_CS_FALSE
 #define CC25_CS_FALSE   GPO_SET(CC25_CS_PORT, CC25_CS_PIN)
@@ -86,29 +86,32 @@ extern "C" {
 
 /**
  * Switches 
- * PB4  AUX1
- * PB12 AUX2
- * PA8  AUX3
+ * AUX1 -> PC14
+ * AUX2 -> PC15
+ * AUX3 -> PB4
  * */
-#define HW_SW_AUX1_PIN            4
-#define HW_SW_AUX2_PIN            12
-#define HW_SW_AUX3_PIN            7   
-#define HW_SW_INIT                gpioInit(GPIOB, HW_SW_AUX1_PIN, GPI_PU); \
-                                  gpioInit(GPIOB, HW_SW_AUX2_PIN, GPI_PU); \
-                                  gpioInit(GPIOA, HW_SW_AUX3_PIN, GPI_PU); \
+#define HW_SW_AUX1_PIN            14
+#define HW_SW_AUX2_PIN            15
+#define HW_SW_AUX3_PIN            4
+#define HW_SW_AUX1_PORT           GPIOC
+#define HW_SW_AUX2_PORT           GPIOC
+#define HW_SW_AUX3_PORT           GPIOB
+#define HW_SW_INIT                gpioInit(HW_SW_AUX1_PORT, HW_SW_AUX1_PIN, GPI_PU); \
+                                  gpioInit(HW_SW_AUX2_PORT, HW_SW_AUX2_PIN, GPI_PU); \
+                                  gpioInit(HW_SW_AUX3_PORT, HW_SW_AUX3_PIN, GPI_PU); \
 
 #define HW_SW_READ                readSwitches()
-#define HW_SW_AUX1_VAL            ((GPIOB->IDR & (1 << HW_SW_AUX1_PIN)) == 0)
-#define HW_SW_AUX2_VAL            ((GPIOB->IDR & (1 << HW_SW_AUX2_PIN)) == 0)
-#define HW_SW_AUX3_VAL            ((GPIOA->IDR & (1 << HW_SW_AUX3_PIN)) == 0)
-#define IS_HW_SW_AUX1_PRESSED     (GPIOB->IDR & (1 << HW_SW_AUX1_PIN)) == 0
-#define IS_HW_SW_AUX3_PRESSED     (GPIOA->IDR & (1 << HW_SW_AUX3_PIN)) == 0
+#define HW_SW_AUX1_VAL            ((HW_SW_AUX1_PORT->IDR & (1 << HW_SW_AUX1_PIN)) == 0)
+#define HW_SW_AUX2_VAL            ((HW_SW_AUX2_PORT->IDR & (1 << HW_SW_AUX2_PIN)) == 0)
+#define HW_SW_AUX3_VAL            ((HW_SW_AUX3_PORT->IDR & (1 << HW_SW_AUX3_PIN)) == 0)
+#define IS_HW_SW_AUX1_PRESSED     (HW_SW_AUX1_PORT->IDR & (1 << HW_SW_AUX1_PIN)) == 0
+#define IS_HW_SW_AUX3_PRESSED     (HW_SW_AUX3_PORT->IDR & (1 << HW_SW_AUX3_PIN)) == 0
 #define IS_BIND_BUTTON_PRESSED    IS_HW_SW_AUX1_PRESSED
 
 /** RF enable for 35MHz transmiter */
 #define TX35_MHZ_INSTALLED
-#define HW_TX_35MHZ_EN_PIN        2
-#define HW_TX_35MHZ_EN_PORT       GPIOA
+#define HW_TX_35MHZ_EN_PIN        13
+#define HW_TX_35MHZ_EN_PORT       GPIOC
 #define HW_TX_35MHZ_EN_INIT       gpioInit(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN, GPO_2MHZ); HW_TX_35MHZ_OFF
 #define HW_TX_35MHZ_ON            GPO_SET(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN)
 #define HW_TX_35MHZ_OFF           GPO_CLR(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN)
@@ -176,6 +179,7 @@ extern "C" {
 #define ADC_RESOLUTION        (4096.0 / ADC_VREF);
 #define HW_VBAT_CHANNEL       0
 #define HW_VBAT_CH_INIT       gpioInit(GPIOA, HW_VBAT_CHANNEL, GPI_ANALOG)
+#define HW_VREFINT_CHANNEL    17
 
 /* fast code */
 #define RAM_CODE __attribute__((section(".ram_code")))
