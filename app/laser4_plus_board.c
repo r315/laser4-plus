@@ -3,12 +3,22 @@
 #include "stm32f1xx_hal.h"
 #include <stdout.h>
 
+#define ADC_RDY     ( 1 << 0)
+#define ADC_REF     ( 1 << 1)
+
+typedef struct {
+    volatile uint16_t results[4];
+    volatile uint16_t flags;
+    uint32_t battery_voltage;
+    float resolution;
+}adc_t;
+
 
 static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
-static void (*pinIntCB)(void);
-static volatile uint16_t adc_result;
 static tone_t *ptone;
+static void (*pinIntCB)(void);
+static adc_t adc;
 
 static void spiInit(void);
 static void timInit(void);
@@ -16,6 +26,7 @@ static void adcInit(void);
 static void encInit(void);
 static void ppmOutInit(void);
 static void buzInit(void);
+static void updateAdcValues(void);
 
 void Error_Handler(char * file, int line){
   while(1){
@@ -37,16 +48,6 @@ void laser4Init(void){
     encInit();
     ppmOutInit();
     buzInit();
-}
-
-void SPI_Write(uint8_t data){
-  HAL_SPI_Transmit(&hspi, &data, 1, 10);
-} 
-
-uint8_t SPI_Read(void){
-uint8_t data;
-    HAL_SPI_Receive(&hspi, &data, 1, 10);
-    return data;
 }
 
 void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode) {
@@ -82,6 +83,17 @@ void gpioAttachInterrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*cb
 
 void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin){
     NVIC_DisableIRQ(EXTI9_5_IRQn);
+}
+
+
+void SPI_Write(uint8_t data){
+  HAL_SPI_Transmit(&hspi, &data, 1, 10);
+} 
+
+uint8_t SPI_Read(void){
+uint8_t data;
+    HAL_SPI_Receive(&hspi, &data, 1, 10);
+    return data;
 }
 
 /**
@@ -248,6 +260,48 @@ uint16_t state = 0;
     return state;
 }
 /**
+ * @brief Configure sample time for one adc channel
+ * 
+ * */
+static void adcSampleTime(uint16_t ch, uint16_t time){
+    if(ch > 17){  // Max 17 channels
+        return;
+    }
+
+    if(ch < 10){
+        ADC1->SMPR2 =  (ADC1->SMPR2 & (7 << (3 * ch))) | (time << (3 * ch));   // Sample time for channels AN9-0
+    }else{
+        ADC1->SMPR1 =  (ADC1->SMPR1 & (7 << (3 * (ch % 10)))) | (time << (3 * (ch % 10)));   // Sample time for channels AN17-10
+    }
+}
+
+/**
+ * @brief calibrate ADC and get resolution based 
+ * on 1.20V internal reference
+ * */
+static void adcCalibration(void){
+    ADC1->CR2 |= ADC_CR2_CAL;                     // Perform ADC calibration
+    while(ADC1->CR2 & ADC_CR2_CAL){               
+        asm volatile("nop");
+    }
+
+    adcSampleTime(HW_VREFINT_CHANNEL, 2);         // Sample time = 13.5 cycles.
+    // select VREFINT channel
+    ADC1->SQR3 = (HW_VREFINT_CHANNEL << 0);
+    // wake up Vrefint 
+    ADC1->CR2 |= ADC_CR2_TSVREFE;
+    delayMs(5);
+    // Start converion
+    ADC1->CR2 |= ADC_CR2_SWSTART;
+    while(!(ADC1->SR & ADC_SR_EOC)){
+        asm volatile("nop");
+    }
+    adc.resolution = 1200.0f / ADC1->DR;
+    // power down VREFINT
+    ADC1->CR2 &= ~ADC_CR2_TSVREFE;
+}
+
+/**
  * @brief Configure ADC for a HW_VBAT_CHANNEL channel in interrupt mode and initiates a convertion.
  *  After convertion the result is stored locally through the interrupt
  *  
@@ -260,31 +314,44 @@ static void adcInit(void){
     RCC->APB2RSTR |= RCC_APB2ENR_ADC1EN;
     RCC->APB2RSTR &= ~RCC_APB2ENR_ADC1EN;
 
-    ADC1->CR2 = (15 << 17) | ADC_CR2_ADON;        // Enable ADC, trigger by software
+    ADC1->CR2 = (15 << 17) |         // trigger by software,
+                ADC_CR2_ADON;        // Enable ADC
+    delayMs(20);
+    adcSampleTime(HW_VBAT_CHANNEL, 4);            // Sample time = 41.5 cycles.
+    adcCalibration();
+    ADC1->SQR3 = (HW_VBAT_CHANNEL << 0);
     ADC1->CR1 = ADC_CR1_EOCIE;                    // Enable end of convertion interrupt
-    ADC1->SMPR2 = (4 << (3 * HW_VBAT_CHANNEL));   // Sample time = 41.5 cycles, AN9-0
-    ADC1->SQR3 = HW_VBAT_CHANNEL;                 // Configure channel for first conversion on sequence 
-    ADC1->CR2 |= ADC_CR2_CAL;                     // Perform ADC calibration
-    while(ADC1->CR2 & ADC_CR2_CAL){               
-        asm volatile("nop");
-    }
     NVIC_EnableIRQ(ADC1_IRQn);
-    ADC1->CR2 |= ADC_CR2_SWSTART;                 // Start convertion 
+    adc.flags = ADC_RDY;
+    updateAdcValues();    
 }
 
+/**
+ * @brief 
+ * */
+static void updateAdcValues(void){
+    if( adc.flags & ADC_RDY){
+        adc.flags &= ~ADC_RDY;
+        ADC1->CR2 |= ADC_CR2_SWSTART;
+    }
+}
 /**
  * @brief Read battery voltage, a new battery 
  *      measurement is performed on function call exit
  * 
  * @return : battery voltage in mV
  * */
-uint32_t readBatteryVoltage(void){
-uint32_t result;
-    // Calculate voltage
-    result = adc_result * ADC_RESOLUTION;
+uint32_t getBatteryVoltage(void){
     // Start a new convertion
-    ADC1->CR2 |= ADC_CR2_SWSTART;
-    return result;
+    updateAdcValues();    
+    return adc.battery_voltage;
+}
+
+/**
+ * @brief Get current adc resolution (mV/step)
+ * */
+float getAdcResolution(void){    
+    return adc.resolution;
 }
 
 /**
@@ -483,7 +550,10 @@ void SysTick_Handler(void){
 #endif
 
 void ADC1_IRQHandler(void){
-    adc_result = (uint16_t)ADC1->DR;
+uint16_t result = ADC1->DR;    
+    adc.battery_voltage = result * adc.resolution;    
+    adc.flags |= ADC_RDY;
+    //ADC1->SR = 0;
 }
 
 void DMA1_Channel5_IRQHandler(void){

@@ -224,7 +224,8 @@ void reloadWatchDog(void);
 void laser4Init(void);
 
 uint32_t readSwitches(void);
-uint32_t readBatteryVoltage(void);
+
+uint32_t getBatteryVoltage(void);
 void ppmOut(uint16_t *data);
 
 void playTone(uint16_t freq, uint16_t duration);

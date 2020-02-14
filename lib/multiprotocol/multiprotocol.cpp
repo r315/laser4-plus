@@ -59,7 +59,7 @@ void multiprotocol_setup(void){
     /* Configure PPM input pin PB5*/
     gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);
     /* Get battery voltage */
-    DBG_PRINT("Battery voltage: %dmV\n", readBatteryVoltage());       
+    DBG_PRINT("Battery voltage: %dmV\n", getBatteryVoltage());       
 
     // Read status of bind button
     if(IS_BIND_BUTTON_PRESSED)
