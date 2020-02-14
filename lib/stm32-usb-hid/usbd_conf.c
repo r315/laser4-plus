@@ -52,7 +52,7 @@
 #include "stm32f1xx_hal.h"
 #include "usbd_def.h"
 #include "usbd_core.h"
-#include "usbd_hid_if.h"
+#include "usbd_hid.h"
 
 /* USER CODE BEGIN Includes */
 

@@ -18,7 +18,7 @@ extern "C" {
 #endif
 
 #ifdef ENABLE_GAME_CONTROLLER
-#include "usbd_hid_if.h"
+#include "usbd_hid.h"
 #include "game_controller.h"
 #endif
 

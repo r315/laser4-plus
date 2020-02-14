@@ -47,7 +47,7 @@
   */
 
 /* Includes ------------------------------------------------------------------*/
-#include "usbd_hid_if.h"
+#include "usbd_hid.h"
 #include "usbd_desc.h"
 #include "usbd_ctlreq.h"
 #include "app.h"

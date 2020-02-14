@@ -116,7 +116,7 @@ ifeq ($(USB_DEVICE),HID)
 C_SOURCES += \
 $(LIB_USB_HID_PATH)/usbd_conf.c \
 $(LIB_USB_HID_PATH)/usbd_desc.c \
-$(LIB_USB_HID_PATH)/usbd_hid_if.c \
+$(LIB_USB_HID_PATH)/usbd_hid.c \
 $(LIB_USB_HID_PATH)/game_controller.c
 
 SOURCES_PATH += \

@@ -1,6 +1,6 @@
 #include "board.h"
 #include "game_controller.h"
-#include "usbd_hid_if.h"
+#include "usbd_hid.h"
 #include "math.h"
 #include "multiprotocol.h"
 
