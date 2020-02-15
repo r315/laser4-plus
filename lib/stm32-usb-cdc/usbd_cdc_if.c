@@ -304,15 +304,6 @@ USBD_HandleTypeDef *dev = &hUsbDeviceFS;
 }
 
 /**
-  * @brief This function handles USB low priority or CAN RX0 interrupts.
-  */
-void USB_LP_CAN1_RX0_IRQHandler(void)
-{  
-    HAL_PCD_IRQHandler(&hpcd_USB_FS); 
-}
-
-
-/**
   * @}
   */
 

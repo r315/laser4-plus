@@ -50,8 +50,7 @@
 #include "usbd_hid.h"
 #include "usbd_desc.h"
 #include "usbd_ctlreq.h"
-#include "app.h"
-#include "game_controller.h"
+#include "usb_device.h"
 
 /** @addtogroup STM32_USB_DEVICE_LIBRARY
   * @{
@@ -109,7 +108,6 @@ static uint8_t USBD_HID_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum);
 /** @defgroup USBD_HID_Private_Variables
   * @{
   */
-static USBD_HandleTypeDef hUsbDeviceFS;
 
 USBD_ClassTypeDef USBD_HID =
     {
@@ -285,8 +283,6 @@ static uint8_t USBD_HID_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
     {
         ((USBD_HID_HandleTypeDef *)pdev->pClassData)->state = HID_IDLE;
     }
-
-    reqModeChange(MODE_HID);
     return ret;
 }
 
@@ -397,26 +393,6 @@ static uint8_t USBD_HID_Setup(USBD_HandleTypeDef *pdev,
 }
 
 /**
-* Vile hack to reenumerate, physically _drag_ d+ low.
-* (need at least 2.5us to trigger usb disconnect)
-* @retval None
-* */
-static void USB_DEVICE_Reenumerate(void)
-{
-    USB->CNTR = USB_CNTR_PDWN;
-    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
-    GPIOA->CRH = (GPIOA->CRH & ~(0x0F << 16)) | (2 << 16);
-    GPIOA->BRR = (1 << 12); //GPIO_PIN_12;
-    asm volatile(
-        "mov r0,#2048 \n"
-        "loop:"
-        "nop\n"
-        "subs r0,#1 \n"
-        "bne loop");
-    GPIOA->CRH = (GPIOA->CRH & ~(0x0F << 16)) | (4 << 16);
-}
-
-/**
   * @brief  USBD_HID_GetCfgDesc 
   *         return configuration descriptor
   * @param  speed : current device speed
@@ -465,9 +441,8 @@ static uint8_t *USBD_HID_GetDeviceQualifierDesc(uint16_t *length)
   * @param  buff: pointer to report
   * @retval status
   */
-uint8_t USBD_HID_SendReport(uint8_t *report, uint16_t len)
+uint8_t USBD_HID_SendReport(USBD_HandleTypeDef *pdev, uint8_t *report, uint16_t len)
 {
-    USBD_HandleTypeDef *pdev = &hUsbDeviceFS;
     USBD_HID_HandleTypeDef *hhid = (USBD_HID_HandleTypeDef *)pdev->pClassData;
 
     if (pdev->dev_state == USBD_STATE_CONFIGURED)
@@ -512,25 +487,6 @@ uint32_t USBD_HID_GetPollingInterval(USBD_HandleTypeDef *pdev)
     return ((uint32_t)(polling_interval));
 }
 
-/**
- * @brief _Init
- *        Initialyse  Comunications Device Class interface
- *  
- */
-void HID_Init(void)
-{
-    USBD_HandleTypeDef *dev = &hUsbDeviceFS;
-
-    USB_DEVICE_Reenumerate();
-
-    CHECK_FOR_ERROR(USBD_Init(dev, &FS_Desc, DEVICE_FS));
-    CHECK_FOR_ERROR(USBD_RegisterClass(dev, &USBD_HID));
-    CHECK_FOR_ERROR(USBD_Start(dev));
-}
-
-void USBD_SuspendCallBack(void){
-    reqModeChange(MODE_MULTIPROTOCOL);
-}
 
 
 /**

@@ -215,7 +215,6 @@ void HAL_PCD_SuspendCallback(PCD_HandleTypeDef *hpcd)
     /* Set SLEEPDEEP bit and SleepOnExit of Cortex System Control Register. */
     SCB->SCR |= (uint32_t)((uint32_t)(SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk));
   }
-  USBD_SuspendCallBack();
   /* USER CODE END 2 */
 }
 

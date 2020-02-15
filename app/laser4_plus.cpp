@@ -20,6 +20,10 @@ uint8_t getCurrentMode(void){
     return state;
 }
 
+void modeChangeCB(void *ptr){
+   reqModeChange((uint32_t)ptr); 
+}
+
 void reqModeChange(uint8_t new_mode){
 uint8_t cur_state = state & STATE_MASK;
     // Do nothing if requesting the current mode
@@ -74,6 +78,8 @@ void setup(void){
 #ifdef ENABLE_GAME_CONTROLLER
     USB_DEVICE_Init();
     CONTROLLER_Init();
+    USB_DEVICE_RegisterCallback(HAL_PCD_SUSPEND_CB_ID, modeChangeCB, (void*)MODE_MULTIPROTOCOL);
+    USB_DEVICE_RegisterCallback(HAL_PCD_RESUME_CB_ID, modeChangeCB, (void*)MODE_HID);
 #endif
 
 #ifdef ENABLE_CONSOLE
