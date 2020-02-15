@@ -1,9 +1,11 @@
 #include "board.h"
+#include "usb_device.h"
 #include "game_controller.h"
-#include "usbd_hid.h"
-#include "math.h"
 #include "multiprotocol.h"
+#include "math.h"
 
+
+#ifdef ENABLE_GAME_CONTROLLER
 //#define DEMO_CONTROLLER
 
 static controller_t laser4;
@@ -77,7 +79,7 @@ RAM_CODE void CONTROLLER_Process(void){
         laser4.yaw = laser4.pitch;
 #endif  
         CLR_PPM_FRAME;
-        USBD_HID_SendReport((uint8_t*)&laser4, REPORT_SIZE);
+        USB_DEVICE_SendReport((uint8_t*)&laser4, REPORT_SIZE);
     }
 }
 
@@ -85,7 +87,7 @@ RAM_CODE void CONTROLLER_Process(void){
 /**
  *  Code for PPM input PB5, TIM3_CH1 
  * */
-void CONTROLLER_Init(void){
+void CONTROLLER_Init(void){   
 
     laser4.roll = LOGICAL_MAXIMUM;
     laser4.pitch = LOGICAL_MAXIMUM/2;
@@ -178,3 +180,4 @@ RAM_CODE void TIM2_IRQHandler(void){
     }  
 }
 #endif /* ENABLE_PWM */
+#endif /* ENABLE_GAME_CONTROLLER */

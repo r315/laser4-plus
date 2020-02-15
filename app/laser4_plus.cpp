@@ -1,6 +1,6 @@
 #include "app.h"
 #include "multiprotocol.h"
-
+#include "usb_device.h"
 
 
 volatile uint8_t state;
@@ -72,7 +72,7 @@ void setup(void){
 #endif
 
 #ifdef ENABLE_GAME_CONTROLLER
-    HID_Init();
+    USB_DEVICE_Init();
     CONTROLLER_Init();
 #endif
 

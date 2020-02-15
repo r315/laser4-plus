@@ -31,7 +31,7 @@ OPT = -Og
 
 APP_SRC_PATH :=$(CURDIR)/app
 LIB_USB_CDC_PATH :=$(CURDIR)/lib/stm32-usb-cdc
-LIB_USB_HID_PATH :=$(CURDIR)/lib/stm32-usb-hid
+LIB_USB_HID_PATH :=$(CURDIR)/lib/stm32-usb-cdc_hid
 LIB_DFU_PATH :=$(CURDIR)/lib/stm32-dfu-bootloader
 LIB_SERIAL_PATH :=$(CURDIR)/lib/stm32-serial
 LIB_MULTIPROTOCOL_PATH :=$(CURDIR)/lib/multiprotocol
@@ -101,41 +101,23 @@ $(FREERTOS_DIR)/tasks.c \
 $(FREERTOS_DIR)/timers.c \
 $(FREERTOS_DIR)/CMSIS_RTOS/cmsis_os.c \
 
-ifneq ($(USB_DEVICE),)
+ifneq ($(USB_DEVICE),NO_USB_DEVICE)
 C_SOURCES += \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
+$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_ll_usb.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd_ex.c \
-
-endif
-
-ifeq ($(USB_DEVICE),HID)
-C_SOURCES += \
-$(LIB_USB_HID_PATH)/usbd_conf.c \
-$(LIB_USB_HID_PATH)/usbd_desc.c \
-$(LIB_USB_HID_PATH)/usbd_hid.c \
-$(LIB_USB_HID_PATH)/game_controller.c
+$(wildcard $(LIB_USB_HID_PATH)/*.c) \
 
 SOURCES_PATH += \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/HID/Src/ \
-
-C_DEFS :=-DENABLE_GAME_CONTROLLER
-endif
-
-ifeq ($(USB_DEVICE),CDC)
-C_SOURCES += \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
-$(LIB_USB_CDC_PATH)/usbd_conf.c \
-$(LIB_USB_CDC_PATH)/usbd_desc.c \
-$(LIB_USB_CDC_PATH)/usbd_cdc_if.c \
-
-SOURCES_PATH += \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/ \
 
-C_DEFS :=-DENABLE_VCOM
+C_DEFS :=-DENABLE_GAME_CONTROLLER
+#C_DEFS :=-DENABLE_VCOM
 endif
 
 C_SOURCES += \
@@ -355,7 +337,7 @@ size: $(BUILD_DIR)/$(TARGET).elf
 # clean up
 #######################################
 clean:
-	-rm -fR .dep $(BUILD_DIR)
+	-rm -fR $(BUILD_DIR)
   
 #######################################
 # dependencies
