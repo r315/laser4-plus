@@ -2,6 +2,7 @@
 #include "board.h"
 #include "stm32f1xx_hal.h"
 #include <stdout.h>
+#include "usbd_conf.h"
 
 #define ADC_RDY     ( 1 << 0)
 #define ADC_REF     ( 1 << 1)
@@ -529,6 +530,16 @@ void setToneLevel(uint16_t level){
 /**
  * @brief Interrupts handlers
  * */
+/**
+  * @brief  USB Interrupt handler
+  * @param  none
+  * @retval None
+  */
+void USB_LP_CAN1_RX0_IRQHandler(void)
+{
+    HAL_PCD_IRQHandler(&hpcd_USB_FS);
+}
+
 void EXTI9_5_IRQHandler(void){
 uint32_t pr = EXTI->PR;
     if((pr & EXTI_PR_PR5) != 0){        

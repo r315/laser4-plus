@@ -279,16 +279,6 @@ void HAL_PCD_DisconnectCallback(PCD_HandleTypeDef *hpcd)
                        LL Driver Interface (USB Device Library --> PCD)
 *******************************************************************************/
 /**
-  * @brief  USB Interrupt handler
-  * @param  none
-  * @retval None
-  */
-void USB_LP_CAN1_RX0_IRQHandler(void)
-{
-    HAL_PCD_IRQHandler(&hpcd_USB_FS);
-}
-
-/**
   * @brief  Initializes the low level portion of the device driver.
   * @param  pdev: Device handle
   * @retval USBD status
