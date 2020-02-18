@@ -54,6 +54,20 @@
 /* USB Device Core handle declaration */
 USBD_HandleTypeDef hUsbDeviceFS;
 
+typedef struct callback{
+    void *param;
+    void (*cb)(void*);
+}callback_t;
+
+typedef struct deviceCallback{
+    callback_t suspend;
+    callback_t resume;
+}deviceCallback_t;
+
+static deviceCallback_t device_callbacks;
+
+static void DEVICE_SuspendCallback(PCD_HandleTypeDef *hpcd);
+static void DEVICE_ResumeCallback(PCD_HandleTypeDef *hpcd);
 /**
 * Vile hack to reenumerate, physically _drag_ d+ low.
 * (need at least 2.5us to trigger usb disconnect)
@@ -78,9 +92,7 @@ static void USB_DEVICE_Reenumerate(void)
 void USB_DEVICE_Init(void)
 {
     USBD_Composite_Set_Descriptor(COMPOSITE_CDC_HID_DESCRIPTOR, COMPOSITE_CDC_HID_DESCRIPTOR_SIZE);
-
     USBD_Composite_Set_Classes(USBD_CDC_CLASS, USBD_HID_CLASS);
-
     in_endpoint_to_class[HID_EPIN_ADDR & 0x7F] = 1;
 
     USB_DEVICE_Reenumerate();
@@ -95,6 +107,38 @@ uint8_t USB_DEVICE_SendReport(uint8_t *report, uint16_t len)
     return USBD_HID_SendReport(&hUsbDeviceFS, report, len);
 }
 
+
+void USB_DEVICE_RegisterCallback(HAL_PCD_CallbackIDTypeDef id, void(*cb)(void*), void *ptr){
+    switch(id){
+        case HAL_PCD_SUSPEND_CB_ID:
+            device_callbacks.suspend.cb = cb;
+            device_callbacks.suspend.param = ptr;
+            HAL_PCD_RegisterCallback(&hpcd_USB_FS, HAL_PCD_SUSPEND_CB_ID, DEVICE_SuspendCallback);
+            break;
+
+        case HAL_PCD_RESUME_CB_ID:
+            device_callbacks.resume.cb = cb;
+            device_callbacks.resume.param = ptr;
+            HAL_PCD_RegisterCallback(&hpcd_USB_FS, HAL_PCD_RESUME_CB_ID, DEVICE_ResumeCallback);
+            break;
+        default :
+            break;
+    }    
+}
+
+ 
+static void DEVICE_SuspendCallback(PCD_HandleTypeDef *hpcd){ 
+    USBD_LL_Suspend((USBD_HandleTypeDef*)hpcd->pData);
+    if (hpcd->Init.low_power_enable){    
+        SCB->SCR |= (uint32_t)((uint32_t)(SCB_SCR_SLEEPDEEP_Msk | SCB_SCR_SLEEPONEXIT_Msk));
+    }
+    device_callbacks.suspend.cb(device_callbacks.suspend.param);
+}
+
+static void DEVICE_ResumeCallback(PCD_HandleTypeDef *hpcd){
+    USBD_LL_Resume((USBD_HandleTypeDef*)hpcd->pData);
+    device_callbacks.resume.cb(device_callbacks.resume.param);
+}
 /**
   * @}
   */

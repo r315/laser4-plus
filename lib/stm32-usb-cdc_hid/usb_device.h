@@ -58,6 +58,7 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 /* USB_Device init function */	
 void USB_DEVICE_Init(void);
 uint8_t USB_DEVICE_SendReport(uint8_t *report, uint16_t len);
+void USB_DEVICE_RegisterCallback(HAL_PCD_CallbackIDTypeDef id, void(*cb)(void*), void *ptr);
 
 #ifdef __cplusplus
 }
