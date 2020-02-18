@@ -30,7 +30,7 @@ OPT = -Og
 # source path
 
 APP_SRC_PATH :=$(CURDIR)/app
-LIB_USB_CDC_PATH :=$(CURDIR)/lib/stm32-usb-cdc
+#LIB_USB_CDC_PATH :=$(CURDIR)/lib/stm32-usb-cdc
 LIB_USB_HID_PATH :=$(CURDIR)/lib/stm32-usb-cdc_hid
 LIB_DFU_PATH :=$(CURDIR)/lib/stm32-dfu-bootloader
 LIB_SERIAL_PATH :=$(CURDIR)/lib/stm32-serial
@@ -113,8 +113,8 @@ $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd_ex.c \
 $(wildcard $(LIB_USB_HID_PATH)/*.c) \
 
 SOURCES_PATH += \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/HID/Src/ \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/ \
+#$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/HID/Src/ \
 
 C_DEFS :=-DENABLE_GAME_CONTROLLER
 #C_DEFS :=-DENABLE_VCOM
@@ -154,12 +154,12 @@ $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Inc \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Inc/Legacy \
 $(REPOSITORY)Drivers/CMSIS/Device/ST/STM32F1xx/Include \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Inc \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
 $(FREERTOS_DIR)/include \
 $(FREERTOS_DIR)/CMSIS_RTOS \
 $(FREERTOS_DIR)/portable/GCC/ARM_CM3 \
 $(LIB_MULTIPROTOCOL_PATH) \
+#$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc \
 
 #######################################
 # binaries

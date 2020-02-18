@@ -66,14 +66,14 @@
 /** @defgroup USBD_DESC_Private_Defines
   * @{
   */ 
-#define USBD_VID					 0x483
-#define USBD_PID_FS     			 0x5740
-#define USBD_LANGID_STRING     		 1033
+#define USBD_VID					           0x0483
+#define USBD_PID_FS     			       0x5740
+#define USBD_LANGID_STRING     		   1033
 #define USBD_MANUFACTURER_STRING     "HR Design"
 #define USBD_PRODUCT_STRING_FS     	 "STM32 Virtual ComPort"
-#define USBD_SERIALNUMBER_STRING_FS  "000000000033"
 #define USBD_CONFIGURATION_STRING_FS "CDC Config"
 #define USBD_INTERFACE_STRING_FS     "CDC Interface"
+#define USBD_SERIALNUMBER_STRING_FS  "000000000033"
 
 /* USER CODE BEGIN 0 */
 
@@ -104,17 +104,6 @@ uint8_t *     USBD_FS_InterfaceStrDescriptor( USBD_SpeedTypeDef speed , uint16_t
 #ifdef USB_SUPPORT_USER_STRING_DESC
 uint8_t *     USBD_FS_USRStringDesc (USBD_SpeedTypeDef speed, uint8_t idx , uint16_t *length);  
 #endif /* USB_SUPPORT_USER_STRING_DESC */  
-
-USBD_DescriptorsTypeDef FS_Desc =
-{
-  USBD_FS_DeviceDescriptor,
-  USBD_FS_LangIDStrDescriptor, 
-  USBD_FS_ManufacturerStrDescriptor,
-  USBD_FS_ProductStrDescriptor,
-  USBD_FS_SerialStrDescriptor,
-  USBD_FS_ConfigStrDescriptor,
-  USBD_FS_InterfaceStrDescriptor,
-};
 
 USBD_DescriptorsTypeDef FS_Desc_Composite =
 {

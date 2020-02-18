@@ -53,7 +53,7 @@
 #include <string.h>
 #include "stm32f1xx.h"
 #include "stm32f1xx_hal.h"
-#include "usbd_def.h"
+//#include "usbd_def.h"
 
 /** @addtogroup USBD_OTG_DRIVER
   * @{
@@ -69,21 +69,21 @@
   */ 
 
 /*---------- -----------*/
-#define USBD_MAX_NUM_INTERFACES     1
+#define USBD_MAX_NUM_INTERFACES         1
 /*---------- -----------*/
-#define USBD_MAX_NUM_CONFIGURATION     1
+#define USBD_MAX_NUM_CONFIGURATION      1
 /*---------- -----------*/
-#define USBD_MAX_STR_DESC_SIZ     512
+#define USBD_MAX_STR_DESC_SIZ           512
 /*---------- -----------*/
-#define USBD_SUPPORT_USER_STRING     0
+#define USBD_SUPPORT_USER_STRING        0
 /*---------- -----------*/
-#define USBD_DEBUG_LEVEL     0
+#define USBD_DEBUG_LEVEL                1
 /*---------- -----------*/
-#define USBD_SELF_POWERED     1
+#define USBD_SELF_POWERED               1
 /*---------- -----------*/
-#define USBD_CDC_INTERVAL     1000
+#define USBD_CDC_INTERVAL               1000
 /*---------- -----------*/
-#define MAX_STATIC_ALLOC_SIZE     512
+#define MAX_STATIC_ALLOC_SIZE           512
 /****************************************/
 /* #define for FS and HS identification */
 #define DEVICE_FS 		0
