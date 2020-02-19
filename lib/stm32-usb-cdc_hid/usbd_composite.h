@@ -11,6 +11,8 @@
 
 #define MAX_ENDPOINTS 16
 
+#define USBD_COMPOSIT_CLASS    &USBD_Composite
+
 extern USBD_ClassTypeDef USBD_Composite;
 
 extern int in_endpoint_to_class[MAX_ENDPOINTS];

@@ -49,7 +49,8 @@
 #include "usbd_desc.h"
 #include "usbd_cdc.h"
 #include "usbd_cdc_if.h"
-#include "usb_descriptors.h"
+#include "usbd_hid.h"
+#include "usbd_composite.h"
 
 /* USB Device Core handle declaration */
 USBD_HandleTypeDef hUsbDeviceFS;
@@ -97,7 +98,7 @@ void USB_DEVICE_Init(void)
 
     USB_DEVICE_Reenumerate();
     USBD_Init(&hUsbDeviceFS, &FS_Desc_Composite, DEVICE_FS);
-    USBD_RegisterClass(&hUsbDeviceFS, &USBD_Composite);
+    USBD_RegisterClass(&hUsbDeviceFS, USBD_COMPOSIT_CLASS);
     USBD_CDC_RegisterInterface(&hUsbDeviceFS, &USBD_Interface_fops_FS);
     USBD_Start(&hUsbDeviceFS);
 }

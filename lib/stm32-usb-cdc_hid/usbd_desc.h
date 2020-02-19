@@ -78,7 +78,11 @@
 
 /** @defgroup USBD_DESC_Exported_Macros
   * @{
-  */ 
+  */
+
+ #define COMPOSITE_CDC_HID_DESCRIPTOR_SIZE 83
+
+ 
 /**
   * @}
   */ 
@@ -87,6 +91,7 @@
   * @{
   */ 
 extern USBD_DescriptorsTypeDef FS_Desc_Composite;
+extern uint8_t COMPOSITE_CDC_HID_DESCRIPTOR[COMPOSITE_CDC_HID_DESCRIPTOR_SIZE];
 
 /**
   * @}
