@@ -6,14 +6,14 @@
 
 
 #ifdef ENABLE_GAME_CONTROLLER
-//#define DEMO_CONTROLLER
+//#define TEST_CONTROLLER
 
 static controller_t laser4;
 volatile uint16_t *ppm_data, last_tim;
 volatile uint32_t gflags;
 static uint8_t *channel_map;
 
-#ifdef DEMO_CONTROLLER
+#ifdef TEST_CONTROLLER
 #undef ENABLE_PPM
 static float angle = 0;
 #else
@@ -29,7 +29,8 @@ static void setControllerPpmFlag(volatile uint16_t *buf, uint8_t chan){
 
 RAM_CODE void CONTROLLER_Process(void){
 
-#if defined(DEMO_CONTROLLER)
+#if defined(TEST_CONTROLLER)
+    static uint8_t count = 0;
     angle += 0.1;
     SET_PPM_FRAME;
     delayMs(20);
@@ -37,7 +38,7 @@ RAM_CODE void CONTROLLER_Process(void){
 
     if(IS_PPM_FRAME_READY)
     {            
-#if !defined(DEMO_CONTROLLER)
+#if !defined(TEST_CONTROLLER)
         uint8_t i;
         uint8_t *data = (uint8_t*)&laser4.pitch;
         for(i = 0; i < MIN_PPM_CHANNELS; i++){
@@ -76,7 +77,15 @@ RAM_CODE void CONTROLLER_Process(void){
         laser4.pitch = (LOGICAL_MAXIMUM/2) + cos(angle) * (LOGICAL_MAXIMUM/2);
         
         laser4.throttle = laser4.roll;
-        laser4.yaw = laser4.pitch;
+        laser4.yaw = laser4.pitch;        
+
+        if( (count--) == 0){
+            uint8_t tmp = (uint8_t)laser4.buttons;
+            tmp = (tmp >> 1) | (tmp << 3);
+            laser4.buttons = tmp;
+            count = 20;
+        }
+
 #endif  
         CLR_PPM_FRAME;
         USB_DEVICE_SendReport((uint8_t*)&laser4, REPORT_SIZE);
@@ -100,6 +109,10 @@ void CONTROLLER_Init(void){
     laser4.min_pulse = PPM_MIN_PERIOD;
 
     channel_map = CH_AETR;
+
+    #if defined(TEST_CONTROLLER)
+    laser4.buttons = 1;
+    #endif
 
 #if defined(ENABLE_PPM)
     ppm_setCallBack(setControllerPpmFlag);
