@@ -22,6 +22,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
 #include "usbd_desc.h"
+#include "usb_device.h"
 #include "app.h"
 
 /* Defines -------------------------------------------------------------------*/
@@ -44,10 +45,9 @@ static char vc_getchar(void);
 static void vc_putchar(char c);
 static void vc_puts(const char *s);
 static uint8_t vc_getCharNonBlocking(char *c);
-static uint8_t vc_kbhit(void)
-;
+static uint8_t vc_kbhit(void);
 /* Private variables-----------------------------------------------------------*/
-static USBD_HandleTypeDef hUsbDeviceFS;
+
 
 USBD_CDC_ItfTypeDef USBD_Interface_fops_FS ={
   CDC_Init_FS,
@@ -55,8 +55,6 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS ={
   CDC_Control_FS,
   CDC_Receive_FS
 };
-
-static QueueHandle_t vcom_queue;
 
 stdout_t vcom = {
     .init = NULL,
@@ -79,17 +77,17 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 /* Private functions ---------------------------------------------------------*/
 
 static uint8_t vc_getCharNonBlocking(char *c){    
-    return xQueueReceive(vcom_queue, c, 0) == pdPASS;
+    return 0; //xQueueReceive(vcom_queue, c, 0) == pdPASS;
 }
 
 static char vc_getchar(void){
     char c;
-    xQueueReceive(vcom_queue, &c, portMAX_DELAY);
+    //xQueueReceive(vcom_queue, &c, portMAX_DELAY);
     return c;
 }
 
 static uint8_t vc_kbhit(void){
-    return APP_RX_DATA_SIZE - uxQueueSpacesAvailable(vcom_queue);
+    return 0; //APP_RX_DATA_SIZE - uxQueueSpacesAvailable(vcom_queue);
 }
 
 static void putAndRetry(uint8_t *data, uint16_t len){
@@ -113,25 +111,7 @@ uint16_t len = 0;
 	putAndRetry((uint8_t*)s, len);
 }
 
-/**
-* Vile hack to reenumerate, physically _drag_ d+ low.
-* (need at least 2.5us to trigger usb disconnect)
-* @retval None
-* */
-static void USB_DEVICE_Reenumerate(void){
-    USB->CNTR = USB_CNTR_PDWN;
-    RCC->APB2ENR |= RCC_APB2ENR_IOPAEN;
-    GPIOA->CRH = (GPIOA->CRH & ~(0x0F << 16)) | (2 << 16);
-    GPIOA->BRR = (1 << 12); //GPIO_PIN_12;
-    asm volatile( 
-                  "mov r0,#2048 \n"
-                  "loop:"
-                  "nop\n"
-                  "subs r0,#1 \n"
-                  "bne loop"
-    );
-    GPIOA->CRH = (GPIOA->CRH & ~(0x0F << 16)) | (4 << 16);
-}
+
 
 /**
   * @brief  Initializes the CDC media low layer over the FS USB IP
@@ -248,12 +228,12 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  uint32_t size = *Len;
+  //uint32_t size = *Len;
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  
-  while(size--)    
-    xQueueSendFromISR(vcom_queue, Buf++, 0);
+  CDC_Transmit_FS(Buf, *Len);
+  //while(size--)    
+    //xQueueSendFromISR(vcom_queue, Buf++, 0);
 
   return (USBD_OK);
   /* USER CODE END 6 */
@@ -282,25 +262,6 @@ uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
   result = USBD_CDC_TransmitPacket(&hUsbDeviceFS);
   /* USER CODE END 7 */
   return result;
-}
-
-/**
- * @brief CDC_Init
- *        Initialyse  Comunications Device Class interface
- *  
- */ 
-void CDC_Init(void){
-USBD_HandleTypeDef *dev = &hUsbDeviceFS;
-    
-    vcom_queue = xQueueCreate( APP_RX_DATA_SIZE, VC_QUEUE_ITEM_SIZE );
-    configASSERT( (vcom_queue != NULL) );
-
-    USB_DEVICE_Reenumerate();
-
-    CHECK_FOR_ERROR(USBD_Init(dev, &FS_Desc, DEVICE_FS));      
-    CHECK_FOR_ERROR(USBD_RegisterClass(dev, &USBD_CDC));
-    CHECK_FOR_ERROR(USBD_CDC_RegisterInterface(dev, &USBD_Interface_fops_FS));
-    CHECK_FOR_ERROR(USBD_Start(dev));
 }
 
 /**
