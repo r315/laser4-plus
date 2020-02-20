@@ -7,6 +7,7 @@ extern "C" {
 
 #include <stdint.h>
 #include "stm32f1xx_hal.h"
+#include "fifo.h"
 
 /* GPIO definitions */
 #define GPIO_MODE_MASK          15
@@ -203,6 +204,11 @@ typedef struct tone{
 
 /* Public variables */
 extern uint32_t SystemCoreClock;
+
+#ifdef ENABLE_SERIAL
+extern fifo_t serial_tx_fifo;
+extern fifo_t serial_rx_fifo;
+#endif
 
 
 /* Function prototyes */

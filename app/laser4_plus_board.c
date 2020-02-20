@@ -14,6 +14,10 @@ typedef struct {
     float resolution;
 }adc_t;
 
+#ifdef ENABLE_SERIAL
+fifo_t serial_tx_fifo;
+fifo_t serial_rx_fifo;
+#endif
 
 static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
@@ -49,6 +53,10 @@ void laser4Init(void){
     encInit();
     ppmOutInit();
     buzInit();
+#ifdef ENABLE_SERIAL
+    fifo_init(&serial_rx_fifo);
+    fifo_init(&serial_tx_fifo);
+#endif
 }
 
 void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode) {

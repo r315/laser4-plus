@@ -102,6 +102,7 @@ $(FREERTOS_DIR)/timers.c \
 $(FREERTOS_DIR)/CMSIS_RTOS/cmsis_os.c \
 
 ifneq ($(USB_DEVICE),NO_USB_DEVICE)
+
 C_SOURCES += \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
@@ -114,10 +115,7 @@ $(wildcard $(LIB_USB_HID_PATH)/*.c) \
 
 SOURCES_PATH += \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/ \
-#$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/HID/Src/ \
 
-C_DEFS :=-DENABLE_GAME_CONTROLLER
-#C_DEFS :=-DENABLE_VCOM
 endif
 
 C_SOURCES += \
@@ -208,9 +206,11 @@ C_DEFS += \
 -DAETR \
 -DENABLE_PPM \
 -DUSE_MY_CONFIG \
+-DENABLE_SERIAL \
 -DENABLE_USART \
--DENABLE_CONSOLE \
+-DENABLE_VCOM_ \
 -DENABLE_DEBUG \
+-DENABLE_CONSOLE_ \
 -DUSE_MY_CONFIG \
 
 # compile gcc flags

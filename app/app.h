@@ -24,13 +24,12 @@ extern "C" {
 
 //#define USE_FREERTOS
 
-#if defined(ENABLE_DEBUG) && defined(DEBUG_TO_CONSOLE)
-    #define DBG_PRINT con.print
-#elif defined(ENABLE_DEBUG)
+#if defined(ENABLE_DEBUG)
     #define DBG_PRINT dbg_printf
-    #define DBG_DUMP_LINE dbgHexDumpLine
+    #define DBG_DUMP_LINE dbg_HexDumpLine
 #else
     #define DBG_PRINT(...)
+    #define DBG_DUMP_LINE(...)
 #endif
 
 enum {
