@@ -94,13 +94,20 @@ static uint8_t USBD_Composite_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTyped
 
         case USB_REQ_TYPE_STANDARD:
             switch (req->bRequest){
-                case USB_REQ_GET_DESCRIPTOR:                
-                    for (int cls = 0; cls < classes; cls++){
+                case USB_REQ_GET_DESCRIPTOR:  
+                              
+                    // Call setup only for HID
+                    USBD_Classes[1]->Setup(pdev, req);                
+                    
+                    /**
+                     * 
+                    for (uint8_t cls = 0; cls < classes; cls++){
+                        USBD_Classes[cls]->Setup(pdev, req);
                         if (USBD_Classes[cls]->Setup(pdev, req) != USBD_OK){
                             USBD_UsrLog("%s: FAIL on class index %x", __FUNCTION__, cls);
                             return USBD_FAIL;
                         }
-                    }
+                    } */
                     break;
 
                 case USB_REQ_GET_INTERFACE:
