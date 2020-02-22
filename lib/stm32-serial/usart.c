@@ -1,5 +1,4 @@
 #include "board.h"
-#include "app.h"
 
 #ifdef ENABLE_USART
 
@@ -48,9 +47,6 @@ void usart_init(void){
 
     //USART1->CR1 |= USART_CR1_UE;
     //while((USART1->SR & USART_SR_TC) == 0);
-
-    dbg_init(&pcom);
-
     NVIC_EnableIRQ(USART1_IRQn);
 }
 
