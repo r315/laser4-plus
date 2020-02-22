@@ -1,4 +1,5 @@
 #include "board.h"
+#include "stdout.h"
 
 #ifdef ENABLE_USART
 
