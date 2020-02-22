@@ -49,10 +49,10 @@ void reqModeChange(uint8_t new_mode);
 uint8_t getCurrentMode(void);
 
 #ifdef __cplusplus
-#ifdef ENABLE_CONSOLE
+#ifdef ENABLE_CLI
 extern Console con;
 extern ConsoleCommand *laser4_commands[];
-#endif /* ENABLE_CONSOLE */
+#endif /* ENABLE_CLI */
 }
 #endif
 

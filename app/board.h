@@ -205,11 +205,10 @@ typedef struct tone{
 /* Public variables */
 extern uint32_t SystemCoreClock;
 
-#ifdef ENABLE_SERIAL
+#ifdef ENABLE_SERIAL_FIFOS
 extern fifo_t serial_tx_fifo;
 extern fifo_t serial_rx_fifo;
 #endif
-
 
 /* Function prototyes */
 void delayMs(uint32_t ms);

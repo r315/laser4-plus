@@ -12,7 +12,7 @@ tone_t chime[] = {
     {0,0}
 };
 
-#ifdef ENABLE_CONSOLE 
+#ifdef ENABLE_CLI 
 Console con;
 #endif
 
@@ -22,22 +22,22 @@ uint8_t getCurrentMode(void){
 
 void usbConnectCB(void *ptr){
    reqModeChange(MODE_HID);
-#ifdef ENABLE_DEBUG
+#if defined(ENABLE_DEBUG) && defined(ENABLE_VCOM)
     dbg_init(&vcom);
 #endif
 
-#ifdef ENABLE_CONSOLE
+#ifdef ENABLE_CLI
     con.setOutput(&vcom);
 #endif
 }
 
 void usbDisconnectCB(void *ptr){
     reqModeChange(MODE_MULTIPROTOCOL);
-#ifdef ENABLE_DEBUG
+#if defined(ENABLE_DEBUG) && defined(ENABLE_USART)
     dbg_init(&pcom);
 #endif
  
-#ifdef ENABLE_CONSOLE
+#ifdef ENABLE_CLI
     con.setOutput(&pcom);
 #endif
 }
@@ -99,7 +99,11 @@ void setup(void){
     CONTROLLER_Init();
 #endif
 
-#ifdef ENABLE_CONSOLE
+#ifdef ENABLE_DEBUG
+    dbg_init(&pcom);
+#endif
+
+#ifdef ENABLE_CLI
     con.init(&pcom, "laser4+ >");
     con.registerCommandList(laser4_commands);
     con.cls();
@@ -139,7 +143,7 @@ void loop(void){
             break;
     }
 
-#ifdef ENABLE_CONSOLE
+#ifdef ENABLE_CLI
     con.process();
 #endif
     reloadWatchDog();

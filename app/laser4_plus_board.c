@@ -14,7 +14,7 @@ typedef struct {
     float resolution;
 }adc_t;
 
-#ifdef ENABLE_SERIAL
+#ifdef ENABLE_SERIAL_FIFOS
 fifo_t serial_tx_fifo;
 fifo_t serial_rx_fifo;
 #endif
@@ -53,7 +53,7 @@ void laser4Init(void){
     encInit();
     ppmOutInit();
     buzInit();
-#ifdef ENABLE_SERIAL
+#ifdef ENABLE_SERIAL_FIFOS
     fifo_init(&serial_rx_fifo);
     fifo_init(&serial_tx_fifo);
 #endif

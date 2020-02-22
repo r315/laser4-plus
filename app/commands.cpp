@@ -3,7 +3,7 @@
 #include "iface_cc2500.h"
 #include "multiprotocol.h"
 
-#ifdef ENABLE_CONSOLE
+#ifdef ENABLE_CLI
 /**
  * Possible commands
  * > bind
