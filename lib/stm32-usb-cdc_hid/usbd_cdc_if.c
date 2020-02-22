@@ -44,6 +44,8 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
 /* USER CODE BEGIN INCLUDE */
+#include "board.h"
+#include "stdout.h"
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -125,6 +127,45 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
+void vcp_init(void){ }
+uint8_t vcp_nb(char *c){ return fifo_get(&serial_rx_fifo, (uint8_t*)c); }
+uint8_t vcp_kbhit(void){ return fifo_avail(&serial_rx_fifo); }
+char vcp_getchar(void){ 
+  char c;
+  while(fifo_avail(&serial_rx_fifo) == 0);
+  fifo_get(&serial_rx_fifo, (uint8_t*)&c);
+  return c;
+}
+
+static void vcp_putAndRetry(uint8_t *data, uint16_t len){
+uint32_t retries = 1000;
+	while(retries--){
+		if(	CDC_Transmit_FS(data, len) == USBD_OK)
+			break;
+	}
+}
+
+void vcp_putchar(char c){
+	vcp_putAndRetry((uint8_t*)&c, 1);
+}
+
+void vcp_puts(const char *str){
+	uint16_t len = 0;
+  	while( *((const char*)(str + len)) != '\0'){
+		len++;	
+	}
+  vcp_putAndRetry((uint8_t*)str, len);
+}
+
+stdout_t vcom = {
+    .init = vcp_init,
+    .xgetchar = vcp_getchar,
+    .xputchar = vcp_putchar,
+    .xputs = vcp_puts,
+    .getCharNonBlocking = vcp_nb,
+    .kbhit = vcp_kbhit,
+    .user_ctx = NULL
+};
 /* USER CODE END PRIVATE_FUNCTIONS_DECLARATION */
 
 /**
@@ -263,6 +304,9 @@ static int8_t CDC_Receive_FS (uint8_t* Buf, uint32_t *Len)
   /* USER CODE BEGIN 6 */
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+  for(uint32_t count = 0; count < *Len; count++, Buf++){
+    fifo_put(&serial_rx_fifo, *Buf);
+  }
   return (USBD_OK);
   /* USER CODE END 6 */ 
 }

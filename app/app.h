@@ -17,8 +17,11 @@ extern "C" {
 #include "usbd_cdc_if.h"
 #endif
 
+#ifdef ENABLE_USART
+#include "usart.h"
+#endif
+
 #ifdef ENABLE_GAME_CONTROLLER
-//#include "usbd_hid.h"
 #include "game_controller.h"
 #endif
 
@@ -41,14 +44,6 @@ enum {
 
 #define STATE_BITS          4
 #define STATE_MASK          ((1<<STATE_BITS) - 1)
-
-#if defined(ENABLE_VCOM)
-extern stdout_t vcom;
-#define IO_CHAR &vcom
-#elif defined(ENABLE_USART)
-extern stdout_t pcom;
-#define IO_CHAR &pcom
-#endif
 
 void reqModeChange(uint8_t new_mode);
 uint8_t getCurrentMode(void);
