@@ -20,8 +20,26 @@ uint8_t getCurrentMode(void){
     return state;
 }
 
-void modeChangeCB(void *ptr){
-   reqModeChange((uint32_t)ptr); 
+void usbConnectCB(void *ptr){
+   reqModeChange(MODE_HID);
+#ifdef ENABLE_DEBUG
+    dbg_init(&vcom);
+#endif
+
+#ifdef ENABLE_CONSOLE
+    con.setOutput(&vcom);
+#endif
+}
+
+void usbDisconnectCB(void *ptr){
+    reqModeChange(MODE_MULTIPROTOCOL);
+#ifdef ENABLE_DEBUG
+    dbg_init(&pcom);
+#endif
+ 
+#ifdef ENABLE_CONSOLE
+    con.setOutput(&pcom);
+#endif
 }
 
 void reqModeChange(uint8_t new_mode){
@@ -51,10 +69,10 @@ static void changeMode(uint8_t new_mode){
 #ifdef ENABLE_GAME_CONTROLLER
             DBG_PRINT("Starting game controller\n");
             CONTROLLER_Init();
+#endif
             LED_OFF;
             playTone(400,100);
             break;
-#endif
         default:
             return;
     }
@@ -70,20 +88,19 @@ void setup(void){
 #ifdef ENABLE_USART
     usart_init();
 #endif  
-    //MCO_EN;
-#ifdef ENABLE_VCOM
-    CDC_Init();
+
+#if defined(ENABLE_VCOM) || defined(ENABLE_GAME_CONTROLLER)
+    USB_DEVICE_Init();
+    USB_DEVICE_RegisterCallback(HAL_PCD_SUSPEND_CB_ID, usbDisconnectCB, NULL);
+    USB_DEVICE_RegisterCallback(HAL_PCD_RESUME_CB_ID, usbConnectCB, NULL);
 #endif
 
 #ifdef ENABLE_GAME_CONTROLLER
-    USB_DEVICE_Init();
     CONTROLLER_Init();
-    USB_DEVICE_RegisterCallback(HAL_PCD_SUSPEND_CB_ID, modeChangeCB, (void*)MODE_MULTIPROTOCOL);
-    USB_DEVICE_RegisterCallback(HAL_PCD_RESUME_CB_ID, modeChangeCB, (void*)MODE_HID);
 #endif
 
 #ifdef ENABLE_CONSOLE
-    con.init(IO_CHAR, "laser4+ >");
+    con.init(&pcom, "laser4+ >");
     con.registerCommandList(laser4_commands);
     con.cls();
 #endif    
@@ -122,9 +139,9 @@ void loop(void){
             break;
     }
 
-    #ifdef ENABLE_CONSOLE
+#ifdef ENABLE_CONSOLE
     con.process();
-    #endif
+#endif
     reloadWatchDog();
     //DBG_PIN_TOGGLE;
 }
