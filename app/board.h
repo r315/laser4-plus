@@ -231,6 +231,8 @@ void laser4Init(void);
 uint32_t readSwitches(void);
 
 uint32_t getBatteryVoltage(void);
+float getAdcResolution(void);
+
 void ppmOut(uint16_t *data);
 
 void playTone(uint16_t freq, uint16_t duration);

@@ -172,13 +172,21 @@ public:
 
 class CmdStatus : public ConsoleCommand {
 	Console *console;
-    
+    uint32_t aux;
 public:
     CmdStatus() : ConsoleCommand("status") {}	
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}   
 	char execute(void *ptr) {
-        console->print("\n"
+		console->xputs("\n----------------------------------------");
+        console->print(
+			"Battery voltage: %umV\n"
+        	"ADC Resolution: %.3fmV/step\n",
+			getBatteryVoltage(), 
+			getAdcResolution()
+		);
+		console->xputs("----------------------------------------");
+        console->print(
 			"RX              [%d]\n"
 			"Change protocol [%d]\n"
 			"Range           [%d]\n"
@@ -186,8 +194,7 @@ public:
 			"Bind done       [%d]\n"
 			"Wait bind       [%d]\n"
 			"Tx pause        [%d]\n"
-			"Input signal    [%d]\n"
-			"\n",
+			"Input signal    [%d]\n",
 			IS_RX_FLAG_on,
 			IS_CHANGE_PROTOCOL_FLAG_on,
 			IS_RANGE_FLAG_on,
@@ -197,17 +204,20 @@ public:
 			IS_TX_MAIN_PAUSE_on,
 			IS_INPUT_SIGNAL_on
 		);
-
+		console->xputs("----------------------------------------");
 		uint16_t *ppm_data = ppm_getData();
 		for(uint8_t i = 0; i < radio.ppm_chan_max; i++){
-			DBG_PRINT("CH[%u]:\t%u\n", i, ppm_data[i]);
+			console->print("CH[%u]:\t%u\n", i, ppm_data[i]);
 		}
 		
 		for(uint8_t i = radio.ppm_chan_max; i < radio.ppm_chan_max + MAX_AUX_CHANNELS; i++){
-        	DBG_PRINT("CH[%u]:\t%u\n", i, ppm_data[i]);
+        	console->print("CH[%u]:\t%u\n", i, ppm_data[i]);
     	}
 
-		DBG_PRINT("\n");
+		console->print("----------------------------------------\n");
+		aux = getCurrentMode();
+		console->print("Mode: %s\n", aux == MODE_MULTIPROTOCOL ? "Multiprotocol" : "Game Controller");
+		console->xputs("----------------------------------------");
         return CMD_OK;        
 	}	
 }cmdstatus;
@@ -277,10 +287,7 @@ public:
 			case 1:
 				DBG_PRINT("Erasing NV Data: %s\n", NV_Erase() == 0? "Fail": "ok");
 				break;
-		}
-
-			
-		
+		}		
 		return CMD_OK;
 	}
 }cmdtest;
@@ -308,7 +315,7 @@ ConsoleCommand *laser4_commands[]{
     &cmdhelp,
     &cmdcc25,
 	&cmdreset,
-	&cmdmockppm,
+//	&cmdmockppm,
 	&cmdbind,
 	&cmdstatus,
 	&cmdtest,
