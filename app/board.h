@@ -196,6 +196,7 @@ extern uint32_t _seeprom, _eeeprom;     //declared on linker script
 #define EEPROM_Read             NV_Read
 #define EEPROM_Write(_A,_B,_C)  NV_Write(_A,_B,_C)
 #define EEPROM_Sync             NV_Sync
+#define EEPROM_SIZE             30
 
 typedef struct tone{
   uint16_t f;

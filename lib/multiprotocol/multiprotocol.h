@@ -166,11 +166,24 @@ extern "C" {
 	#define PPM_MIN_100 988		//	100%
 //#endif
 #define PPM_DEFAULT_VALUE 0
-
 #define MAX_AUX_CHANNELS 4
-
-#define EEPROM_ID_OFFSET 0
 #define _FLAGS_ radio.flags
+
+/* Indexes of constants in eeprom */
+#define EEPROM_ID_OFFSET        0
+#define EEPROM_BIND_FLAG        29 //EEPROM_SIZE - 1
+// Two byte indexes
+#define IDX_CHANNEL_MAX_100     8
+#define IDX_CHANNEL_MIN_100     9
+#define IDX_CHANNEL_MED_50      11
+#define IDX_CHANNEL_MAX_125     10
+#define IDX_CHANNEL_MIN_125	    12
+#define IDX_CHANNEL_SWITCH      13
+#define IDX_PPM_MAX_100         14
+#define IDX_PPM_MIN_100         15
+#define IDX_PPM_DEFAULT_VALUE   16
+
+#define DEFAULT_ID              0x2AD141A7
 
 enum protocols_e{
     MODE_SERIAL     = 0,
@@ -312,6 +325,7 @@ extern radio_t radio;
 extern uint8_t CH_AETR[];
 extern uint8_t CH_TAER[];
 extern uint8_t CH_EATR[];
+extern uint16_t eeprom_data[];
 
 void multiprotocol_setup(void);
 void multiprotocol_loop(void);

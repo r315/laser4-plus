@@ -78,6 +78,25 @@ static void changeMode(uint8_t new_mode){
     }
 }
 
+
+void init_eeprom_data(uint8_t *dst){
+uint8_t bind_flag;
+    
+    if(EEPROM_Read(EEPROM_BIND_FLAG, &bind_flag, 1) != 1){
+        DBG_PRINT("Error reading EEPROM\n");
+        return;
+    }
+        
+    if(bind_flag == 0xF0){    
+        if(NV_Restore(dst, EEPROM_SIZE) != EEPROM_SIZE){
+            DBG_PRINT("Error reading EEPROM\n");
+            return;
+        }
+    }
+
+    DBG_PRINT("Data loaded from EEPROM\n");
+}
+
 void setup(void){    
 
     state = STARTING;

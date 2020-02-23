@@ -285,6 +285,9 @@ public:
 				console->xputchar('\n');
 				break;
 			case 1:
+				dbg_HexDump((uint8_t*)eeprom_data, EEPROM_SIZE);
+				break;
+			case 9:
 				DBG_PRINT("Erasing NV Data: %s\n", NV_Erase() == 0? "Fail": "ok");
 				break;
 		}		
