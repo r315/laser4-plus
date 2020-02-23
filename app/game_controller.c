@@ -24,6 +24,7 @@ static int16_t map(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, i
 static void setControllerPpmFlag(volatile uint16_t *buf, uint8_t chan){
     SET_PPM_FRAME;
     ppm_data = buf;
+    radio.ppm_chan_max = chan;
 }
 #endif
 
@@ -52,20 +53,12 @@ RAM_CODE void CONTROLLER_Process(void){
             val = map(val, laser4.min_pulse, laser4.max_pulse, LOGICAL_MINIMUM, LOGICAL_MAXIMUM);
             *(data + (channel_map[i] * 2)) = val;
             *(data + 1 + (channel_map[i] * 2)) = val >> 8;
+            // Make data visible to status command
+            radio.channel_data[i] = val;
         }
-        
-        int16_t diff = ENC_TIM->CNT - last_tim;
-        if(diff != 0){
-            uint16_t tmp = laser4.aux2;
-            tmp += diff*10;
-            if(tmp > eeprom_data[IDX_CHANNEL_MAX_100]){
-                tmp = eeprom_data[IDX_CHANNEL_MAX_100];
-            }else if(tmp < eeprom_data[IDX_CHANNEL_MIN_100]){
-                tmp = eeprom_data[IDX_CHANNEL_MIN_100];
-            }
-            laser4.aux2 = tmp;        
-            last_tim += diff;
-        }
+
+        update_channels_aux();
+        laser4.aux2 = radio.channel_data[radio.ppm_chan_max + MAX_AUX_CHANNELS - 1];       
         laser4.buttons = HW_SW_READ;
 #else
         //float t = angle * 0.15915f; // Normalize t = x/2pi - floor(x/2pi)
