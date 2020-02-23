@@ -83,7 +83,10 @@ public:
     CmdCC25() : ConsoleCommand("cc2500") {}	
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {
-		console->print("usage: cc2500 <[-r, --reset, -rs, status]>\n");	
+		console->xputs("usage: cc2500 <[-r, --reset, -rs, status]>");	
+		console->xputs("\t-r <0-2E>, Read Register");
+		console->xputs("\t-rs <30-3D>, Read status register");	
+		console->xputs("\t--reset, Reset CC2500 module");
 	}
 
 	char reset(void){
