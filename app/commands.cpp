@@ -172,21 +172,22 @@ public:
 
 class CmdStatus : public ConsoleCommand {
 	Console *console;
-    uint32_t aux;
 public:
     CmdStatus() : ConsoleCommand("status") {}	
 	void init(void *params) { console = static_cast<Console*>(params); }
-	void help(void) {}   
-	char execute(void *ptr) {
-		console->xputs("\n----------------------------------------");
-        console->print(
+	void help(void) {}  
+
+	void batteryVoltage(void){
+		console->print(
 			"Battery voltage: %umV\n"
         	"ADC Resolution: %.3fmV/step\n",
 			getBatteryVoltage(), 
 			getAdcResolution()
 		);
-		console->xputs("----------------------------------------");
-        console->print(
+	}
+
+	void systemFlags(void){
+		console->print(
 			"RX              [%d]\n"
 			"Change protocol [%d]\n"
 			"Range           [%d]\n"
@@ -204,19 +205,45 @@ public:
 			IS_TX_MAIN_PAUSE_on,
 			IS_INPUT_SIGNAL_on
 		);
-		console->xputs("----------------------------------------");
-		uint16_t *ppm_data = ppm_getData();
-		for(uint8_t i = 0; i < radio.ppm_chan_max; i++){
-			console->print("CH[%u]:\t%u\n", i, ppm_data[i]);
-		}
-		
-		for(uint8_t i = radio.ppm_chan_max; i < radio.ppm_chan_max + MAX_AUX_CHANNELS; i++){
-        	console->print("CH[%u]:\t%u\n", i, ppm_data[i]);
-    	}
+	}
 
-		console->print("----------------------------------------\n");
-		aux = getCurrentMode();
+	void channelValues(void){
+		for(uint8_t i = 0; i < radio.ppm_chan_max + MAX_AUX_CHANNELS; i++){
+        	console->print("CH[%u]:\t%u\n", i, radio.channel_data[i]);
+    	}
+	}
+
+	void mode(void){
+		uint8_t aux = getCurrentMode();
 		console->print("Mode: %s\n", aux == MODE_MULTIPROTOCOL ? "Multiprotocol" : "Game Controller");
+	}
+
+	void channelRanges(void){
+		console->print(
+			"CH MAX      %d\n"
+			"CH MIN      %d\n"
+			"CH switch   %d\n"
+			"PPM MAX     %d\n"
+			"PPM MIN     %d\n",
+			eeprom_data[IDX_CHANNEL_MAX_100],
+			eeprom_data[IDX_CHANNEL_MIN_100],
+			eeprom_data[IDX_CHANNEL_SWITCH],
+			eeprom_data[IDX_PPM_MAX_100],
+			eeprom_data[IDX_PPM_MIN_100]
+		);
+	}
+
+	char execute(void *ptr) {
+		console->xputs("\n----------------------------------------");
+        batteryVoltage();
+		console->xputs("----------------------------------------");
+        systemFlags();
+		console->xputs("----------------------------------------");		
+		channelValues();
+		console->xputs("----------------------------------------");
+		mode();
+		console->xputs("----------------------------------------");
+		channelRanges();
 		console->xputs("----------------------------------------");
         return CMD_OK;        
 	}	
