@@ -99,11 +99,6 @@ void multiprotocol_setup(void){
     // Setup callback for ppm frame ready
     ppm_setCallBack(setPpmFlag);
 
-    // Set default PPMs' value
-    for(uint8_t i=0; i < MAX_CHN_NUM; i++){
-        radio.ppm_data[i] = PPM_MAX_100 + PPM_MIN_100;
-    }
-    radio.ppm_data[THROTTLE] = PPM_MIN_100 * 2; // We are using 0.5us as time base, so pulses have the double size
     radio.chan_order = 0;
 
     if(radio.mode_select != MODE_SERIAL)

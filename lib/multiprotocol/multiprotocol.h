@@ -263,6 +263,8 @@ typedef struct radio{
     // Servo data 
     uint16_t channel_data[MAX_CHN_NUM];
     uint8_t  channel_aux;
+    // Encoder count
+    uint16_t enc_count;
 #ifdef FAILSAFE_ENABLE
 	uint16_t Failsafe_data[NUM_CHN];
 #endif
@@ -299,7 +301,7 @@ typedef struct radio{
     // PPM variable
     volatile uint16_t *ppm_data;
     volatile uint8_t  ppm_chan_max;
-    uint32_t chan_order;
+    uint8_t chan_order;
 #endif
     //Received packets buffer
     uint8_t packet_in[TELEMETRY_BUFFER_SIZE];
