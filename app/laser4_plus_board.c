@@ -29,6 +29,7 @@ static void spiInit(void);
 static void timInit(void);
 static void adcInit(void);
 static void encInit(void);
+static void crcInit(void);
 static void ppmOutInit(void);
 static void buzInit(void);
 static void updateAdcValues(void);
@@ -53,6 +54,7 @@ void laser4Init(void){
     encInit();
     ppmOutInit();
     buzInit();
+    crcInit();
 #ifdef ENABLE_SERIAL_FIFOS
     fifo_init(&serial_rx_fifo);
     fifo_init(&serial_tx_fifo);
@@ -535,6 +537,23 @@ void setToneLevel(uint16_t level){
     BUZ_TIM->CCR1 = level-1;
 }
 
+/**
+ * @brief Enable CRC unit
+ * */
+void crcInit(void){
+    RCC->AHBENR |= RCC_AHBENR_CRCEN;
+    CRC->CR = 1;
+}
+
+/**
+ * @brief Pseudo random number generator??
+ * 
+ * @return : CRC'd number with timer
+ * */
+uint32_t xrand(void){
+    CRC->DR = TIMER_BASE->CNT ^ CRC->DR;
+    return CRC->DR;
+}
 /**
  * @brief Interrupts handlers
  * */

@@ -501,9 +501,8 @@ static uint32_t random_id(uint8_t create_new)
         id = STM32_UUID[0] ^ STM32_UUID[1] ^ STM32_UUID[2];
         DBG_PRINT("Generated ID from STM32 UUID\n");
 #endif
-    }else{
-        //TODO: 
-        id ^= 1; //random(0xfefefefe) + ((uint32_t)random(0xfefefefe) << 16);
+    }else{         
+        id = xrand();
     }
 
     eeprom_data[EEPROM_ID_OFFSET] = (uint16_t)id;

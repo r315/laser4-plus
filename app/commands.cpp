@@ -255,22 +255,22 @@ public:
 class CmdMockPPM : public ConsoleCommand {
 	Console *console;    
 public:
-    CmdMockPPM() : ConsoleCommand("mock-ppm") {}
+    CmdMockPPM() : ConsoleCommand("id") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(void *ptr) {
 		uint32_t int_value;
-		if(nextHex((char**)&ptr, &int_value)){
-			if(int_value == 1){
-				//setTimer(6000, multiprotocol_mock_ppm);
-			}else{
-				//stopTimer();				
-			}
-			return CMD_OK;
+		nextHex((char**)&ptr, &int_value);
+		if(int_value == 1){
+			console->print("Random ID: %x\n", xrand());
+		}else{
+			console->print("Random ID: %x\n", radio.protocol_id_master);
 		}
-		return CMD_BAD_PARAM;
+	
+		return CMD_OK;
+		
 	}
-}cmdmockppm;	
+}cmdid;	
 
 class CmdReset : public ConsoleCommand {
 	Console *console;    
@@ -301,13 +301,13 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(void *ptr) {
-		uint32_t test;
-		if(!nextHex((char**)&ptr, &test)){
-
+		uint32_t test_code;
+		
+		if(!nextHex((char**)&ptr, &test_code)){
 			return CMD_OK;
 		}
 
-		switch(test){
+		switch(test_code){
 			case 0:
 				for(uint8_t i = 0; i < MAX_CHN_NUM; i++ ){
 					console->print("\nChannel[%u]: %u", i, radio.channel_data[i]);
@@ -348,7 +348,7 @@ ConsoleCommand *laser4_commands[]{
     &cmdhelp,
     &cmdcc25,
 	&cmdreset,
-//	&cmdmockppm,
+	&cmdid,
 	&cmdbind,
 	&cmdstatus,
 	&cmdtest,

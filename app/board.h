@@ -240,6 +240,8 @@ void playTone(uint16_t freq, uint16_t duration);
 void playMelody(tone_t *tones);
 void setToneLevel(uint16_t level);
 
+uint32_t xrand(void);
+
 #ifdef ENABLE_USART
 void usart_init(void);
 #endif
