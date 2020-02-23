@@ -92,9 +92,8 @@ uint8_t bind_flag;
             DBG_PRINT("Error reading EEPROM\n");
             return;
         }
+        DBG_PRINT("Data loaded from EEPROM\n");
     }
-
-    DBG_PRINT("Data loaded from EEPROM\n");
 }
 
 void setup(void){    
