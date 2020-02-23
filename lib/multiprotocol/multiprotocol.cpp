@@ -452,7 +452,7 @@ static void setPpmFlag(volatile uint16_t *buf, uint8_t chan){
     PPM_FLAG_on;
     radio.ppm_data = buf;
     // Saving the number of channels received
-    if(chan > radio.ppm_chan_max) 
+    //if(chan > radio.ppm_chan_max) 
         radio.ppm_chan_max = chan;
 }
 
