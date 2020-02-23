@@ -52,7 +52,7 @@ uint16_t eeprom_data[EEPROM_SIZE / 2] = {
 (uint16_t)DEFAULT_ID, (uint16_t)(DEFAULT_ID>>16),
 0xFFFF, 0xFFFF,
 CHANNEL_MAX_100, CHANNEL_MIN_100,
-CHANNEL_MAX_125, CHANNEL_MIN_125,CHANNEL_SWITCH, 
+CHANNEL_MAX_125, CHANNEL_MIN_125, CHANNEL_SWITCH, 
 PPM_MAX_100, PPM_MIN_100, PPM_DEFAULT_VALUE
 };
 
@@ -82,13 +82,17 @@ void multiprotocol_setup(void){
     radio.mode_select = HW_PROTOCOL_SWITCH;
     uint8_t bank = HW_BANK_SWITCH;
 
-    DBG_PRINT("Protocol selection switch reads as %d\n", radio.mode_select);	
+    DBG_PRINT("Protocol selection switch reads as %d\n", radio.mode_select);
+
+    uint16_t channel_default = (eeprom_data[IDX_CHANNEL_MAX_100] - eeprom_data[IDX_CHANNEL_MIN_100]) >> 1;
 
     for(uint8_t i = 0; i < MAX_CHN_NUM; i++){
-        radio.channel_data[i] = eeprom_data[IDX_CHANNEL_MIN_100];
+        radio.channel_data[i] = channel_default;
     }
 
-    radio.channel_data[THROTTLE] = 0;
+    ENC_TIM->CNT = radio.enc_count;
+
+    radio.channel_data[THROTTLE] = eeprom_data[IDX_CHANNEL_MIN_125] ;
 
     modules_reset();
     
@@ -399,8 +403,7 @@ static uint16_t next_callback;
  * After ppm synchronization, this function is called every ~20mS
  * */
 void update_channels_aux(void){
-static uint16_t last_count;
-    
+   
     radio.channel_aux = HW_SW_READ;
    
     for(uint8_t i = 0; i < MAX_AUX_CHANNELS - 1; i++){
@@ -412,7 +415,7 @@ static uint16_t last_count;
     }
 
     // Process encoder
-    int16_t diff = ENC_TIM->CNT - last_count;
+    int16_t diff = ENC_TIM->CNT - radio.enc_count;
     if(diff != 0){
         uint16_t tmp = radio.channel_data[radio.ppm_chan_max + MAX_AUX_CHANNELS - 1];
         tmp += diff * 10; // speed
@@ -422,9 +425,8 @@ static uint16_t last_count;
             tmp = eeprom_data[IDX_CHANNEL_MIN_100];
         }
         radio.channel_data[radio.ppm_chan_max + MAX_AUX_CHANNELS - 1] = tmp;        
-        last_count += diff;
+        radio.enc_count += diff;
     }
-
 }
 
 /**
