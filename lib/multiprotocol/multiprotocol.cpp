@@ -40,7 +40,7 @@ static void update_channels_aux(void);
 static void protocol_init(void);
 static void update_led_status(void);
 int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max);
-static uint32_t random_id(uint16_t address, uint8_t create_new);
+static uint32_t random_id(uint8_t create_new);
 
 //Channel mapping for protocols
 uint8_t CH_AETR[]={AILERON, ELEVATOR, THROTTLE, RUDDER, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
@@ -50,7 +50,8 @@ uint8_t CH_EATR[]={ELEVATOR, AILERON, THROTTLE, RUDDER, CH5, CH6, CH7, CH8, CH9,
 
 //
 uint16_t eeprom_data[EEPROM_SIZE / 2] = {
-(uint16_t)(DEFAULT_ID>>16), (uint16_t)DEFAULT_ID, 
+(uint16_t)DEFAULT_ID, (uint16_t)(DEFAULT_ID>>16),
+0xFFFF, 0xFFFF,
 CHANNEL_MAX_100, CHANNEL_MIN_100, CHANNEL_MED_50, 
 CHANNEL_MAX_125, CHANNEL_MIN_125, CHANNEL_SWITCH,
 PPM_MAX_100, PPM_MIN_100, PPM_DEFAULT_VALUE
@@ -85,14 +86,14 @@ void multiprotocol_setup(void){
     DBG_PRINT("Protocol selection switch reads as %d\n", radio.mode_select);	
 
     for(uint8_t i = 0; i < MAX_CHN_NUM; i++){
-        radio.channel_data[i] = CHANNEL_MIN_100;
+        radio.channel_data[i] = eeprom_data[IDX_CHANNEL_MIN_100];
     }
 
     radio.channel_data[THROTTLE] = 0;
 
     modules_reset();
     
-    radio.protocol_id_master = random_id(EEPROM_ID_OFFSET, 0);
+    radio.protocol_id_master = random_id(0);
     DBG_PRINT("Module Id: %lx\n", radio.protocol_id_master);
 
 #ifdef ENABLE_PPM
@@ -242,15 +243,15 @@ static uint8_t Update_All(void){
                 val = radio.ppm_data[i];
                 sei();										// enable global int
                 val = map16b(val, 
-                            PPM_MIN_100 * 2,
-                            PPM_MAX_100 * 2,
-                            CHANNEL_MIN_100,
-                            CHANNEL_MAX_100);
+                            eeprom_data[IDX_PPM_MIN_100] * 2,
+                            eeprom_data[IDX_PPM_MAX_100] * 2,
+                            eeprom_data[IDX_CHANNEL_MIN_100],
+                            eeprom_data[IDX_CHANNEL_MAX_100]);
                 
                 if(val & 0x8000){
-                    val = CHANNEL_MIN_125;
-                }else if(val > CHANNEL_MAX_125){
-                    val = CHANNEL_MAX_125;
+                    val = eeprom_data[IDX_CHANNEL_MIN_125];
+                }else if(val > eeprom_data[IDX_CHANNEL_MAX_125]){
+                    val = eeprom_data[IDX_CHANNEL_MAX_125];
                 }
 
                 if(chan_or)
@@ -412,10 +413,11 @@ static uint16_t last_tim;
     //}
     for(uint8_t i = 0; i < MAX_AUX_CHANNELS - 1; i++){
         if((radio.channel_aux & (1<<i)) == 0){
-            radio.channel_data[radio.ppm_chan_max + i] = CHANNEL_MIN_100;
+            radio.channel_data[radio.ppm_chan_max + i] = eeprom_data[IDX_CHANNEL_MIN_100];
+    // TODO: Fix concurrent access to ppm_data
             radio.ppm_data[radio.ppm_chan_max + i] = PPM_MIN_PERIOD;
         }else{
-            radio.channel_data[radio.ppm_chan_max + i] = CHANNEL_MED_50;
+            radio.channel_data[radio.ppm_chan_max + i] = eeprom_data[IDX_CHANNEL_MED_50];
             radio.ppm_data[radio.ppm_chan_max + i] = PPM_MED_PERIOD;
         }        
     }
@@ -424,10 +426,10 @@ static uint16_t last_tim;
     if(diff != 0){
         uint16_t tmp = radio.channel_data[radio.ppm_chan_max + MAX_AUX_CHANNELS - 1];
         tmp += diff*10;
-        if(tmp > CHANNEL_MAX_100){
-            tmp = CHANNEL_MAX_100;
-        }else if(tmp < CHANNEL_MIN_100){
-            tmp = CHANNEL_MIN_100;
+        if(tmp > eeprom_data[IDX_CHANNEL_MAX_100]){
+            tmp = eeprom_data[IDX_CHANNEL_MAX_100];
+        }else if(tmp < eeprom_data[IDX_CHANNEL_MIN_100]){
+            tmp = eeprom_data[IDX_CHANNEL_MIN_100];
         }
         radio.channel_data[radio.ppm_chan_max + MAX_AUX_CHANNELS - 1] = tmp;        
         last_tim += diff;
@@ -485,63 +487,40 @@ static void modules_reset(void){
 /**
  * 
  * */
-static uint32_t random_id(uint16_t address, uint8_t create_new)
+static uint32_t random_id(uint8_t create_new)
 {
-    #ifndef FORCE_GLOBAL_ID
-        uint32_t id = 0;
-        uint8_t tmp;
+    uint32_t id = 0;        
+        
+    id = eeprom_data[EEPROM_ID_OFFSET + 1] << 16 | eeprom_data[EEPROM_ID_OFFSET]; 
 
-        if(EEPROM_Read((address + 10), &tmp, 1) != 1){
-            DBG_PRINT("Invalid data on EEPROM");
+    if(!create_new){
+        if(id != DEFAULT_ID)	//ID with seed=0
+        {
+            DBG_PRINT("Using ID from EEPROM\n");
+            return id;
         }
+    
+    // Generate a random ID
+#if defined STM32_BOARD
+        #define STM32_UUID ((uint32_t *)0x1FFFF7E8)
+        id = STM32_UUID[0] ^ STM32_UUID[1] ^ STM32_UUID[2];
+        DBG_PRINT("Generated ID from STM32 UUID\n");
+#endif
+    }else{
+        //TODO: 
+        id ^= 1; //random(0xfefefefe) + ((uint32_t)random(0xfefefefe) << 16);
+    }
 
-        if(tmp == 0xf0 && !create_new)
-        //if(eeprom_read_byte((EE_ADDR)(address + 10)) == 0xf0 && !create_new)
-        {  // TXID exists in EEPROM
-            //for(uint8_t i=4;i>0;i--){
-            //	id<<=8;
-            //	id|=eeprom_read_byte((EE_ADDR)address + i-1);
-            //}
-            EEPROM_Read(address, (uint8_t*)&id, 4);
+    eeprom_data[EEPROM_ID_OFFSET] = (uint16_t)id;
+    eeprom_data[EEPROM_ID_OFFSET + 1] = (uint16_t)(id >> 16);
+    *((uint8_t*)eeprom_data + EEPROM_BIND_FLAG) = 0xF0;
 
-            if(id != 0x2AD141A7)	//ID with seed=0
-            {
-                DBG_PRINT("Read ID from EEPROM\n");
-                return id;
-            }
-        }
-        // Generate a random ID
-        #if defined STM32_BOARD
-            #define STM32_UUID ((uint32_t *)0x1FFFF7E8)
-            if (!create_new)
-            {
-                id = STM32_UUID[0] ^ STM32_UUID[1] ^ STM32_UUID[2];
-                DBG_PRINT("Generated ID from STM32 UUID\n");
-            }
-            else
-        #endif
-            {
-                //TODO: 
-                id ^= 1; //random(0xfefefefe) + ((uint32_t)random(0xfefefefe) << 16);
-            }
-        //for(uint8_t i=0;i<4;i++){
-        //	eeprom_write_byte((EE_ADDR)(address+i), id >> (i*8));
-        //}
-        EEPROM_Write(address, (uint8_t*)&id, 4);
+    EEPROM_Write(EEPROM_ID_OFFSET, (uint8_t*)eeprom_data, EEPROM_SIZE);
 
-        //eeprom_write_byte((EE_ADDR)(address+10),0xf0);//write bind flag in eeprom.
-        tmp = 0xf0;
-        EEPROM_Write((address+10), &tmp, 1);
-
-        if(!EEPROM_Sync()){
-            DBG_PRINT("!! Fail to sync EEPROM !!\n");
-        }else{
-            DBG_PRINT("ID Saved to EEPROM\n");
-        }
-        return id;
-    #else
-        (void)address;
-        (void)create_new;
-        return FORCE_GLOBAL_ID;
-    #endif
+    if(!EEPROM_Sync()){
+        DBG_PRINT("!! Fail to sync EEPROM !!\n");
+    }else{
+        DBG_PRINT("ID Saved to EEPROM\n");
+    }
+    return id;
 }

@@ -58,10 +58,10 @@ RAM_CODE void CONTROLLER_Process(void){
         if(diff != 0){
             uint16_t tmp = laser4.aux2;
             tmp += diff*10;
-            if(tmp > CHANNEL_MAX_100){
-                tmp = CHANNEL_MAX_100;
-            }else if(tmp < CHANNEL_MIN_100){
-                tmp = CHANNEL_MIN_100;
+            if(tmp > eeprom_data[IDX_CHANNEL_MAX_100]){
+                tmp = eeprom_data[IDX_CHANNEL_MAX_100];
+            }else if(tmp < eeprom_data[IDX_CHANNEL_MIN_100]){
+                tmp = eeprom_data[IDX_CHANNEL_MIN_100];
             }
             laser4.aux2 = tmp;        
             last_tim += diff;

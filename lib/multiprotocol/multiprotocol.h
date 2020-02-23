@@ -173,15 +173,15 @@ extern "C" {
 #define EEPROM_ID_OFFSET        0
 #define EEPROM_BIND_FLAG        29 //EEPROM_SIZE - 1
 // Two byte indexes
-#define IDX_CHANNEL_MAX_100     8
-#define IDX_CHANNEL_MIN_100     9
-#define IDX_CHANNEL_MED_50      11
-#define IDX_CHANNEL_MAX_125     10
-#define IDX_CHANNEL_MIN_125	    12
-#define IDX_CHANNEL_SWITCH      13
-#define IDX_PPM_MAX_100         14
-#define IDX_PPM_MIN_100         15
-#define IDX_PPM_DEFAULT_VALUE   16
+#define IDX_CHANNEL_MAX_100     4
+#define IDX_CHANNEL_MIN_100     5
+#define IDX_CHANNEL_MED_50      6
+#define IDX_CHANNEL_MAX_125     7
+#define IDX_CHANNEL_MIN_125	    8
+#define IDX_CHANNEL_SWITCH      9
+#define IDX_PPM_MAX_100         10
+#define IDX_PPM_MIN_100         11
+#define IDX_PPM_DEFAULT_VALUE   12
 
 #define DEFAULT_ID              0x2AD141A7
 

@@ -61,13 +61,13 @@ uint8_t cur_state = state & STATE_MASK;
 static void changeMode(uint8_t new_mode){
     switch(new_mode){
         case MODE_MULTIPROTOCOL:
-            DBG_PRINT("Starting Multiprotocol\n");
+            DBG_PRINT("\n ***** Starting Multiprotocol *****\n");
             multiprotocol_setup();
             playTone(500,100);
             break;
         case MODE_HID:
 #ifdef ENABLE_GAME_CONTROLLER
-            DBG_PRINT("Starting game controller\n");
+            DBG_PRINT("\n ***** Starting game controller ***** \n");
             CONTROLLER_Init();
 #endif
             LED_OFF;
@@ -133,6 +133,8 @@ void setup(void){
     playMelody(chime);
     // wait for melody to finish
     delayMs(1500);
+
+    init_eeprom_data((uint8_t*)eeprom_data);
     // 3 seconds watchdog
     enableWatchDog(3000);
 }
