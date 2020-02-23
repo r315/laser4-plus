@@ -36,7 +36,6 @@ radio_t radio;
 static uint8_t Update_All(void);
 static void modules_reset(void);
 //static void update_serial_data(void);
-static void update_channels_aux(void);
 static void protocol_init(void);
 static void update_led_status(void);
 int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max);
@@ -52,8 +51,8 @@ uint8_t CH_EATR[]={ELEVATOR, AILERON, THROTTLE, RUDDER, CH5, CH6, CH7, CH8, CH9,
 uint16_t eeprom_data[EEPROM_SIZE / 2] = {
 (uint16_t)DEFAULT_ID, (uint16_t)(DEFAULT_ID>>16),
 0xFFFF, 0xFFFF,
-CHANNEL_MAX_100, CHANNEL_MIN_100, CHANNEL_MED_50, 
-CHANNEL_MAX_125, CHANNEL_MIN_125, CHANNEL_SWITCH,
+CHANNEL_MAX_100, CHANNEL_MIN_100,
+CHANNEL_MAX_125, CHANNEL_MIN_125,CHANNEL_SWITCH, 
 PPM_MAX_100, PPM_MIN_100, PPM_DEFAULT_VALUE
 };
 
@@ -404,35 +403,31 @@ static uint16_t next_callback;
 /**
  * After ppm synchronization, this function is called every ~20mS
  * */
-static void update_channels_aux(void){    
-static uint16_t last_tim;
+void update_channels_aux(void){
+static uint16_t last_count;
     
     radio.channel_aux = HW_SW_READ;
-    //if(radio.channel_aux){
-    //    DBG_PRINT("AUX: %x\n", radio.channel_aux);
-    //}
+   
     for(uint8_t i = 0; i < MAX_AUX_CHANNELS - 1; i++){
         if((radio.channel_aux & (1<<i)) == 0){
             radio.channel_data[radio.ppm_chan_max + i] = eeprom_data[IDX_CHANNEL_MIN_100];
-    // TODO: Fix concurrent access to ppm_data
-            radio.ppm_data[radio.ppm_chan_max + i] = PPM_MIN_PERIOD;
         }else{
-            radio.channel_data[radio.ppm_chan_max + i] = eeprom_data[IDX_CHANNEL_MED_50];
-            radio.ppm_data[radio.ppm_chan_max + i] = PPM_MED_PERIOD;
+            radio.channel_data[radio.ppm_chan_max + i] = eeprom_data[IDX_CHANNEL_SWITCH];
         }        
     }
 
-    int16_t diff = ENC_TIM->CNT - last_tim;
+    // Process encoder
+    int16_t diff = ENC_TIM->CNT - last_count;
     if(diff != 0){
         uint16_t tmp = radio.channel_data[radio.ppm_chan_max + MAX_AUX_CHANNELS - 1];
-        tmp += diff*10;
+        tmp += diff * 10; // speed
         if(tmp > eeprom_data[IDX_CHANNEL_MAX_100]){
             tmp = eeprom_data[IDX_CHANNEL_MAX_100];
         }else if(tmp < eeprom_data[IDX_CHANNEL_MIN_100]){
             tmp = eeprom_data[IDX_CHANNEL_MIN_100];
         }
         radio.channel_data[radio.ppm_chan_max + MAX_AUX_CHANNELS - 1] = tmp;        
-        last_tim += diff;
+        last_count += diff;
     }
 
 }

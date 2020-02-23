@@ -157,14 +157,12 @@ extern "C" {
 #define CHANNEL_MAX_100	1844	//	100%
 #define CHANNEL_MIN_100	204		//	100%
 #define CHANNEL_MAX_125	2047	//	125%
-#define CHANNEL_MED_50	((CHANNEL_MAX_100 - CHANNEL_MIN_100) / 2)	//	50%
-#define CHANNEL_MIN_125	0
-#define CHANNEL_SWITCH  1104    // 1550us	
+#define CHANNEL_MIN_125	0       //  125%
+#define CHANNEL_SWITCH  1104    //  1550us
 
-//#if defined(TX_ER9X)
-	#define PPM_MAX_100 2012	//	100%
-	#define PPM_MIN_100 988		//	100%
-//#endif
+#define PPM_MAX_100     2012	//	100%
+#define PPM_MIN_100     988		//	100%
+
 #define PPM_DEFAULT_VALUE 0
 #define MAX_AUX_CHANNELS 4
 #define _FLAGS_ radio.flags
@@ -175,12 +173,11 @@ extern "C" {
 // Two byte indexes
 #define IDX_CHANNEL_MAX_100     4
 #define IDX_CHANNEL_MIN_100     5
-#define IDX_CHANNEL_MED_50      6
-#define IDX_CHANNEL_MAX_125     7
-#define IDX_CHANNEL_MIN_125	    8
-#define IDX_CHANNEL_SWITCH      9
-#define IDX_PPM_MAX_100         10
-#define IDX_PPM_MIN_100         11
+#define IDX_CHANNEL_MAX_125     6
+#define IDX_CHANNEL_MIN_125	    7
+#define IDX_CHANNEL_SWITCH      8
+#define IDX_PPM_MAX_100         9
+#define IDX_PPM_MIN_100         10
 #define IDX_PPM_DEFAULT_VALUE   12
 
 #define DEFAULT_ID              0x2AD141A7
@@ -331,6 +328,7 @@ void multiprotocol_setup(void);
 void multiprotocol_loop(void);
 
 void ppm_setCallBack(void(*cb)(volatile uint16_t*, uint8_t));
+void update_channels_aux(void);
 uint16_t ppm_tx(void);
 uint16_t *ppm_getData(void);
 
