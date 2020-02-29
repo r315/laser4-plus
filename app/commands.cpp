@@ -294,8 +294,14 @@ public:
 	}
 }cmdbind;
 
+uint16_t ppm_sim_data[] = {3000, 3000, 1950, 3000};
+void ppm_sim(void){
+	setPpmFlag(ppm_sim_data, 4);
+}
+
 class CmdTest : public ConsoleCommand {
-	Console *console;    
+	Console *console;
+	uint32_t tim;
 public:
     CmdTest() : ConsoleCommand("test") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
@@ -316,6 +322,15 @@ public:
 				break;
 			case 1:
 				dbg_HexDump((uint8_t*)eeprom_data, EEPROM_SIZE);
+				break;
+
+			case 2:
+				DBG_PRINT("Starting ppm simulation \n");
+				tim = startTimer(20, SWTIM_AUTO, ppm_sim);
+				break;
+			case 3:
+				DBG_PRINT("Stoping ppm simulation \n");
+				stopTimer(tim);
 				break;
 			case 9:
 				DBG_PRINT("Erasing NV Data: %s\n", NV_Erase() == 0? "Fail": "ok");
