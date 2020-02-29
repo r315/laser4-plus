@@ -56,7 +56,6 @@ CHANNEL_MAX_125, CHANNEL_MIN_125, CHANNEL_SWITCH,
 PPM_MAX_100, PPM_MIN_100, PPM_DEFAULT_VALUE
 };
 
-static void setPpmFlag(volatile uint16_t *buf, uint8_t channels);
 static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
 
 /**
@@ -448,7 +447,7 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id)
 /**
  * @brief Callback from ppm_decode
  * */
-static void setPpmFlag(volatile uint16_t *buf, uint8_t chan){
+void setPpmFlag(volatile uint16_t *buf, uint8_t chan){
     PPM_FLAG_on;
     radio.ppm_data = buf;
     // Saving the number of channels received

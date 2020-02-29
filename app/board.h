@@ -126,18 +126,17 @@ extern "C" {
 #define LED_toggle                LED_TOGGLE
 #define EE_ADDR                   uint16_t
 
-#define TIMER_BASE                TIM3          //PB5 -> TIM3_CH2
-#define TIMER_BASE_IRQn           TIM3_IRQn
-#define TIMER_BASE_IRQHandler     TIM3_IRQHandler
+#define BUZ_TIM                   TIM1
 
 #define ENC_TIM_IRQn              TIM2_IRQn
 #define ENC_TIM                   TIM2
 #define ENC_TIM_IRQHandler        TIM2_IRQHandler
 
+#define TIMER_BASE                TIM3          //PB5 -> TIM3_CH2
+#define TIMER_BASE_IRQn           TIM3_IRQn
+#define TIMER_BASE_IRQHandler     TIM3_IRQHandler
+
 #define PPM_TIM                   TIM4
-
-#define BUZ_TIM                   TIM1
-
 
 #define cli     __disable_irq
 #define sei     __enable_irq
@@ -198,6 +197,16 @@ extern uint32_t _seeprom, _eeeprom;     //declared on linker script
 #define EEPROM_Sync             NV_Sync
 #define EEPROM_SIZE             30
 
+/* General symbols */
+#define ADC_RDY     ( 1 << 0)
+#define ADC_REF     ( 1 << 1)
+
+#define SWTIM_NUM       4
+#define SWTIM_RUNNING   (1 << 0)
+#define SWTIM_AUTO      (1 << 1)
+#define SWTIM_IN_USE    (1 << 2)
+
+
 typedef struct tone{
   uint16_t f;
   uint16_t t;
@@ -241,6 +250,10 @@ void playMelody(tone_t *tones);
 void setToneLevel(uint16_t level);
 
 uint32_t xrand(void);
+
+void processTimers(void);
+uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void));
+void stopTimer(uint32_t tim);
 
 #ifdef ENABLE_USART
 void usart_init(void);

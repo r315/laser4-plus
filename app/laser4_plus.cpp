@@ -166,6 +166,8 @@ void loop(void){
 #ifdef ENABLE_CLI
     con.process();
 #endif
+
+    processTimers();
     reloadWatchDog();
     //DBG_PIN_TOGGLE;
 }

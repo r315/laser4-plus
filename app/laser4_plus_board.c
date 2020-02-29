@@ -4,9 +4,6 @@
 #include <stdout.h>
 #include "usbd_conf.h"
 
-#define ADC_RDY     ( 1 << 0)
-#define ADC_REF     ( 1 << 1)
-
 typedef struct {
     volatile uint16_t results[4];
     volatile uint16_t flags;
@@ -14,17 +11,27 @@ typedef struct {
     float resolution;
 }adc_t;
 
+typedef struct {
+    uint32_t time;
+    uint32_t count;
+    uint32_t flags;
+    void (*action)(void);
+}swtimer_t;
+
 #ifdef ENABLE_SERIAL_FIFOS
 fifo_t serial_tx_fifo;
 fifo_t serial_rx_fifo;
 #endif
 
+// Private variables
 static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
 static tone_t *ptone;
 static void (*pinIntCB)(void);
 static adc_t adc;
+static swtimer_t swtim[SWTIM_NUM];
 
+// Private functions
 static void spiInit(void);
 static void timInit(void);
 static void adcInit(void);
@@ -34,6 +41,7 @@ static void ppmOutInit(void);
 static void buzInit(void);
 static void updateAdcValues(void);
 
+// Functions implemenation
 void Error_Handler(char * file, int line){
   while(1){
   }
@@ -548,7 +556,61 @@ void crcInit(void){
 }
 
 /**
- * @brief Pseudo random number generator??
+ * @brief Start a software timer
+ * 
+ * @param time : Timer duration
+ * @param flags : Extra flags for continuous mode, 0 for single time
+ * @param cb : callback function when timer expires
+ * 
+ * @return : Assigned timer index
+ * */
+uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void)){
+
+    for(uint32_t i = 0; i < SWTIM_NUM; i++){
+        if((swtim[i].flags & SWTIM_RUNNING) == 0){
+            swtim[i].time = time;
+            swtim[i].count = 0;
+            swtim[i].action = cb;
+            swtim[i].flags = flags | SWTIM_RUNNING;
+            return i;
+        }
+    }
+    return SWTIM_NUM;
+}
+
+/**
+ * */
+void stopTimer(uint32_t tim){
+    swtim[tim].flags = 0;
+}
+
+/**
+ * @brief Check if timers have expired and execute correspondent action
+ * 
+ * */
+void processTimers(void){
+static uint32_t last_ticks = 0;
+uint32_t diff = ticks - last_ticks;
+
+    for(uint32_t i = 0; i < SWTIM_NUM; i++){
+        if(swtim[i].flags & SWTIM_RUNNING){
+            swtim[i].count += diff;
+            if(swtim[i].count >= swtim[i].time){
+                swtim[i].action();
+                if(swtim[i].flags & SWTIM_AUTO){
+                    swtim[i].count = 0;
+                }else{
+                    swtim[i].flags &= ~(SWTIM_RUNNING);
+                }
+            }
+        }
+    }
+
+    last_ticks = ticks;
+}
+
+/**
+ * @brief meh close enougth
  * 
  * @return : CRC'd number with timer
  * */
