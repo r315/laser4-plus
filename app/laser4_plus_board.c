@@ -496,7 +496,7 @@ static void startTone(tone_t *tone){
     DMA1_Channel5->CMAR = (uint32_t)(&tone->f);
     DMA1_Channel5->CNDTR = tone->t;
     DMA1_Channel5->CCR |= DMA_CCR_EN;
-    PPM_TIM->EGR = TIM_EGR_UG;
+    BUZ_TIM->EGR = TIM_EGR_UG;
     BUZ_TIM->CR1 |=  TIM_CR1_CEN;
 }
 
@@ -522,7 +522,9 @@ static tone_t single_tone;
  * @param tones : pointer to tones array.
  * */
 void playMelody(tone_t *tones){
+    // Set next tone
     ptone = tones + 1;
+    // Play first tone
     startTone(tones);   
 }
 
@@ -551,9 +553,10 @@ void crcInit(void){
  * @return : CRC'd number with timer
  * */
 uint32_t xrand(void){
-    CRC->DR = TIMER_BASE->CNT ^ CRC->DR;
+    CRC->DR = TIMER_BASE->CNT;
     return CRC->DR;
 }
+
 /**
  * @brief Interrupts handlers
  * */
@@ -598,14 +601,16 @@ void DMA1_Channel5_IRQHandler(void){
     if(DMA1->ISR & DMA_ISR_TCIF5){
         DMA1_Channel5->CCR &= ~DMA_CCR_EN;
         if(ptone->t != 0){
+            // Load next tone
             DMA1_Channel5->CMAR = (uint32_t)(&ptone->f);
             DMA1_Channel5->CNDTR = ptone->t;
             DMA1_Channel5->CCR |= DMA_CCR_EN;
             ptone++;
         }else{
+            // Stop tone generation
             BUZ_TIM->CR1 &= ~TIM_CR1_CEN;
             BUZ_TIM->ARR = 0xFFF;
-            PPM_TIM->EGR = TIM_EGR_UG;
+            BUZ_TIM->EGR = TIM_EGR_UG;
         }
     }
     DMA1->IFCR |= DMA_IFCR_CGIF5;
