@@ -9,6 +9,8 @@ extern "C" {
 #include "stm32f1xx_hal.h"
 #include "fifo.h"
 
+//#define XTAL12MHZ
+
 /* GPIO definitions */
 #define GPIO_MODE_MASK          15
 //#define GPIO_MODE_INPUT         (0 << 0) // Input, defined on HAL

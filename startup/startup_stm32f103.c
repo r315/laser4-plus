@@ -96,7 +96,11 @@ volatile uint32_t *src, *dest;
     /* Configure and enable PLL oscillator (sysclk = 72Mhz) */
     
     RCC->CFGR = //(4 << 24) |                 // MCO = sysclk
+#ifdef XTAL12MHZ
+                (4 << 18) |                 // PLLMUL = 6
+#else
                 (7 << 18) |                 // PLLMUL = 9
+#endif
                 (1 << 16) |                 // PLLSRC = PREDIV1
                 (2 << 14) |                 // ADCPRE = 6
                 (4 << 8);                   // PPRE1 = 2
