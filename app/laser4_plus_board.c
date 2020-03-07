@@ -5,16 +5,19 @@
 #include "usbd_conf.h"
 
 typedef struct {
-    volatile uint16_t results[4];
-    volatile uint16_t flags;
+    volatile uint16_t result;
+    volatile uint16_t status;
     uint32_t battery_voltage;
+    uint32_t calibration_code;
     float resolution;
+    float vdiv_racio;
+    void (*cb)(uint32_t data);
 }adc_t;
 
 typedef struct {
     uint32_t time;
     uint32_t count;
-    uint32_t flags;
+    uint32_t status;
     void (*action)(void);
 }swtimer_t;
 
@@ -33,9 +36,9 @@ fifo_t serial_rx_fifo;
 static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
 static sound_t hbuz;
-static void (*pinIntCB)(void);
-static adc_t adc;
+static adc_t hadc;
 static swtimer_t swtim[SWTIM_NUM];
+static void (*pinIntCB)(void);
 
 // Private functions
 static void spiInit(void);
@@ -45,7 +48,6 @@ static void encInit(void);
 static void crcInit(void);
 static void ppmOutInit(void);
 static void buzInit(void);
-static void updateAdcValues(void);
 
 // Functions implemenation
 void Error_Handler(char * file, int line){
@@ -304,11 +306,15 @@ static void adcSampleTime(uint16_t ch, uint16_t time){
  * @brief calibrate ADC and get resolution based 
  * on 1.20V internal reference
  * */
-static void adcCalibration(void){
+uint32_t adcCalibrate(void){
     ADC1->CR2 |= ADC_CR2_CAL;                     // Perform ADC calibration
     while(ADC1->CR2 & ADC_CR2_CAL){               
         asm volatile("nop");
     }
+
+    hadc.calibration_code = ADC1->DR;
+    // Set calibration flag
+    hadc.status |= ADC_CAL;
 
     adcSampleTime(HW_VREFINT_CHANNEL, 2);         // Sample time = 13.5 cycles.
     // select VREFINT channel
@@ -316,16 +322,38 @@ static void adcCalibration(void){
     // wake up Vrefint 
     ADC1->CR2 |= ADC_CR2_TSVREFE;
     delayMs(5);
-    // Start converion
+    // Start conversion
     ADC1->CR2 |= ADC_CR2_SWSTART;
     while(!(ADC1->SR & ADC_SR_EOC)){
         asm volatile("nop");
     }
-    adc.resolution = 1200.0f / ADC1->DR;
+    // Compute resolution
+    hadc.resolution = VREFINT_VALUE / ADC1->DR;
     // power down VREFINT
     ADC1->CR2 &= ~ADC_CR2_TSVREFE;
+    // Set resolution flag
+    hadc.status |= ADC_RES;
+    return 1;
 }
 
+/**
+ * @brief Set voltage divider racio, used to measure battery voltage
+ * 
+ * @param r : Racio = R2/(R1+R2)
+ * */
+void adcSetVdivRacio(float r){
+    hadc.vdiv_racio = r;
+    hadc.status |= ADC_DIV;
+}
+
+/**
+ * @brief get current voltage divider racio, used to measure battery voltage
+ * 
+ * @return : R2/(R1+R2)
+ * */
+float adcGetVdivRacio(void){
+    return hadc.vdiv_racio;
+}
 /**
  * @brief Configure ADC for a HW_VBAT_CHANNEL channel in interrupt mode and initiates a convertion.
  *  After convertion the result is stored locally through the interrupt
@@ -342,41 +370,76 @@ static void adcInit(void){
     ADC1->CR2 = (15 << 17) |         // trigger by software,
                 ADC_CR2_ADON;        // Enable ADC
     delayMs(20);
-    adcSampleTime(HW_VBAT_CHANNEL, 4);            // Sample time = 41.5 cycles.
-    adcCalibration();
+    adcSampleTime(HW_VBAT_CHANNEL, 6);            // Sample time, 4 => 41.5 cycles.
+    adcCalibrate();
     ADC1->SQR3 = (HW_VBAT_CHANNEL << 0);
     ADC1->CR1 = ADC_CR1_EOCIE;                    // Enable end of convertion interrupt
     NVIC_EnableIRQ(ADC1_IRQn);
-    adc.flags = ADC_RDY;
-    updateAdcValues();    
+    hadc.status = 0;
 }
 
 /**
  * @brief 
  * */
-static void updateAdcValues(void){
-    if( adc.flags & ADC_RDY){
-        adc.flags &= ~ADC_RDY;
-        ADC1->CR2 |= ADC_CR2_SWSTART;
-    }
-}
-/**
- * @brief Read battery voltage, a new battery 
- *      measurement is performed on function call exit
- * 
- * @return : battery voltage in mV
- * */
-uint32_t getBatteryVoltage(void){
-    // Start a new convertion
-    updateAdcValues();    
-    return adc.battery_voltage;
+static void adcStartConversion(uint32_t ch){
+    hadc.status &= ~ADC_RDY;
+    // Set first conversion channel in regular sequence,
+    // ignore all other channnels
+    ADC1->SQR3 = (ch << 0);
+    // Start
+    ADC1->CR2 |= ADC_CR2_SWSTART;
 }
 
 /**
  * @brief Get current adc resolution (mV/step)
  * */
-float getAdcResolution(void){    
-    return adc.resolution;
+float adcGetResolution(void){    
+    return hadc.resolution;
+}
+
+/**
+ * @brief End of conversion callback for battery channel
+ * 
+ * @param data : RAW data from ADC
+ * */
+static void batteryEOC(uint32_t data){
+    hadc.battery_voltage = (float)(data * hadc.resolution) / hadc.vdiv_racio;
+}
+/**
+ * @brief Get battery voltage by start a convertion and wait for it to end
+ * 
+ * @return : battery voltage in mV
+ * */
+uint32_t batteryGetVoltage(void){
+    hadc.cb = batteryEOC;
+    adcStartConversion(HW_VBAT_CHANNEL);
+    while((hadc.status & ADC_RDY) == 0 );
+    return  hadc.battery_voltage;
+}
+
+/**
+ * @brief Read battery voltage, if a battery measurement is ready, starts a new 
+ * connversion and return the last measured value. If a measurement is not available return
+ * 
+ * @param dst : Pointer to place measured value
+ * 
+ * @return : 0 if no measure is available (don't change dst), != 0 on success
+ * */
+uint32_t batteryReadVoltage(uint32_t *dst){
+    if(hadc.status & ADC_RDY){
+        *dst = hadc.battery_voltage;
+        hadc.cb = batteryEOC;
+        adcStartConversion(HW_VBAT_CHANNEL);
+        return 1;
+    }
+    return 0;
+}
+
+/**
+ * @brief Get instant current consumption (mA)
+ * */
+float getInstantCurrent(void){
+    return 0.0f;
 }
 
 /**
@@ -601,11 +664,11 @@ void crcInit(void){
 uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void)){
 
     for(uint32_t i = 0; i < SWTIM_NUM; i++){
-        if((swtim[i].flags & SWTIM_RUNNING) == 0){
+        if((swtim[i].status & SWTIM_RUNNING) == 0){
             swtim[i].time = time;
             swtim[i].count = 0;
             swtim[i].action = cb;
-            swtim[i].flags = flags | SWTIM_RUNNING;
+            swtim[i].status = flags | SWTIM_RUNNING;
             return i;
         }
     }
@@ -615,7 +678,7 @@ uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void)){
 /**
  * */
 void stopTimer(uint32_t tim){
-    swtim[tim].flags = 0;
+    swtim[tim].status = 0;
 }
 
 /**
@@ -627,14 +690,14 @@ static uint32_t last_ticks = 0;
 uint32_t diff = ticks - last_ticks;
 
     for(uint32_t i = 0; i < SWTIM_NUM; i++){
-        if(swtim[i].flags & SWTIM_RUNNING){
+        if(swtim[i].status & SWTIM_RUNNING){
             swtim[i].count += diff;
             if(swtim[i].count >= swtim[i].time){
                 swtim[i].action();
-                if(swtim[i].flags & SWTIM_AUTO){
+                if(swtim[i].status & SWTIM_AUTO){
                     swtim[i].count = 0;
                 }else{
-                    swtim[i].flags &= ~(SWTIM_RUNNING);
+                    swtim[i].status &= ~(SWTIM_RUNNING);
                 }
             }
         }
@@ -687,9 +750,12 @@ void SysTick_Handler(void){
 #endif
 
 void ADC1_IRQHandler(void){
-uint16_t result = ADC1->DR;    
-    adc.battery_voltage = result * adc.resolution;    
-    adc.flags |= ADC_RDY;
+    if(hadc.cb != NULL){
+        hadc.cb(ADC1->DR);
+    }else{
+        hadc.result = ADC1->DR;
+    }
+    hadc.status |= ADC_RDY;
     //ADC1->SR = 0;
 }
 

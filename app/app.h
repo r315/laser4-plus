@@ -29,6 +29,7 @@ extern "C" {
 #define EEPROM_ID_OFFSET        0
 #define EEPROM_BIND_FLAG        29 //EEPROM_SIZE - 1
 // Two byte indexes
+#define IDX_BAT_VOLTAGE_DIV     2
 #define IDX_CHANNEL_MAX_100     4
 #define IDX_CHANNEL_MIN_100     5
 #define IDX_CHANNEL_MAX_125     6
@@ -39,6 +40,7 @@ extern "C" {
 #define IDX_PPM_DEFAULT_VALUE   12
 
 #define DEFAULT_ID              0x2AD141A7
+#define BAT_VOLTAGE_DIV         0x3e27ef9e  //0.164
 
 //#define USE_FREERTOS
 
@@ -50,6 +52,10 @@ extern "C" {
     #define DBG_DUMP_LINE(...)
 #endif
 
+
+#define STATE_BITS          4
+#define STATE_MASK          ((1<<STATE_BITS) - 1)
+
 enum {
     STARTING = 0,
     MODE_MULTIPROTOCOL,
@@ -57,8 +63,10 @@ enum {
     REQ_MODE_CHANGE,
 };
 
-#define STATE_BITS          4
-#define STATE_MASK          ((1<<STATE_BITS) - 1)
+typedef union {
+  float f;
+  uint32_t u;
+}f2u_u;
 
 extern uint16_t eeprom_data[];
 

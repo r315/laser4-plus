@@ -79,6 +79,13 @@ static void changeMode(uint8_t new_mode){
     }
 }
 
+void checkBattery(void){
+uint32_t vbat;
+    if(batteryReadVoltage(&vbat)){
+        DBG_PRINT("Battery voltage: %dmV\n", vbat);
+    }    
+}
+
 
 void init_eeprom_data(uint8_t *dst){
 uint8_t bind_flag;
@@ -134,7 +141,16 @@ void setup(void){
     
     // Load eeprom data
     init_eeprom_data((uint8_t*)eeprom_data);
+    // Configure adc calibration values
+    f2u_u tmp;
+    tmp.u = (uint32_t)(eeprom_data[IDX_BAT_VOLTAGE_DIV] | (eeprom_data[IDX_BAT_VOLTAGE_DIV + 1] << 16));
+    adcSetVdivRacio(tmp.f);
+
+    /* Get battery voltage */
+    DBG_PRINT("Battery voltage: %dmV\n", batteryGetVoltage());
+    // wait for melody to finish
     buzWaitEnd();
+    startTimer(1000, SWTIM_AUTO, checkBattery);
     // 3 seconds watchdog
     enableWatchDog(3000);
 }

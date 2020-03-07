@@ -182,10 +182,10 @@ public:
 
 	void batteryVoltage(void){
 		console->print(
-			"Battery voltage: %umV\n"
-        	"ADC Resolution: %.3fmV/step\n",
-			getBatteryVoltage(), 
-			getAdcResolution()
+			"Battery voltage: %umV\n"        	
+			"Amps: %.3fmA\n",
+			batteryGetVoltage(),
+			getInstantCurrent()
 		);
 	}
 

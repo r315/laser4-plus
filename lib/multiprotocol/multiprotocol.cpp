@@ -55,9 +55,7 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
 void multiprotocol_setup(void){   
     DBG_PRINT("Laser4+ version: %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
     /* Configure PPM input pin PB5*/
-    gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);
-    /* Get battery voltage */
-    DBG_PRINT("Battery voltage: %dmV\n", getBatteryVoltage());       
+    gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);        
 
     // Read status of bind button
     if(IS_BIND_BUTTON_PRESSED)

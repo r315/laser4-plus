@@ -177,11 +177,13 @@ extern "C" {
 #endif
 
 /* Analog input */
-#define ADC_VREF              1500 // mV
-#define ADC_RESOLUTION        (4096.0 / ADC_VREF);
 #define HW_VBAT_CHANNEL       0
-#define HW_VBAT_CH_INIT       gpioInit(GPIOA, HW_VBAT_CHANNEL, GPI_ANALOG)
+#define HW_ISENSE_CHANNEL     2
+#define HW_VBAT_CH_INIT       \
+      gpioInit(GPIOA, HW_VBAT_CHANNEL, GPI_ANALOG); \
+      gpioInit(GPIOA, HW_ISENSE_CHANNEL, GPI_ANALOG)
 #define HW_VREFINT_CHANNEL    17
+#define VREFINT_VALUE         1200.0f
 
 /* fast code */
 #define RAM_CODE __attribute__((section(".ram_code")))
@@ -200,6 +202,12 @@ extern uint32_t _seeprom, _eeeprom;     //declared on linker script
 #define EEPROM_SIZE             30
 
 /* General symbols */
+#define ADC_RDY     (1 << 0)
+#define ADC_DIV     (1 << 1)
+#define ADC_CAL     (1 << 2)
+#define ADC_RES     (1 << 3)
+//#define ADC_BUSY    (1 << 4)
+
 #define BUZ_PLAYING (1 << 0)
 
 #define SWTIM_NUM       4
@@ -241,8 +249,14 @@ void laser4Init(void);
 
 uint32_t readSwitches(void);
 
-uint32_t getBatteryVoltage(void);
-float getAdcResolution(void);
+float adcGetResolution(void);
+void adcSetVdivRacio(float r);
+float adcGetVdivRacio(void);
+uint32_t adcCalibrate(void);
+float getInstantCurrent(void);
+uint32_t batteryGetVoltage(void);
+uint32_t batteryReadVoltage(uint32_t *dst);
+
 
 void ppmOut(uint16_t *data);
 
