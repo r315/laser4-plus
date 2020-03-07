@@ -18,6 +18,11 @@ typedef struct {
     void (*action)(void);
 }swtimer_t;
 
+typedef struct {
+    tone_t *ptone;
+    tone_t tone;
+}sound_t;
+
 #ifdef ENABLE_SERIAL_FIFOS
 fifo_t serial_tx_fifo;
 fifo_t serial_rx_fifo;
@@ -26,7 +31,7 @@ fifo_t serial_rx_fifo;
 // Private variables
 static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
-static tone_t *ptone;
+static sound_t hbuz;
 static void (*pinIntCB)(void);
 static adc_t adc;
 static swtimer_t swtim[SWTIM_NUM];
@@ -463,6 +468,14 @@ void ppmOutInit(void){
 /**
  * @brief Basic tone generation on pin PA8 using TIM1_CH1
  * and DMA 
+ * 
+ * Buzzer timer is configured as PWM mode1 in downcount mode.
+ * The counter starts from ARR register (top) that defines the frequency perioud in us,
+ * and counts down, when matches CCR1 the output is set to high.
+ * When the counter reaches zero, set the output to low and request a DMA transfer to ARR register.
+ * On the last DMA transfer an interrupt is issued, that will configure the next tone periout to be 
+ * loaded to ARR or stop the melody. 
+ * 
  * */
 void buzInit(void){
     gpioInit(GPIOA, 8, GPO_AF | GPO_2MHZ);
@@ -486,9 +499,9 @@ void buzInit(void){
 #endif
     BUZ_TIM->PSC = (SystemCoreClock/1000000) - 1;	// 72-1;for 72 MHZ (1us clock)
     BUZ_TIM->CCER = TIM_CCER_CC1E;                  // Enable channel
-    BUZ_TIM->BDTR |= TIM_BDTR_MOE;
+    BUZ_TIM->BDTR |= TIM_BDTR_MOE;                  // Necessary for TIM1
     // Force idle state
-    BUZ_TIM->CCR1 = 5;                              // Low volume
+    BUZ_TIM->CCR1 = BUZ_DEFAULT_VOLUME;             // Low volume level
     BUZ_TIM->ARR = 0xFFF;
     BUZ_TIM->EGR |= TIM_EGR_UG;
     // Enable DMA Request 
@@ -512,15 +525,15 @@ static void startTone(tone_t *tone){
  * @brief Plays a single tone for a given time
  * 
  * @param freq     : Tone fundamental frequency
- * @param duration : duration of tone in cycles
+ * @param duration : duration of tone in ms
  * */
 void playTone(uint16_t freq, uint16_t duration){
-static tone_t single_tone;
-    single_tone.f = freq;
-    single_tone.t = duration;
-    ptone = &single_tone;
-    startTone(ptone);
-    ptone->t = 0;       //force tone ending
+uint32_t d = duration * 1000UL;    // Convert to us
+    hbuz.tone.f = FREQ_TO_US(freq) - BUZ_TIM->CCR1; // Subtract volume pulse
+    hbuz.tone.t = d / hbuz.tone.f;
+    hbuz.ptone = &hbuz.tone;
+    startTone(hbuz.ptone);
+    hbuz.ptone->t = 0;       //force tone ending
 }
 
 /**
@@ -530,8 +543,18 @@ static tone_t single_tone;
  * @param tones : pointer to tones array.
  * */
 void playMelody(tone_t *tones){
+tone_t *pt = tones;
+
+    // Convert each tone frequency to time in us
+    while(pt->t > 0){
+        uint32_t d = pt->t * 1000UL;
+        pt->f = FREQ_TO_US(pt->f) - BUZ_TIM->CCR1;  
+        pt->t = d / pt->f;
+        pt++;
+    }
+
     // Set next tone
-    ptone = tones + 1;
+    hbuz.ptone = tones + 1;
     // Play first tone
     startTone(tones);   
 }
@@ -662,12 +685,12 @@ uint16_t result = ADC1->DR;
 void DMA1_Channel5_IRQHandler(void){
     if(DMA1->ISR & DMA_ISR_TCIF5){
         DMA1_Channel5->CCR &= ~DMA_CCR_EN;
-        if(ptone->t != 0){
+        if(hbuz.ptone->t != 0){
             // Load next tone
-            DMA1_Channel5->CMAR = (uint32_t)(&ptone->f);
-            DMA1_Channel5->CNDTR = ptone->t;
+            DMA1_Channel5->CMAR = (uint32_t)(&hbuz.ptone->f);
+            DMA1_Channel5->CNDTR = hbuz.ptone->t;
             DMA1_Channel5->CCR |= DMA_CCR_EN;
-            ptone++;
+            hbuz.ptone++;
         }else{
             // Stop tone generation
             BUZ_TIM->CR1 &= ~TIM_CR1_CEN;

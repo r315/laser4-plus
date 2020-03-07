@@ -129,6 +129,8 @@ extern "C" {
 #define EE_ADDR                   uint16_t
 
 #define BUZ_TIM                   TIM1
+#define BUZ_DEFAULT_VOLUME        9     // 10us pulse.
+#define FREQ_TO_US(_F)            (1000000/_F)
 
 #define ENC_TIM_IRQn              TIM2_IRQn
 #define ENC_TIM                   TIM2
