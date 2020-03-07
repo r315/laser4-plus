@@ -25,6 +25,21 @@ extern "C" {
 #include "game_controller.h"
 #endif
 
+/* Indexes of constants in eeprom */
+#define EEPROM_ID_OFFSET        0
+#define EEPROM_BIND_FLAG        29 //EEPROM_SIZE - 1
+// Two byte indexes
+#define IDX_CHANNEL_MAX_100     4
+#define IDX_CHANNEL_MIN_100     5
+#define IDX_CHANNEL_MAX_125     6
+#define IDX_CHANNEL_MIN_125	    7
+#define IDX_CHANNEL_SWITCH      8
+#define IDX_PPM_MAX_100         9
+#define IDX_PPM_MIN_100         10
+#define IDX_PPM_DEFAULT_VALUE   12
+
+#define DEFAULT_ID              0x2AD141A7
+
 //#define USE_FREERTOS
 
 #if defined(ENABLE_DEBUG)
@@ -44,6 +59,8 @@ enum {
 
 #define STATE_BITS          4
 #define STATE_MASK          ((1<<STATE_BITS) - 1)
+
+extern uint16_t eeprom_data[];
 
 void reqModeChange(uint8_t new_mode);
 uint8_t getCurrentMode(void);
