@@ -17,6 +17,20 @@ tone_t chime[] = {
 Console con;
 #endif
 
+/**
+ * EEPROM ram copy
+ * */
+uint16_t eeprom_data[EEPROM_SIZE / 2] = {
+    (uint16_t)DEFAULT_ID, (uint16_t)(DEFAULT_ID>>16),
+    (uint16_t)BAT_VOLTAGE_DIV,(uint16_t)(BAT_VOLTAGE_DIV>>16),
+    CHANNEL_MAX_100, CHANNEL_MIN_100,
+    CHANNEL_MAX_125, CHANNEL_MIN_125, CHANNEL_SWITCH, 
+    PPM_MAX_100, PPM_MIN_100, PPM_DEFAULT_VALUE,
+};
+
+/**
+ * @brief
+ * */
 uint8_t getCurrentMode(void){
     return state;
 }
