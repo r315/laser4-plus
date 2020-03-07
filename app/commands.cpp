@@ -221,21 +221,6 @@ public:
 		console->print("Mode: %s\n", aux == MODE_MULTIPROTOCOL ? "Multiprotocol" : "Game Controller");
 	}
 
-	void channelRanges(void){
-		console->print(
-			"CH MAX      %d\n"
-			"CH MIN      %d\n"
-			"CH switch   %d\n"
-			"PPM MAX     %d\n"
-			"PPM MIN     %d\n",
-			eeprom_data[IDX_CHANNEL_MAX_100],
-			eeprom_data[IDX_CHANNEL_MIN_100],
-			eeprom_data[IDX_CHANNEL_SWITCH],
-			eeprom_data[IDX_PPM_MAX_100],
-			eeprom_data[IDX_PPM_MIN_100]
-		);
-	}
-
 	char execute(void *ptr) {
 		console->xputs("\n----------------------------------------");
         batteryVoltage();
@@ -245,8 +230,6 @@ public:
 		channelValues();
 		console->xputs("----------------------------------------");
 		mode();
-		console->xputs("----------------------------------------");
-		channelRanges();
 		console->xputs("----------------------------------------");
         return CMD_OK;        
 	}	
@@ -265,10 +248,8 @@ public:
 			console->print("Random ID: %x\n", xrand());
 		}else{
 			console->print("Random ID: %x\n", radio.protocol_id_master);
-		}
-	
-		return CMD_OK;
-		
+		}	
+		return CMD_OK;		
 	}
 }cmdid;	
 
@@ -332,8 +313,7 @@ public:
 				DBG_PRINT("Stoping ppm simulation \n");
 				stopTimer(tim);
 				break;
-			case 9:
-				DBG_PRINT("Erasing NV Data: %s\n", NV_Erase() == 0? "Fail": "ok");
+			case 9:				
 				break;
 		}		
 		return CMD_OK;
@@ -359,6 +339,120 @@ public:
 	}
 }cmdmode;
 
+class CmdEeprom : public ConsoleCommand {
+	Console *console;    
+public:
+    CmdEeprom() : ConsoleCommand("eeprom") {}
+	void init(void *params) { console = static_cast<Console*>(params); }
+
+	void help(void) {
+		console->xputs("usage: eeprom [dump|save|erase]");
+	}
+
+	void id(void){
+		console->print(			
+			"ID \t	\t\t0x%X\n",
+			*(uint32_t*)(eeprom_data+EEPROM_ID_OFFSET));	
+	}
+
+	void channelRanges(void){
+		console->print(
+			"CH MAX      \t\t%d\n"
+			"CH MIN      \t\t%d\n"
+			"CH switch   \t\t%d\n"
+			"PPM MAX     \t\t%d\n"
+			"PPM MIN     \t\t%d\n",
+			eeprom_data[IDX_CHANNEL_MAX_100],
+			eeprom_data[IDX_CHANNEL_MIN_100],
+			eeprom_data[IDX_CHANNEL_SWITCH],
+			eeprom_data[IDX_PPM_MAX_100],
+			eeprom_data[IDX_PPM_MIN_100]
+		);
+	}	
+
+	char execute(void *ptr) {
+		char *p = (char*)ptr;
+
+		if(*p == '\0'){
+			console->xputs("----------------------------------------");
+			channelRanges();
+			id();
+			console->xputs("----------------------------------------");
+			return CMD_OK;
+		}
+
+		if(xstrcmp(p,"help") == 0){	
+			help();
+			return CMD_OK;
+		}
+
+		if(xstrcmp(p,"erase") == 0){
+			DBG_PRINT("Erasing NV Data: %s\n", NV_Erase() == 0? "Fail": "ok");
+			return CMD_OK;
+		}
+		
+		if(xstrcmp(p,"dump") == 0){
+			DBG_DUMP_LINE((uint8_t*)eeprom_data, EEPROM_SIZE, 0);			
+			return CMD_OK;
+		}
+		
+		if(xstrcmp(p,"save") == 0){	
+			EEPROM_Write(0, (uint8_t*)eeprom_data, EEPROM_SIZE);		
+			return CMD_OK;
+		}
+
+		uint32_t int_value;
+		if(nextHex((char**)&ptr, &int_value)){
+			reqModeChange((uint8_t)int_value);
+		}
+		return CMD_OK;
+	}
+}cmdeeprom;
+
+class CmdAdc : public ConsoleCommand {
+	Console *console;    
+public:
+    CmdAdc() : ConsoleCommand("adc") {}
+	void init(void *params) { console = static_cast<Console*>(params); }
+	void help(void) {
+		console->xputs("usage: adc [calibrate]");
+	}
+
+	void batVoltageCalibration(void){
+		console->print("Bat voltage div \t%.3f\n",adcGetVdivRacio());
+	}
+
+	void adcResolution(void){
+		console->print("Adc resolution  \t%.3fmV/step\n", adcGetResolution());
+	}
+
+	char execute(void *ptr) {
+		char *p = (char*)ptr;
+		if(*p == '\0'){
+			batVoltageCalibration();
+			adcResolution();			
+			return CMD_OK;
+		}
+
+		if(xstrcmp(p,"help") == 0){	
+			help();
+			return CMD_OK;
+		}
+
+		if(xstrcmp(p,"calibrate") == 0){	
+			if(adcCalibrate()){
+				adcResolution();
+			}else{
+				console->print("Fail to calibrate adc\n");
+			}
+			return CMD_OK;
+		}
+	
+		return CMD_OK;
+	}
+}cmdadc;
+
+
 ConsoleCommand *laser4_commands[]{
     &cmdhelp,
     &cmdcc25,
@@ -368,6 +462,8 @@ ConsoleCommand *laser4_commands[]{
 	&cmdstatus,
 	&cmdtest,
 	&cmdmode,
+	&cmdeeprom,
+	&cmdadc,
     NULL
 };
 #endif
