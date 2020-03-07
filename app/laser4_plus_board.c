@@ -21,6 +21,7 @@ typedef struct {
 typedef struct {
     tone_t *ptone;
     tone_t tone;
+    volatile uint32_t status;
 }sound_t;
 
 #ifdef ENABLE_SERIAL_FIFOS
@@ -513,12 +514,13 @@ void buzInit(void){
  * 
  * @param tone : pointer to first tone to be played
  * */
-static void startTone(tone_t *tone){
+static void buzStartTone(tone_t *tone){
     DMA1_Channel5->CMAR = (uint32_t)(&tone->f);
     DMA1_Channel5->CNDTR = tone->t;
     DMA1_Channel5->CCR |= DMA_CCR_EN;
     BUZ_TIM->EGR = TIM_EGR_UG;
     BUZ_TIM->CR1 |=  TIM_CR1_CEN;
+    hbuz.status |= BUZ_PLAYING;
 }
 
 /**
@@ -527,12 +529,12 @@ static void startTone(tone_t *tone){
  * @param freq     : Tone fundamental frequency
  * @param duration : duration of tone in ms
  * */
-void playTone(uint16_t freq, uint16_t duration){
+void buzPlayTone(uint16_t freq, uint16_t duration){
 uint32_t d = duration * 1000UL;    // Convert to us
     hbuz.tone.f = FREQ_TO_US(freq) - BUZ_TIM->CCR1; // Subtract volume pulse
     hbuz.tone.t = d / hbuz.tone.f;
     hbuz.ptone = &hbuz.tone;
-    startTone(hbuz.ptone);
+    buzStartTone(hbuz.ptone);
     hbuz.ptone->t = 0;       //force tone ending
 }
 
@@ -542,7 +544,7 @@ uint32_t d = duration * 1000UL;    // Convert to us
  * 
  * @param tones : pointer to tones array.
  * */
-void playMelody(tone_t *tones){
+void buzPlay(tone_t *tones){
 tone_t *pt = tones;
 
     // Convert each tone frequency to time in us
@@ -556,7 +558,7 @@ tone_t *pt = tones;
     // Set next tone
     hbuz.ptone = tones + 1;
     // Play first tone
-    startTone(tones);   
+    buzStartTone(tones);   
 }
 
 /**
@@ -566,9 +568,18 @@ tone_t *pt = tones;
  * @param level : Tone volume 0 to tone frequency
  *  
  * */
-void setToneLevel(uint16_t level){
+void buzSetLevel(uint16_t level){
     BUZ_TIM->CCR1 = level-1;
 }
+
+/**
+ * @brief Waits for the end of tone(s)
+ * Blocking call duh..
+ * */
+void buzWaitEnd(void){
+    while(hbuz.status & BUZ_PLAYING);
+}
+
 
 /**
  * @brief Enable CRC unit
@@ -692,10 +703,11 @@ void DMA1_Channel5_IRQHandler(void){
             DMA1_Channel5->CCR |= DMA_CCR_EN;
             hbuz.ptone++;
         }else{
-            // Stop tone generation
+            // Tone ended, stop tone generation
             BUZ_TIM->CR1 &= ~TIM_CR1_CEN;
             BUZ_TIM->ARR = 0xFFF;
             BUZ_TIM->EGR = TIM_EGR_UG;
+            hbuz.status &= ~BUZ_PLAYING;
         }
     }
     DMA1->IFCR |= DMA_IFCR_CGIF5;

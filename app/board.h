@@ -200,8 +200,7 @@ extern uint32_t _seeprom, _eeeprom;     //declared on linker script
 #define EEPROM_SIZE             30
 
 /* General symbols */
-#define ADC_RDY     ( 1 << 0)
-#define ADC_REF     ( 1 << 1)
+#define BUZ_PLAYING (1 << 0)
 
 #define SWTIM_NUM       4
 #define SWTIM_RUNNING   (1 << 0)
@@ -247,9 +246,10 @@ float getAdcResolution(void);
 
 void ppmOut(uint16_t *data);
 
-void playTone(uint16_t freq, uint16_t duration);
-void playMelody(tone_t *tones);
-void setToneLevel(uint16_t level);
+void buzPlayTone(uint16_t freq, uint16_t duration);
+void buzPlay(tone_t *tones);
+void buzSetLevel(uint16_t level);
+void buzWaitEnd(void);
 
 uint32_t xrand(void);
 

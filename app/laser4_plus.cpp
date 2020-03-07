@@ -64,7 +64,7 @@ static void changeMode(uint8_t new_mode){
         case MODE_MULTIPROTOCOL:
             DBG_PRINT("\n ***** Starting Multiprotocol *****\n");
             multiprotocol_setup();
-            playTone(500,100);
+            buzPlayTone(500,100);
             break;
         case MODE_HID:
 #ifdef ENABLE_GAME_CONTROLLER
@@ -72,7 +72,7 @@ static void changeMode(uint8_t new_mode){
             CONTROLLER_Init();
 #endif
             LED_OFF;
-            playTone(400,100);
+            buzPlayTone(400,100);
             break;
         default:
             return;
@@ -130,11 +130,11 @@ void setup(void){
         
     reqModeChange(MODE_MULTIPROTOCOL);
 
-    playMelody(chime);
-    // wait for melody to finish
-    delayMs(1500);
-
+    buzPlay(chime);   
+    
+    // Load eeprom data
     init_eeprom_data((uint8_t*)eeprom_data);
+    buzWaitEnd();
     // 3 seconds watchdog
     enableWatchDog(3000);
 }
