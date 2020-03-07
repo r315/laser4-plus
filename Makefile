@@ -216,6 +216,9 @@ C_DEFS += \
 -DENABLE_GAME_CONTROLLER \
 -DUSE_MY_CONFIG \
 
+ifeq ($(XTAL), 12)
+C_DEFS +=-DXTAL12MHZ
+endif
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
 
