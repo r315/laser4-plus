@@ -28,19 +28,22 @@ extern "C" {
 /* Indexes of constants in eeprom */
 #define EEPROM_ID_OFFSET        0
 #define EEPROM_BIND_FLAG        29 //EEPROM_SIZE - 1
-// Two byte indexes
+// 32-bit indexes
 #define IDX_BAT_VOLTAGE_DIV     2
-#define IDX_CHANNEL_MAX_100     4
-#define IDX_CHANNEL_MIN_100     5
-#define IDX_CHANNEL_MAX_125     6
-#define IDX_CHANNEL_MIN_125	    7
-#define IDX_CHANNEL_SWITCH      8
-#define IDX_PPM_MAX_100         9
-#define IDX_PPM_MIN_100         10
-#define IDX_PPM_DEFAULT_VALUE   12
+#define IDX_SENSE_RESISTOR      4
+// 16-bit indexes
+#define IDX_CHANNEL_MAX_100     6
+#define IDX_CHANNEL_MIN_100     7
+#define IDX_CHANNEL_MAX_125     8
+#define IDX_CHANNEL_MIN_125	    9
+#define IDX_CHANNEL_SWITCH      10
+#define IDX_PPM_MAX_100         11
+#define IDX_PPM_MIN_100         12
+#define IDX_PPM_DEFAULT_VALUE   13
 
 #define DEFAULT_ID              0x2AD141A7
-#define BAT_VOLTAGE_DIV         0x3e27ef9e  //0.164
+#define DEFAULT_VOLTAGE_DIV     0x3e27ef9e  // 0.164
+#define DEFAULT_SENSE_RESISTOR  0x3db851ec  // 0.09
 
 //#define USE_FREERTOS
 

@@ -10,6 +10,7 @@ typedef struct {
     uint32_t calibration_code;
     float resolution;
     float vdiv_racio;
+    float sense_resistor;
     uint32_t battery_voltage;
     uint32_t battery_current;
 }adc_t;
@@ -352,6 +353,15 @@ void adcSetVdivRacio(float r){
 }
 
 /**
+ * @brief Set current sense resistor value for current calculation
+ * 
+ * @param rs : Sense resistor value in ohms
+ * */
+void adcSetSenseResistor(float rs){
+    hadc.sense_resistor = rs * ISENSE_GAIN;
+}
+
+/**
  * @brief get current voltage divider racio, used to measure battery voltage
  * 
  * @return : R2/(R1+R2)
@@ -359,6 +369,16 @@ void adcSetVdivRacio(float r){
 float adcGetVdivRacio(void){
     return hadc.vdiv_racio;
 }
+
+/**
+ * @brief Get current sense resistor value for current calculation
+ * 
+ * @return : Sense resistor value in ohms
+ * */
+float adcGetSenseResistor(void){
+    return hadc.sense_resistor / ISENSE_GAIN;
+}
+
 
 /**
  * @brief Configure ADC for a HW_VBAT_CHANNEL channel in interrupt mode and initiates a convertion.
@@ -765,12 +785,12 @@ void SysTick_Handler(void){
 #endif
 // ADC1 DMA request
 void DMA1_Channel1_IRQHandler(void){
-    if(DMA1->ISR & DMA_ISR_TCIF1){
+    //if(DMA1->ISR & DMA_ISR_TCIF1){
         DMA1_Channel1->CCR &= ~DMA_CCR_EN;
         hadc.battery_voltage = (float)(hadc.result[0] * hadc.resolution) / hadc.vdiv_racio;   
-        hadc.battery_current = hadc.result[1] * hadc.resolution;
+        hadc.battery_current = (hadc.result[1] * hadc.resolution)/hadc.sense_resistor;
         hadc.status |= ADC_RDY;
-    }
+    //}
     DMA1->IFCR |= DMA_IFCR_CGIF1;
 }
 

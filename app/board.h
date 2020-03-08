@@ -209,6 +209,8 @@ extern "C" {
 #define ADC_CR2_EXTSEL_SWSTART  (15 << 17)
 #define ADC_SEQ_LEN             2
 
+#define ISENSE_GAIN             40
+
 #define BUZ_PLAYING             (1 << 0)
 
 #define SWTIM_NUM               4
@@ -254,6 +256,8 @@ uint32_t readSwitches(void);
 float adcGetResolution(void);
 void adcSetVdivRacio(float r);
 float adcGetVdivRacio(void);
+void adcSetSenseResistor(float rs);
+float adcGetSenseResistor(void);
 uint32_t adcCalibrate(void);
 float getInstantCurrent(void);
 uint32_t batteryGetVoltage(void);

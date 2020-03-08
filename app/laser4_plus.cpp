@@ -22,25 +22,12 @@ Console con;
  * */
 uint16_t eeprom_data[EEPROM_SIZE / 2] = {
     (uint16_t)DEFAULT_ID, (uint16_t)(DEFAULT_ID>>16),
-    (uint16_t)BAT_VOLTAGE_DIV,(uint16_t)(BAT_VOLTAGE_DIV>>16),
+    (uint16_t)DEFAULT_VOLTAGE_DIV,(uint16_t)(DEFAULT_VOLTAGE_DIV>>16),
+    (uint16_t)DEFAULT_SENSE_RESISTOR,(uint16_t)(DEFAULT_SENSE_RESISTOR>>16),
     CHANNEL_MAX_100, CHANNEL_MIN_100,
     CHANNEL_MAX_125, CHANNEL_MIN_125, CHANNEL_SWITCH, 
     PPM_MAX_100, PPM_MIN_100, PPM_DEFAULT_VALUE,
 };
-
-
-/**
- * @brief
- * */
-void appSaveEEPROM(void){
-    EEPROM_Write(EEPROM_ID_OFFSET, (uint8_t*)eeprom_data, EEPROM_SIZE);
-
-    if(!EEPROM_Sync()){
-        DBG_PRINT("!! Fail to sync EEPROM !!\n");
-    }else{
-        DBG_PRINT("EEPROM Saved\n");
-    }
-}
 
 /**
  * @brief
@@ -113,7 +100,8 @@ static void changeMode(uint8_t new_mode){
 }
 
 /**
- * @brief
+ * @brief Periodic called function to check battery voltage
+ * 
  * */
 void appCheckBattery(void){
 uint32_t vbat;
@@ -124,6 +112,7 @@ uint32_t vbat;
 
 /**
  * @brief
+ * 
  * */
 void appInitEEPROM(uint8_t *dst){
 uint8_t bind_flag;
@@ -141,6 +130,24 @@ uint8_t bind_flag;
         DBG_PRINT("Data loaded from EEPROM\n");
     }
 }
+
+
+/**
+ * @brief Save the ram eeprom content to flash memory
+ * Note: In order to save eeprom, Multiprotocol must
+ * write the bind flag
+ * 
+ * */
+void appSaveEEPROM(void){
+    EEPROM_Write(EEPROM_ID_OFFSET, (uint8_t*)eeprom_data, EEPROM_SIZE);
+
+    if(!EEPROM_Sync()){
+        DBG_PRINT("!! Fail to sync EEPROM !!\n");
+    }else{
+        DBG_PRINT("EEPROM Saved\n");
+    }
+}
+
 
 void setup(void){    
 
@@ -183,6 +190,8 @@ void setup(void){
     f2u_u tmp;
     tmp.u = (uint32_t)(eeprom_data[IDX_BAT_VOLTAGE_DIV] | (eeprom_data[IDX_BAT_VOLTAGE_DIV + 1] << 16));
     adcSetVdivRacio(tmp.f);
+    tmp.u = (uint32_t)(eeprom_data[IDX_SENSE_RESISTOR] | (eeprom_data[IDX_SENSE_RESISTOR + 1] << 16));
+    adcSetSenseResistor(tmp.f);
 
     /* Get battery voltage */
     DBG_PRINT("Battery voltage: %dmV\n", batteryGetVoltage());

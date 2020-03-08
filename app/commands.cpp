@@ -4,12 +4,6 @@
 #include "multiprotocol.h"
 
 #ifdef ENABLE_CLI
-/**
- * Possible commands
- * > bind
- * > select protocol
- * > override channel
- */
 
 char *getOptValue(char *opt, uint32_t argc, char **argv){
     for(uint32_t i = 0; i < argc; i++){
@@ -240,14 +234,25 @@ class CmdMockPPM : public ConsoleCommand {
 public:
     CmdMockPPM() : ConsoleCommand("id") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
-	void help(void) {}
+	void help(void) {
+		console->xputs("usage: id [0|1]\n"
+				"\t0,1 : Generate random id\n");
+	}
+
 	char execute(void *ptr) {
+		char *p = (char*)ptr;
 		uint32_t int_value;
-		nextHex((char**)&ptr, &int_value);
+
+		if(xstrcmp(p,"help") == 0){	
+			help();
+			return CMD_OK;
+		}
+
+		nextHex(&p, &int_value);
 		if(int_value == 1){
 			console->print("Random ID: %x\n", xrand());
 		}else{
-			console->print("Random ID: %x\n", radio.protocol_id_master);
+			console->print("Current ID: %x\n", radio.protocol_id_master);
 		}	
 		return CMD_OK;		
 	}
@@ -417,7 +422,29 @@ public:
 	void help(void) {
 		console->xputs("usage: adc [calibrate|-r]");
 		console->xputs("\t calibrate  Adc calibration based on internal voltage reference\n"
-						"\t-r <racio> : Battery voltage divider racio");
+						"\t-div <racio> : Battery voltage divider racio\n"
+						"\t-rs <resistor> Sense resistor");
+	}
+
+	int readFloatParameter(const char *opt, uint32_t argc, char **argv, uint16_t *dst, void (*func)(float)){
+		f2u_u t;
+		char *param = getOptValue((char*)opt, argc, argv);
+		double d;
+		
+		if(param == NULL){
+			return CMD_NOT_FOUND;
+		}		
+
+		if(nextDouble(&param, &d) == 0){
+			return CMD_BAD_PARAM;
+		}
+
+		t.f = d;		
+		*dst = (uint16_t)t.u;
+		*(dst + 1) = (uint16_t)(t.u>>16);
+		func(t.f);
+
+		return CMD_OK;	
 	}
 
 	void batVoltageCalibration(void){
@@ -432,8 +459,12 @@ public:
 		console->print("Current  \t\t%umA\n", batteryGetCurrent());
 	}
 
+	void senseResistor(void){
+		console->print("Sense resistor  \t%.3f Ohm\n", adcGetSenseResistor());
+	}
+
 	char execute(void *ptr) {
-		char *argv[4], *param;
+		char *argv[4];
         uint32_t argc;
 
 		argc = strToArray((char*)ptr, argv);
@@ -441,7 +472,8 @@ public:
 		if(argc == 0){
 			batVoltageCalibration();
 			adcResolution();
-			current();			
+			current();
+			senseResistor();			
 			return CMD_OK;
 		}
 
@@ -459,21 +491,11 @@ public:
 			return CMD_OK;
 		}
 
-		param = getOptValue((char*)"-r", argc, argv);
-		if(param != NULL){		
-			f2u_u t;
-			double d;
-
-			if(nextDouble(&param, &d) == 0){
-				return CMD_BAD_PARAM;
-			}
-			t.f = d;		
-			eeprom_data[IDX_BAT_VOLTAGE_DIV] = (uint16_t)t.u;
-			eeprom_data[IDX_BAT_VOLTAGE_DIV + 1] = (uint16_t)(t.u>>16);
-			adcSetVdivRacio(t.f);
-		}
-	
-		return CMD_OK;
+		if(readFloatParameter("-div", argc, argv, &eeprom_data[IDX_BAT_VOLTAGE_DIV], adcSetVdivRacio) == CMD_OK)
+			return CMD_OK;
+		if(readFloatParameter("-rs", argc, argv, &eeprom_data[IDX_SENSE_RESISTOR], adcSetSenseResistor) == CMD_OK)
+			return CMD_OK;
+		return CMD_BAD_PARAM;
 	}
 }cmdadc;
 
