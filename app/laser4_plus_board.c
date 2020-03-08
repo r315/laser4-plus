@@ -15,10 +15,13 @@ typedef struct {
 }adc_t;
 
 typedef struct {
-    uint32_t time;
-    uint32_t count;
-    uint32_t status;
-    void (*action)(void);
+    uint32_t last_tick;
+    struct {
+        uint32_t time;
+        uint32_t count;
+        uint32_t status;
+        void (*action)(void);
+    }timers[SWTIM_NUM];
 }swtimer_t;
 
 typedef struct {
@@ -37,7 +40,7 @@ static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
 static sound_t hbuz;
 static adc_t hadc;
-static swtimer_t swtim[SWTIM_NUM];
+static swtimer_t hswtim;
 static void (*pinIntCB)(void);
 
 // Private functions
@@ -664,11 +667,11 @@ void crcInit(void){
 uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void)){
 
     for(uint32_t i = 0; i < SWTIM_NUM; i++){
-        if((swtim[i].status & SWTIM_RUNNING) == 0){
-            swtim[i].time = time;
-            swtim[i].count = 0;
-            swtim[i].action = cb;
-            swtim[i].status = flags | SWTIM_RUNNING;
+        if((hswtim.timers[i].status & SWTIM_RUNNING) == 0){
+            hswtim.timers[i].time = time;
+            hswtim.timers[i].count = 0;
+            hswtim.timers[i].action = cb;
+            hswtim.timers[i].status = flags | SWTIM_RUNNING;
             return i;
         }
     }
@@ -678,7 +681,7 @@ uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void)){
 /**
  * */
 void stopTimer(uint32_t tim){
-    swtim[tim].status = 0;
+    hswtim.timers[tim].status = 0;
 }
 
 /**
@@ -686,24 +689,22 @@ void stopTimer(uint32_t tim){
  * 
  * */
 void processTimers(void){
-static uint32_t last_ticks = 0;
-uint32_t diff = ticks - last_ticks;
-
+uint32_t diff = ticks - hswtim.last_tick;
     for(uint32_t i = 0; i < SWTIM_NUM; i++){
-        if(swtim[i].status & SWTIM_RUNNING){
-            swtim[i].count += diff;
-            if(swtim[i].count >= swtim[i].time){
-                swtim[i].action();
-                if(swtim[i].status & SWTIM_AUTO){
-                    swtim[i].count = 0;
+        if(hswtim.timers[i].status & SWTIM_RUNNING){
+            hswtim.timers[i].count += diff;
+            if(hswtim.timers[i].count >= hswtim.timers[i].time){
+                hswtim.timers[i].action();
+                if(hswtim.timers[i].status & SWTIM_AUTO){
+                    hswtim.timers[i].count = 0;
                 }else{
-                    swtim[i].status &= ~(SWTIM_RUNNING);
+                    hswtim.timers[i].status &= ~(SWTIM_RUNNING);
                 }
             }
         }
     }
 
-    last_ticks = ticks;
+    hswtim.last_tick = ticks;
 }
 
 /**
@@ -724,8 +725,7 @@ uint32_t xrand(void){
   * @param  none
   * @retval None
   */
-void USB_LP_CAN1_RX0_IRQHandler(void)
-{
+void USB_LP_CAN1_RX0_IRQHandler(void){
     HAL_PCD_IRQHandler(&hpcd_USB_FS);
 }
 
