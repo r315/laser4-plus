@@ -74,6 +74,8 @@ void reqModeChange(uint8_t new_mode);
 uint8_t getCurrentMode(void);
 void init_eeprom_data(uint8_t *dst);
 
+void appSaveEEPROM(void);
+
 #ifdef __cplusplus
 #ifdef ENABLE_CLI
 extern Console con;

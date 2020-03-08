@@ -396,8 +396,8 @@ public:
 			return CMD_OK;
 		}
 		
-		if(xstrcmp(p,"save") == 0){	
-			EEPROM_Write(0, (uint8_t*)eeprom_data, EEPROM_SIZE);		
+		if(xstrcmp(p,"save") == 0){			
+			appSaveEEPROM();
 			return CMD_OK;
 		}
 

@@ -494,12 +494,6 @@ static uint32_t random_id(uint8_t create_new)
     eeprom_data[EEPROM_ID_OFFSET + 1] = (uint16_t)(id >> 16);
     *((uint8_t*)eeprom_data + EEPROM_BIND_FLAG) = 0xF0;
 
-    EEPROM_Write(EEPROM_ID_OFFSET, (uint8_t*)eeprom_data, EEPROM_SIZE);
-
-    if(!EEPROM_Sync()){
-        DBG_PRINT("!! Fail to sync EEPROM !!\n");
-    }else{
-        DBG_PRINT("ID Saved to EEPROM\n");
-    }
+    appSaveEEPROM();
     return id;
 }
