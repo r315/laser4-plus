@@ -176,14 +176,14 @@ public:
 class CmdStatus : public ConsoleCommand {
 	Console *console;
 public:
-    CmdStatus() : ConsoleCommand("status") {}	
+    CmdStatus() : ConsoleCommand("status") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}  
 
 	void batteryVoltage(void){
 		console->print(
 			"Battery voltage: %umV\n"        	
-			"Amps: %umA\n",
+			"Current: \t%umA\n",
 			batteryGetVoltage(),
 			batteryGetCurrent()
 		);
@@ -217,7 +217,7 @@ public:
 	}
 
 	void mode(void){
-		uint8_t aux = getCurrentMode();
+		uint8_t aux = appGetCurrentMode();
 		console->print("Mode: %s\n", aux == MODE_MULTIPROTOCOL ? "Multiprotocol" : "Game Controller");
 	}
 
@@ -328,12 +328,12 @@ public:
 	void help(void) {}
 	char execute(void *ptr) {
 		if(*(char*)ptr == '\0'){
-			console->print("Current mode: %d\n",getCurrentMode());
+			console->print("Current mode: %d\n",appGetCurrentMode());
 			return CMD_OK;
 		}
 		uint32_t int_value;
 		if(nextHex((char**)&ptr, &int_value)){
-			reqModeChange((uint8_t)int_value);
+			appReqModeChange((uint8_t)int_value);
 		}
 		return CMD_OK;
 	}
@@ -403,7 +403,7 @@ public:
 
 		uint32_t int_value;
 		if(nextHex((char**)&ptr, &int_value)){
-			reqModeChange((uint8_t)int_value);
+			appReqModeChange((uint8_t)int_value);
 		}
 		return CMD_OK;
 	}

@@ -30,6 +30,7 @@ uint16_t eeprom_data[EEPROM_SIZE / 2] = {
 
 
 /**
+ * @brief
  * */
 void appSaveEEPROM(void){
     EEPROM_Write(EEPROM_ID_OFFSET, (uint8_t*)eeprom_data, EEPROM_SIZE);
@@ -44,12 +45,15 @@ void appSaveEEPROM(void){
 /**
  * @brief
  * */
-uint8_t getCurrentMode(void){
+uint8_t appGetCurrentMode(void){
     return state;
 }
 
+/**
+ * @brief
+ * */
 void usbConnectCB(void *ptr){
-   reqModeChange(MODE_HID);
+   appReqModeChange(MODE_HID);
 #if defined(ENABLE_DEBUG) && defined(ENABLE_VCOM)
     dbg_init(&vcom);
 #endif
@@ -60,7 +64,7 @@ void usbConnectCB(void *ptr){
 }
 
 void usbDisconnectCB(void *ptr){
-    reqModeChange(MODE_MULTIPROTOCOL);
+    appReqModeChange(MODE_MULTIPROTOCOL);
 #if defined(ENABLE_DEBUG) && defined(ENABLE_USART)
     dbg_init(&pcom);
 #endif
@@ -69,8 +73,10 @@ void usbDisconnectCB(void *ptr){
     con.setOutput(&pcom);
 #endif
 }
-
-void reqModeChange(uint8_t new_mode){
+/**
+ * @brief
+ * */
+void appReqModeChange(uint8_t new_mode){
 uint8_t cur_state = state & STATE_MASK;
     // Do nothing if requesting the current mode
     if(cur_state == new_mode){
@@ -106,15 +112,20 @@ static void changeMode(uint8_t new_mode){
     }
 }
 
-void checkBattery(void){
+/**
+ * @brief
+ * */
+void appCheckBattery(void){
 uint32_t vbat;
     if(batteryReadVoltage(&vbat)){
-        DBG_PRINT("Battery voltage: %dmV\n", vbat);
+        //DBG_PRINT("Battery voltage: %dmV\n", vbat);
     }    
 }
 
-
-void init_eeprom_data(uint8_t *dst){
+/**
+ * @brief
+ * */
+void appInitEEPROM(uint8_t *dst){
 uint8_t bind_flag;
     
     if(EEPROM_Read(EEPROM_BIND_FLAG, &bind_flag, 1) != 1){
@@ -162,12 +173,12 @@ void setup(void){
     con.cls();
 #endif    
         
-    reqModeChange(MODE_MULTIPROTOCOL);
+    appReqModeChange(MODE_MULTIPROTOCOL);
 
     buzPlay(chime);   
     
     // Load eeprom data
-    init_eeprom_data((uint8_t*)eeprom_data);
+    appInitEEPROM((uint8_t*)eeprom_data);
     // Configure adc calibration values
     f2u_u tmp;
     tmp.u = (uint32_t)(eeprom_data[IDX_BAT_VOLTAGE_DIV] | (eeprom_data[IDX_BAT_VOLTAGE_DIV + 1] << 16));
@@ -177,7 +188,7 @@ void setup(void){
     DBG_PRINT("Battery voltage: %dmV\n", batteryGetVoltage());
     // wait for melody to finish
     buzWaitEnd();
-    startTimer(30000, SWTIM_AUTO, checkBattery);
+    startTimer(30000, SWTIM_AUTO, appCheckBattery);
     // 3 seconds watchdog
     enableWatchDog(3000);
 }
