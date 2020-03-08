@@ -257,7 +257,7 @@ uint32_t adcCalibrate(void);
 float getInstantCurrent(void);
 uint32_t batteryGetVoltage(void);
 uint32_t batteryReadVoltage(uint32_t *dst);
-
+uint32_t batteryGetCurrent(void);
 
 void ppmOut(uint16_t *data);
 

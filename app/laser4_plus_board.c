@@ -11,7 +11,7 @@ typedef struct {
     uint32_t calibration_code;
     float resolution;
     float vdiv_racio;
-    void (*cb)(uint32_t data);
+    uint32_t battery_current;
 }adc_t;
 
 typedef struct {
@@ -357,6 +357,7 @@ void adcSetVdivRacio(float r){
 float adcGetVdivRacio(void){
     return hadc.vdiv_racio;
 }
+
 /**
  * @brief Configure ADC for a HW_VBAT_CHANNEL channel in interrupt mode and initiates a convertion.
  *  After convertion the result is stored locally through the interrupt
@@ -384,7 +385,7 @@ static void adcInit(void){
 /**
  * @brief 
  * */
-static void adcStartConversion(uint32_t ch){
+static void adcStartConversion(void){
     hadc.status &= ~ADC_RDY;
     // Set first conversion channel in regular sequence,
     // ignore all other channnels
@@ -441,8 +442,10 @@ uint32_t batteryReadVoltage(uint32_t *dst){
 /**
  * @brief Get instant current consumption (mA)
  * */
-float getInstantCurrent(void){
-    return 0.0f;
+uint32_t batteryGetCurrent(void){
+    adcStartConversion();
+    while((hadc.status & ADC_RDY) == 0 );
+    return  hadc.battery_current;
 }
 
 /**
@@ -631,7 +634,7 @@ tone_t *pt = tones;
  * @brief Change tone volume by changing 
  * duty cycle
  * 
- * @param level : Tone volume 0 to tone frequency
+ * @param level : Tone volume 0 to tone frequency period
  *  
  * */
 void buzSetLevel(uint16_t level){
@@ -778,7 +781,7 @@ void DMA1_Channel5_IRQHandler(void){
     }
     DMA1->IFCR |= DMA_IFCR_CGIF5;
 }
-
+// TIM4 DMA request
 void DMA1_Channel7_IRQHandler(void){
     if(DMA1->ISR & DMA_ISR_TCIF7){
         DMA1_Channel7->CCR &= ~DMA_CCR_EN;
