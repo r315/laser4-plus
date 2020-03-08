@@ -28,6 +28,19 @@ uint16_t eeprom_data[EEPROM_SIZE / 2] = {
     PPM_MAX_100, PPM_MIN_100, PPM_DEFAULT_VALUE,
 };
 
+
+/**
+ * */
+void appSaveEEPROM(void){
+    EEPROM_Write(EEPROM_ID_OFFSET, (uint8_t*)eeprom_data, EEPROM_SIZE);
+
+    if(!EEPROM_Sync()){
+        DBG_PRINT("!! Fail to sync EEPROM !!\n");
+    }else{
+        DBG_PRINT("EEPROM Saved\n");
+    }
+}
+
 /**
  * @brief
  * */
@@ -164,7 +177,7 @@ void setup(void){
     DBG_PRINT("Battery voltage: %dmV\n", batteryGetVoltage());
     // wait for melody to finish
     buzWaitEnd();
-    startTimer(1000, SWTIM_AUTO, checkBattery);
+    startTimer(30000, SWTIM_AUTO, checkBattery);
     // 3 seconds watchdog
     enableWatchDog(3000);
 }
