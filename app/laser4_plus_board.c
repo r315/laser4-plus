@@ -5,12 +5,12 @@
 #include "usbd_conf.h"
 
 typedef struct {
-    volatile uint16_t result;
     volatile uint16_t status;
-    uint32_t battery_voltage;
+    uint16_t result[2];
     uint32_t calibration_code;
     float resolution;
     float vdiv_racio;
+    uint32_t battery_voltage;
     uint32_t battery_current;
 }adc_t;
 
@@ -310,6 +310,8 @@ static void adcSampleTime(uint16_t ch, uint16_t time){
  * on 1.20V internal reference
  * */
 uint32_t adcCalibrate(void){
+uint32_t bsqr3;
+
     ADC1->CR2 |= ADC_CR2_CAL;                     // Perform ADC calibration
     while(ADC1->CR2 & ADC_CR2_CAL){               
         asm volatile("nop");
@@ -318,9 +320,8 @@ uint32_t adcCalibrate(void){
     hadc.calibration_code = ADC1->DR;
     // Set calibration flag
     hadc.status |= ADC_CAL;
-
-    adcSampleTime(HW_VREFINT_CHANNEL, 2);         // Sample time = 13.5 cycles.
-    // select VREFINT channel
+    // select VREFINT channel for first conversion
+    bsqr3 = ADC1->SQR3;
     ADC1->SQR3 = (HW_VREFINT_CHANNEL << 0);
     // wake up Vrefint 
     ADC1->CR2 |= ADC_CR2_TSVREFE;
@@ -334,6 +335,7 @@ uint32_t adcCalibrate(void){
     hadc.resolution = VREFINT_VALUE / ADC1->DR;
     // power down VREFINT
     ADC1->CR2 &= ~ADC_CR2_TSVREFE;
+    ADC1->SQR3 = bsqr3;
     // Set resolution flag
     hadc.status |= ADC_RES;
     return 1;
@@ -367,18 +369,36 @@ float adcGetVdivRacio(void){
 static void adcInit(void){
     HW_VBAT_CH_INIT;
 
-    RCC->APB2ENR  |= RCC_APB2ENR_ADC1EN;          // Enable Adc1
+    RCC->APB2ENR  |= RCC_APB2ENR_ADC1EN;        // Enable and reset ADC1
     RCC->APB2RSTR |= RCC_APB2ENR_ADC1EN;
     RCC->APB2RSTR &= ~RCC_APB2ENR_ADC1EN;
 
-    ADC1->CR2 = (15 << 17) |         // trigger by software,
-                ADC_CR2_ADON;        // Enable ADC
+    ADC1->CR2 = ADC_CR2_EXTSEL_SWSTART |        // Select software trigger,
+                ADC_CR2_ADON;                   // Enable ADC
     delayMs(20);
-    adcSampleTime(HW_VBAT_CHANNEL, 6);            // Sample time, 4 => 41.5 cycles.
+    // Configure Sample time for the used channles
+    adcSampleTime(HW_VBAT_CHANNEL, 6);          // Sample time, 6 => 71.5 cycles.
+    adcSampleTime(HW_ISENSE_CHANNEL, 6);        // Sample time, 6 => 71.5 cycles.
+    adcSampleTime(HW_VREFINT_CHANNEL, 3);       // Sample time 3 => 28.5 cycles.
+    // Perform start up calibration
     adcCalibrate();
-    ADC1->SQR3 = (HW_VBAT_CHANNEL << 0);
-    ADC1->CR1 = ADC_CR1_EOCIE;                    // Enable end of convertion interrupt
-    NVIC_EnableIRQ(ADC1_IRQn);
+    // Configure channels to be converted and enable scan mode
+    ADC1->SQR3 = (HW_ISENSE_CHANNEL << 5) | (HW_VBAT_CHANNEL << 0);
+    ADC1->SQR1 = (1 << 20);                     // Two channels on sequence
+    ADC1->CR1 |= ADC_CR1_SCAN;
+     // Configure DMA
+    RCC->AHBENR |= RCC_AHBENR_DMA1EN;               // Enable DMA1
+    DMA1_Channel1->CPAR = (uint32_t)&ADC1->DR;      // Source peripheral
+    DMA1_Channel1->CCR =
+            DMA_CCR_MSIZE_0 |                       // 16bit Dst size
+            DMA_CCR_PSIZE_0 |                       // 16bit src size
+            //DMA_CCR_DIR |                           // Read from memory
+            DMA_CCR_MINC |                          // Memory increment
+            DMA_CCR_TCIE;                           // Enable end of transfer interrupt
+    ADC1->CR2 |= ADC_CR2_DMA;
+
+    NVIC_EnableIRQ(DMA1_Channel1_IRQn);
+
     hadc.status = 0;
 }
 
@@ -387,9 +407,11 @@ static void adcInit(void){
  * */
 static void adcStartConversion(void){
     hadc.status &= ~ADC_RDY;
-    // Set first conversion channel in regular sequence,
-    // ignore all other channnels
-    ADC1->SQR3 = (ch << 0);
+    // Destination memory
+    DMA1_Channel1->CMAR = (uint32_t)&hadc.result[0];
+    // ADC sequence length
+    DMA1_Channel1->CNDTR = ADC_SEQ_LEN;
+    DMA1_Channel1->CCR |= DMA_CCR_EN;   
     // Start
     ADC1->CR2 |= ADC_CR2_SWSTART;
 }
@@ -402,21 +424,12 @@ float adcGetResolution(void){
 }
 
 /**
- * @brief End of conversion callback for battery channel
- * 
- * @param data : RAW data from ADC
- * */
-static void batteryEOC(uint32_t data){
-    hadc.battery_voltage = (float)(data * hadc.resolution) / hadc.vdiv_racio;
-}
-/**
  * @brief Get battery voltage by start a convertion and wait for it to end
  * 
  * @return : battery voltage in mV
  * */
 uint32_t batteryGetVoltage(void){
-    hadc.cb = batteryEOC;
-    adcStartConversion(HW_VBAT_CHANNEL);
+    adcStartConversion();
     while((hadc.status & ADC_RDY) == 0 );
     return  hadc.battery_voltage;
 }
@@ -432,8 +445,7 @@ uint32_t batteryGetVoltage(void){
 uint32_t batteryReadVoltage(uint32_t *dst){
     if(hadc.status & ADC_RDY){
         *dst = hadc.battery_voltage;
-        hadc.cb = batteryEOC;
-        adcStartConversion(HW_VBAT_CHANNEL);
+        adcStartConversion();
         return 1;
     }
     return 0;
@@ -751,17 +763,18 @@ void SysTick_Handler(void){
     ticks++;
 }
 #endif
-
-void ADC1_IRQHandler(void){
-    if(hadc.cb != NULL){
-        hadc.cb(ADC1->DR);
-    }else{
-        hadc.result = ADC1->DR;
+// ADC1 DMA request
+void DMA1_Channel1_IRQHandler(void){
+    if(DMA1->ISR & DMA_ISR_TCIF1){
+        DMA1_Channel1->CCR &= ~DMA_CCR_EN;
+        hadc.battery_voltage = (float)(hadc.result[0] * hadc.resolution) / hadc.vdiv_racio;   
+        hadc.battery_current = hadc.result[1] * hadc.resolution;
+        hadc.status |= ADC_RDY;
     }
-    hadc.status |= ADC_RDY;
-    //ADC1->SR = 0;
+    DMA1->IFCR |= DMA_IFCR_CGIF1;
 }
 
+// TIM1 DMA request
 void DMA1_Channel5_IRQHandler(void){
     if(DMA1->ISR & DMA_ISR_TCIF5){
         DMA1_Channel5->CCR &= ~DMA_CCR_EN;

@@ -183,9 +183,9 @@ public:
 	void batteryVoltage(void){
 		console->print(
 			"Battery voltage: %umV\n"        	
-			"Amps: %.3fmA\n",
+			"Amps: %umA\n",
 			batteryGetVoltage(),
-			getInstantCurrent()
+			batteryGetCurrent()
 		);
 	}
 
@@ -368,7 +368,7 @@ public:
 			eeprom_data[IDX_PPM_MAX_100],
 			eeprom_data[IDX_PPM_MIN_100]
 		);
-	}	
+	}
 
 	char execute(void *ptr) {
 		char *p = (char*)ptr;
@@ -415,37 +415,62 @@ public:
     CmdAdc() : ConsoleCommand("adc") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {
-		console->xputs("usage: adc [calibrate]");
+		console->xputs("usage: adc [calibrate|-r]");
+		console->xputs("\t calibrate  Adc calibration based on internal voltage reference\n"
+						"\t-r <racio> : Battery voltage divider racio");
 	}
 
 	void batVoltageCalibration(void){
-		console->print("Bat voltage div \t%.3f\n",adcGetVdivRacio());
+		console->print("Bat voltage divider \t%.3f\n", adcGetVdivRacio());
 	}
 
 	void adcResolution(void){
 		console->print("Adc resolution  \t%.3fmV/step\n", adcGetResolution());
 	}
 
+	void current(void){
+		console->print("Current  \t\t%umA\n", batteryGetCurrent());
+	}
+
 	char execute(void *ptr) {
-		char *p = (char*)ptr;
-		if(*p == '\0'){
+		char *argv[4], *param;
+        uint32_t argc;
+
+		argc = strToArray((char*)ptr, argv);
+		
+		if(argc == 0){
 			batVoltageCalibration();
-			adcResolution();			
+			adcResolution();
+			current();			
 			return CMD_OK;
 		}
 
-		if(xstrcmp(p,"help") == 0){	
+		if(xstrcmp(argv[0],"help") == 0){	
 			help();
 			return CMD_OK;
 		}
 
-		if(xstrcmp(p,"calibrate") == 0){	
+		if(xstrcmp(argv[0],"calibrate") == 0){	
 			if(adcCalibrate()){
 				adcResolution();
 			}else{
 				console->print("Fail to calibrate adc\n");
 			}
 			return CMD_OK;
+		}
+
+		param = getOptValue((char*)"-r", argc, argv);
+		if(param != NULL){		
+			f2u_u t;
+			double d;
+
+			if(nextDouble(&param, &d) == 0){
+				return CMD_BAD_PARAM;
+			}
+			t.f = d;		
+			eeprom_data[IDX_BAT_VOLTAGE_DIV] = (uint16_t)t.u;
+			eeprom_data[IDX_BAT_VOLTAGE_DIV + 1] = (uint16_t)(t.u>>16);
+			adcSetVdivRacio(t.f);
 		}
 	
 		return CMD_OK;

@@ -206,7 +206,8 @@ extern "C" {
 #define ADC_DIV                 (1 << 1)
 #define ADC_CAL                 (1 << 2)
 #define ADC_RES                 (1 << 3)
-
+#define ADC_CR2_EXTSEL_SWSTART  (15 << 17)
+#define ADC_SEQ_LEN             2
 
 #define BUZ_PLAYING             (1 << 0)
 
