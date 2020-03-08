@@ -210,6 +210,7 @@ extern "C" {
 #define ADC_SEQ_LEN             2
 
 #define ISENSE_GAIN             40
+#define BATTERY_VOLTAGE_MIN     3100U
 
 #define BUZ_PLAYING             (1 << 0)
 

@@ -59,6 +59,9 @@ extern "C" {
 #define STATE_BITS          4
 #define STATE_MASK          ((1<<STATE_BITS) - 1)
 
+#define TIMER_BATTERY_TIME  30000U  // ms
+#define WATCHDOG_TIME       3000U   // ms
+
 enum {
     STARTING = 0,
     MODE_MULTIPROTOCOL,

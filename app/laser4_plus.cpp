@@ -106,7 +106,9 @@ static void changeMode(uint8_t new_mode){
 void appCheckBattery(void){
 uint32_t vbat;
     if(batteryReadVoltage(&vbat)){
-        //DBG_PRINT("Battery voltage: %dmV\n", vbat);
+        if(vbat < BATTERY_VOLTAGE_MIN){
+            DBG_PRINT("Battery voltage: %dmV\n", vbat);
+        }        
     }    
 }
 
@@ -197,9 +199,9 @@ void setup(void){
     DBG_PRINT("Battery voltage: %dmV\n", batteryGetVoltage());
     // wait for melody to finish
     buzWaitEnd();
-    startTimer(30000, SWTIM_AUTO, appCheckBattery);
-    // 3 seconds watchdog
-    enableWatchDog(3000);
+    startTimer(TIMER_BATTERY_TIME, SWTIM_AUTO, appCheckBattery);
+    // Configure watchdog
+    enableWatchDog(WATCHDOG_TIME);
 }
 
 void loop(void){
