@@ -176,10 +176,8 @@ public:
 
 	void batteryVoltage(void){
 		console->print(
-			"Battery voltage: %umV\n"        	
-			"Current: \t%umA\n",
-			batteryGetVoltage(),
-			batteryGetCurrent()
+			"Battery voltage: %umV\n",
+			batteryGetVoltage()
 		);
 	}
 
