@@ -59,6 +59,7 @@ $(LIBEMB_PATH)/button \
 $(LIBEMB_PATH)/misc \
 $(LIBEMB_PATH)/console \
 $(LIBEMB_PATH)/display \
+$(LIBEMB_PATH)/drv/tft \
 $(FREERTOS_DIR) \
 $(FREERTOS_DIR)/portable/GCC/ARM_CM3 \
 $(FREERTOS_DIR)/portable/MemMang \
@@ -91,6 +92,7 @@ $(LIBEMB_PATH)/misc/nvdata.c \
 $(LIBEMB_PATH)/misc/strfunc.c \
 $(LIBEMB_PATH)/misc/fifo.c \
 $(LIBEMB_PATH)/misc/debug.c \
+$(LIBEMB_PATH)/drv/tft/ssd1306.c \
 
 #C_SOURCES +=  \
 $(FREERTOS_DIR)/portable/GCC/ARM_CM3/port.c \
@@ -121,6 +123,7 @@ endif
 
 C_SOURCES += \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c \
+$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_flash_ex.c \
@@ -216,6 +219,7 @@ C_DEFS += \
 -DENABLE_CLI \
 -DENABLE_GAME_CONTROLLER \
 -DUSE_MY_CONFIG \
+-DENABLE_DISPLAY \
 
 ifeq ($(XTAL), 12)
 C_DEFS +=-DXTAL12MHZ

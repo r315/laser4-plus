@@ -8,6 +8,9 @@ extern "C" {
 #include <stdint.h>
 #include "stm32f1xx_hal.h"
 #include "fifo.h"
+#ifdef ENABLE_DISPLAY
+#include "ssd1306.h"
+#endif
 
 /* GPIO definitions */
 #define GPIO_MODE_MASK          15
@@ -280,6 +283,11 @@ void stopTimer(uint32_t tim);
 
 #ifdef ENABLE_USART
 void usart_init(void);
+#endif
+
+#ifdef ENABLE_DISPLAY
+extern I2C_HandleTypeDef hi2c2;
+#define I2C_Write(_A, _D, _S) HAL_I2C_Master_Transmit(&hi2c2, _A << 1, _D, _S, 100)
 #endif
 
 #ifdef __cplusplus

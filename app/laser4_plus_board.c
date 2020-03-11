@@ -44,6 +44,11 @@ static adc_t hadc;
 static swtimer_t hswtim;
 static void (*pinIntCB)(void);
 
+#ifdef ENABLE_DISPLAY
+I2C_HandleTypeDef hi2c2;
+static void i2cInit(void);
+#endif
+
 // Private functions
 static void spiInit(void);
 static void timInit(void);
@@ -78,6 +83,13 @@ void laser4Init(void){
 #ifdef ENABLE_SERIAL_FIFOS
     fifo_init(&serial_rx_fifo);
     fifo_init(&serial_tx_fifo);
+#endif
+
+#ifdef ENABLE_DISPLAY
+    i2cInit();
+    LCD_Init();
+    LCD_Fill(0, 0, 12, 3, 1);
+    LCD_Update();
 #endif
 }
 
@@ -151,6 +163,47 @@ static void spiInit(){
 
     SPI_PINS_INIT;
 }
+
+#ifdef ENABLE_DISPLAY
+/**
+  * @brief I2C2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void i2cInit(void){
+    hi2c2.Instance = I2C2;
+    hi2c2.Init.ClockSpeed = 100000;
+    hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
+    hi2c2.Init.OwnAddress1 = 0;
+    hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
+    hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
+    hi2c2.Init.OwnAddress2 = 0;
+    hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
+    hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+    if(HAL_I2C_Init(&hi2c2) != HAL_OK) {
+        Error_Handler(__FILE__, __LINE__);
+    }
+}
+const uint8_t APBPrescTable[8U] =  {0, 0, 0, 0, 1, 2, 3, 4};
+uint32_t HAL_RCC_GetPCLK1Freq(void){
+  return (SystemCoreClock >> APBPrescTable[(RCC->CFGR & RCC_CFGR_PPRE1) >> RCC_CFGR_PPRE1_Pos]);
+}
+
+/**
+* @brief I2C MSP Initialization
+* This function configures the hardware resources used in this example
+* PB10     ------> I2C2_SCL
+* PB11     ------> I2C2_SDA 
+* @param hi2c: I2C handle pointer
+* @retval None
+*/
+void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c){
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    gpioInit(GPIOB, 10, GPO_10MHZ | GPO_AF | GPO_OD);
+    gpioInit(GPIOB, 11, GPO_10MHZ | GPO_AF | GPO_OD);
+    __HAL_RCC_I2C2_CLK_ENABLE();
+}
+#endif
 
 /**
  * @brief Initialyze 1ms general purpose time base
