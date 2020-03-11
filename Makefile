@@ -37,7 +37,7 @@ LIB_SERIAL_PATH :=$(CURDIR)/lib/stm32-serial
 LIB_MULTIPROTOCOL_PATH :=$(CURDIR)/lib/multiprotocol
 #LIB_MULTIPROTOCOL_PATH :=$(CURDIR)/lib/cc2500
 STARTUP_PATH :=$(CURDIR)/startup
-LIBEMB_PATH =./libemb
+LIBEMB_PATH =./lib/libemb
 
 FW :=STM32Cube_FW_F1_V1.8.0/
 

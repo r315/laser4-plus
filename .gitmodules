@@ -1,0 +1,6 @@
+[submodule "lib/stm32-dfu-bootloader"]
+	path = lib/stm32-dfu-bootloader
+	url = https://github.com/r315/stm32-dfu-bootloader.git
+[submodule "lib/libemb"]
+	path = lib/libemb
+	url = https://github.com/r315/libemb.git
