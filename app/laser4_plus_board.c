@@ -202,6 +202,18 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c){
     gpioInit(GPIOB, 10, GPO_10MHZ | GPO_AF | GPO_OD);
     gpioInit(GPIOB, 11, GPO_10MHZ | GPO_AF | GPO_OD);
     __HAL_RCC_I2C2_CLK_ENABLE();
+    HAL_NVIC_SetPriority(I2C2_EV_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(I2C2_EV_IRQn);
+    HAL_NVIC_SetPriority(I2C2_ER_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(I2C2_ER_IRQn);
+}
+
+void I2C2_EV_IRQHandler(void){
+    HAL_I2C_EV_IRQHandler(&hi2c2);
+}
+
+void I2C2_ER_IRQHandler(void){
+    HAL_I2C_ER_IRQHandler(&hi2c2);
 }
 #endif
 

@@ -288,6 +288,15 @@ void usart_init(void);
 #ifdef ENABLE_DISPLAY
 extern I2C_HandleTypeDef hi2c2;
 #define I2C_Write(_A, _D, _S) HAL_I2C_Master_Transmit(&hi2c2, _A << 1, _D, _S, 100)
+//#define I2C_Write(_A, _D, _S) HAL_I2C_Master_Transmit_IT(&hi2c2, _A << 1, _D, _S)
+static inline void I2C_WriteBlock(uint16_t address, uint8_t *data, uint16_t size){
+  uint32_t retry = 100;
+  while(retry--){
+    if(HAL_I2C_Master_Transmit_IT(&hi2c2, address << 1, data, size) == HAL_OK){
+      break;
+    }
+  }
+}
 #endif
 
 #ifdef __cplusplus
