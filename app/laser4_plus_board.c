@@ -88,7 +88,7 @@ void laser4Init(void){
 #ifdef ENABLE_DISPLAY
     i2cInit();
     LCD_Init();
-    LCD_Fill(0, 0, 12, 3, 1);
+    LCD_Fill(0, 0, 128, 32, BLACK);
     LCD_Update();
 #endif
 }
