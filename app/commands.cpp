@@ -285,10 +285,10 @@ void ppm_sim(void){
 
 class CmdTest : public ConsoleCommand {
 	Console *console;
-	uint32_t tim;
+	int32_t tim;
 public:
     CmdTest() : ConsoleCommand("test") {}
-	void init(void *params) { console = static_cast<Console*>(params); }
+	void init(void *params) { console = static_cast<Console*>(params); tim = -1;}
 	void help(void) {}
 	char execute(void *ptr) {
 		uint32_t test_code;
@@ -309,14 +309,21 @@ public:
 				break;
 
 			case 2:
-				DBG_PRINT("Starting ppm simulation \n");
-				tim = startTimer(20, SWTIM_AUTO, ppm_sim);
+				if(tim != -1 ){
+					break;
+				}
+				console->xputs("Starting ppm simulation");
+				tim = startTimer(20, SWTIM_AUTO_RELOAD, ppm_sim);
 				break;
 			case 3:
-				DBG_PRINT("Stoping ppm simulation \n");
+				console->xputs("Stoping ppm simulation");
 				stopTimer(tim);
+				tim = -1;
 				break;
-			case 9:				
+			case 4:
+				uint32_t start = HAL_GetTick();				
+				
+				console->print("Time: %ums\n", HAL_GetTick() - start);
 				break;
 		}		
 		return CMD_OK;
