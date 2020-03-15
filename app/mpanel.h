@@ -31,18 +31,24 @@ class MpanelDro : MpanelItem{
     font_t *font;
     float value;
     mpanelicon_t *icon;
+    const char *fmt;
 public:
     void update(float value);
+    void update(uint32_t value);
     void draw(void);
     void setIcon(mpanelicon_t *icon);
-    MpanelDro(uint16_t posx, uint16_t posy, font_t *font){
+    MpanelDro(uint16_t posx, uint16_t posy, const char *fmt, font_t *font){
         this->posx = posx;
         this->posy = posy;
         this->font = font;
         this->value = 0.0f;
+        this->fmt = fmt;
+        this->icon = NULL;
     }    
 };
 
 extern font_t font_seven_seg;
+
+void MPANEL_drawIcon(uint16_t x, uint16_t y, idata_t *data);
 
 #endif /* _mpanel_h_ */

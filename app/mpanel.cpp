@@ -46,20 +46,23 @@ static uint16_t seven_seg_dp(uint16_t x, uint16_t y){
  * data format: w,h,data...
  * 
  */
-static void MPANEL_drawIcon(uint16_t x, uint16_t y, idata_t *data){
+void MPANEL_drawIcon(uint16_t x, uint16_t y, idata_t *data){
     uint8_t *p = data->data;
 
-    for(uint16_t h = y; h < y + data->hight; h++, p++){
+    for(uint8_t h = y; h < y + data->hight; h++, p++){
         uint8_t line = *p;
-        for(uint16_t w = x, bc = 0; w < x + data->width; w++, bc++){
-            if(bc == 8){
-                bc = 0;
+        uint8_t mask = (data->width-1) % 8;
+        mask = (1 << mask);
+        for(uint8_t w = x; w < x + data->width; w++, mask >>= 1){
+            if(mask == 0){
+                mask = 0x80;
                 line = *(++p);
             }
-            if(line & (0x80>>bc))
+            if(line & mask)
                 LCD_Pixel(w, h, WHITE);
             else
                 LCD_Pixel(w, h, BLACK);
+            
         }
     }
 }
@@ -79,7 +82,7 @@ static uint8_t MPANEL_drawChar(uint16_t x, uint16_t y, uint8_t c, font_t *font){
     p = font->data + (c * font->h * font->bpl);
 
     if(p > font->data + font->data_len)
-        return 0;
+        return x;
 
     for(uint16_t h = y; h < y +font->h; h++, p++){
         uint8_t line = *p;
@@ -112,7 +115,12 @@ void MPANEL_print(uint16_t x, uint16_t y, font_t *font, const char *fmt, ...){
 
 void MpanelDro::update(float value){
     this->value = value;
-    MPANEL_print(this->posx, this->posy, this->font, "%.2f", value);
+    MPANEL_print(this->posx, this->posy, this->font, this->fmt, value);
+}
+
+void MpanelDro::update(uint32_t value){
+    this->value = value;
+    MPANEL_print(this->posx, this->posy, this->font, this->fmt, value);
 }
 
 void MpanelDro::draw(void){
