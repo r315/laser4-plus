@@ -15,15 +15,15 @@ typedef struct {
     uint32_t battery_current;
 }adc_t;
 
+
 typedef struct {
-    uint32_t last_tick;
-    struct {
         uint32_t time;
         uint32_t count;
         uint32_t status;
         void (*action)(void);
-    }timers[SWTIM_NUM];
 }swtimer_t;
+
+swtimer_t timers[SWTIM_NUM];
 
 typedef struct {
     tone_t *ptone;
@@ -802,11 +802,11 @@ void crcInit(void){
 uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void)){
 
     for(uint32_t i = 0; i < SWTIM_NUM; i++){
-        if((hswtim.timers[i].status & SWTIM_RUNNING) == 0){
-            hswtim.timers[i].time = time;
-            hswtim.timers[i].count = 0;
-            hswtim.timers[i].action = cb;
-            hswtim.timers[i].status = flags | SWTIM_RUNNING;
+        if((timers[i].status & SWTIM_RUNNING) == 0){
+            timers[i].time = time;
+            timers[i].count = 0;
+            timers[i].action = cb;
+            timers[i].status = flags | SWTIM_RUNNING;
             return i;
         }
     }
@@ -816,7 +816,7 @@ uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void)){
 /**
  * */
 void stopTimer(uint32_t tim){
-    hswtim.timers[tim].status = 0;
+    timers[tim].status = 0;
 }
 
 /**
@@ -824,22 +824,24 @@ void stopTimer(uint32_t tim){
  * 
  * */
 void processTimers(void){
-uint32_t diff = ticks - hswtim.last_tick;
-    for(uint32_t i = 0; i < SWTIM_NUM; i++){
-        if(hswtim.timers[i].status & SWTIM_RUNNING){
-            hswtim.timers[i].count += diff;
-            if(hswtim.timers[i].count >= hswtim.timers[i].time){
-                hswtim.timers[i].action();
-                if(hswtim.timers[i].status & SWTIM_AUTO_RELOAD){
-                    hswtim.timers[i].count = 0;
+static uint32_t last_tick = 0;
+uint32_t diff = ticks - last_tick;
+swtimer_t *tim = timers;
+    for(uint32_t i = 0; i < SWTIM_NUM; i++, tim++){
+        if(tim->status & SWTIM_RUNNING){
+            tim->count += diff;
+            if(tim->count >= tim->time){
+                tim->action();
+                if(tim->status & SWTIM_AUTO_RELOAD){
+                    tim->count = 0;
                 }else{
-                    hswtim.timers[i].status &= ~(SWTIM_RUNNING);
+                    tim->status &= ~(SWTIM_RUNNING);
                 }
             }
         }
     }
 
-    hswtim.last_tick = ticks;
+    last_tick = ticks;
 }
 
 /**
