@@ -219,14 +219,20 @@ extern "C" {
 
 #define SWTIM_NUM               4
 #define SWTIM_RUNNING           (1 << 0)
-#define SWTIM_AUTO              (1 << 1)
+#define SWTIM_AUTO_RELOAD       (1 << 1)
 #define SWTIM_IN_USE            (1 << 2)
 
 
 typedef struct tone{
-  uint16_t f;
-  uint16_t t;
+    uint16_t f;
+    uint16_t t;
 }tone_t;
+
+typedef struct vires {
+    uint32_t vbat;
+    uint32_t cur;
+}vires_t;
+
 
 /* Public variables */
 extern uint32_t SystemCoreClock;
@@ -267,6 +273,8 @@ float getInstantCurrent(void);
 uint32_t batteryGetVoltage(void);
 uint32_t batteryReadVoltage(uint32_t *dst);
 uint32_t batteryGetCurrent(void);
+uint32_t batteryReadCurrent(uint32_t *dst);
+uint32_t batteryReadVI(vires_t *dst);
 
 void ppmOut(uint16_t *data);
 

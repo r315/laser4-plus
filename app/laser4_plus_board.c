@@ -521,7 +521,7 @@ uint32_t batteryGetVoltage(void){
 
 /**
  * @brief Read battery voltage, if a battery measurement is ready, starts a new 
- * connversion and return the last measured value. If a measurement is not available return
+ * conversion and return the last measured value. If a measurement is not available return
  * 
  * @param dst : Pointer to place measured value
  * 
@@ -543,6 +543,41 @@ uint32_t batteryGetCurrent(void){
     adcStartConversion();
     while((hadc.status & ADC_RDY) == 0 );
     return  hadc.battery_current;
+}
+
+/**
+ * @brief Read current consumption, if measurement is ready, starts a new 
+ * conversion and return the last measured value. If a measurement is not available return
+ * 
+ * @param dst : Pointer to place measured value
+ * 
+ * @return : 0 if no measure is available (don't change dst), != 0 on success
+ * */
+uint32_t batteryReadCurrent(uint32_t *dst){
+    if(hadc.status & ADC_RDY){
+        *dst = hadc.battery_current;
+        adcStartConversion();
+        return 1;
+    }
+    return 0;
+}
+
+/**
+ * @brief Read current consumption and vattery voltage, if measurement is ready, starts a new 
+ * conversion and return the last measured value. If a measurement is not available return
+ * 
+ * @param dst : Pointer to place measured value
+ * 
+ * @return : 0 if no measure is available (don't change dst), != 0 on success
+ * */
+uint32_t batteryReadVI(vires_t *dst){
+    if(hadc.status & ADC_RDY){
+        dst->vbat = 3000; //hadc.battery_voltage;
+        dst->cur = 40; //hadc.battery_current;
+        adcStartConversion();
+        return 1;
+    }
+    return 0;
 }
 
 /**
@@ -795,7 +830,7 @@ uint32_t diff = ticks - hswtim.last_tick;
             hswtim.timers[i].count += diff;
             if(hswtim.timers[i].count >= hswtim.timers[i].time){
                 hswtim.timers[i].action();
-                if(hswtim.timers[i].status & SWTIM_AUTO){
+                if(hswtim.timers[i].status & SWTIM_AUTO_RELOAD){
                     hswtim.timers[i].count = 0;
                 }else{
                     hswtim.timers[i].status &= ~(SWTIM_RUNNING);
