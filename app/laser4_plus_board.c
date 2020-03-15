@@ -41,7 +41,6 @@ static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
 static sound_t hbuz;
 static adc_t hadc;
-static swtimer_t hswtim;
 static void (*pinIntCB)(void);
 
 #ifdef ENABLE_DISPLAY
@@ -572,8 +571,8 @@ uint32_t batteryReadCurrent(uint32_t *dst){
  * */
 uint32_t batteryReadVI(vires_t *dst){
     if(hadc.status & ADC_RDY){
-        dst->vbat = 3000; //hadc.battery_voltage;
-        dst->cur = 40; //hadc.battery_current;
+        dst->vbat = (hadc.battery_voltage > BATTERY_VOLTAGE_MAX) ? 9999U : hadc.battery_voltage;
+        dst->cur = (hadc.battery_current > BATTERY_CURRENT_MAX) ? 9999U : hadc.battery_current;
         adcStartConversion();
         return 1;
     }
