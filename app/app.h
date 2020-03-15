@@ -60,7 +60,13 @@ extern "C" {
 #define STATE_MASK          ((1<<STATE_BITS) - 1)
 
 #define TIMER_BATTERY_TIME  30000U  // ms
+#define TIMER_LOWBAT_TIME   500U    // ms
 #define WATCHDOG_TIME       3000U   // ms
+
+#define NO                  0
+#define YES                 1
+#define ON                  0
+#define OFF                 1
 
 enum {
     STARTING = 0,

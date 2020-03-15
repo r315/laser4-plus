@@ -1,9 +1,12 @@
 #include "app.h"
 #include "multiprotocol.h"
 #include "usb_device.h"
+#include "mpanel.h"
 
 
 volatile uint8_t state;
+static uint8_t bat_low;
+static float bat_consumed = 0;  //mAh
 
 tone_t chime[] = {
     {493,200},
@@ -15,6 +18,82 @@ tone_t chime[] = {
 
 #ifdef ENABLE_CLI 
 Console con;
+#endif
+
+#ifdef ENABLE_DISPLAY
+#define DRO_BAT_POS     4, 10
+#define DRO_AMPH_POS    74, 10
+#define DRO_MA_POS      88, 1
+#define ICO_35MHZ_POS   34, 1
+#define ICO_2_4GHZ_POS  52, 1
+#define ICO_USB_POS     70, 1
+#define ICO_LOWBAT_POS  1, 1
+
+#define ICO_CLR_START   ICO_35MHZ_POS
+#define ICO_CLR_SIZE    56, 8
+
+const uint8_t ico_volt_data[] = {7,8,
+    0x7f,0x5d,0x5d,0x5d,0x5d,0x6b,0x77,0x7f
+};
+
+const uint8_t ico_amph_data[] = {10, 8,
+   0x03,0xff,0x03,0x3f,0x02,0xd7,0x02,0xd7,0x02,0x13,0x02,0xd5,0x02,0xd5,0x03,0xff
+};
+
+const uint8_t ico_lowbat_data[] = {29, 7,    
+    0x1f,0xff,0xff,0xff,0x17,0xff,0xff,0xff,0x17,0x9b,0xb7,0xb1,0x17,0x6b,
+    0xb3,0x5b,0x17,0x6a,0xb5,0x1b,0x11,0x9d,0x71,0x5b,0x1f,0xff,0xff,0xff
+};
+
+const uint8_t ico_35mhz_data[] = {15, 7,
+    0x7f,0xff,0x44,0x5d,0x75,0xc9,0x44,0x55,0x77,0x5d,0x44,0x5d,0x7f,0xff
+};
+
+const uint8_t ico_2_4ghz_data[] = {15, 7,
+    0x7f,0xff,0x46,0xb3,0x76,0xaf,0x46,0x29,0x5f,0xad,0x45,0xb1,0x7f,0xff
+};
+
+const uint8_t ico_usb_data[] = {13, 7,
+    0x1f,0xff,0x15,0x13,0x15,0x75,0x15,0x13,0x15,0xd5,0x11,0x13,0x1f,0xff
+};
+
+static mpanelicon_t ico_volt = {
+    (uint16_t)(font_seven_seg.w * 3 + 7),
+    (uint16_t)(font_seven_seg.h/2),
+    (idata_t*)ico_volt_data
+};
+
+static mpanelicon_t ico_amph = {
+    (uint16_t)(font_seven_seg.w * 3 + 7),
+    (uint16_t)(font_seven_seg.h/2),
+    (idata_t*)ico_amph_data
+};
+
+static mpanelicon_t ico_35mhz = {
+    ICO_35MHZ_POS,
+    (idata_t*)ico_35mhz_data
+};
+
+static mpanelicon_t ico_2_4ghz = {
+    ICO_2_4GHZ_POS,
+    (idata_t*)ico_2_4ghz_data
+};
+
+static mpanelicon_t ico_usb = {
+    ICO_USB_POS,
+    (idata_t*)ico_usb_data
+};
+
+static mpanelicon_t ico_low_bat = {
+    ICO_LOWBAT_POS,
+    (idata_t*)ico_lowbat_data
+};
+
+MpanelDro dro_bat(DRO_BAT_POS, "%.2f",&font_seven_seg);
+MpanelDro dro_amph(DRO_AMPH_POS, "%.2f",&font_seven_seg);
+MpanelDro dro_ma(DRO_MA_POS, "%3uMA", &pixelDustFont);
+
+void appToggleLowBatIco(void);
 #endif
 
 /**
@@ -37,7 +116,10 @@ uint8_t appGetCurrentMode(void){
 }
 
 /**
- * @brief
+ * @brief Usb connect callback, called when usb cable is connected
+ * or if the system is power on with the usb cable plugged in
+ * 
+ * @param ptr : pointer passed when the callback is registered
  * */
 void usbConnectCB(void *ptr){
    appReqModeChange(MODE_HID);
@@ -46,10 +128,16 @@ void usbConnectCB(void *ptr){
 #endif
 
 #ifdef ENABLE_CLI
+    // redirect cli to vcom
     con.setOutput(&vcom);
 #endif
 }
 
+/**
+ * @brief Usb disconnect callback, called when usb cable is removed.
+ * 
+ * @param ptr : pointer passed when the callback is registered
+ * */
 void usbDisconnectCB(void *ptr){
     appReqModeChange(MODE_MULTIPROTOCOL);
 #if defined(ENABLE_DEBUG) && defined(ENABLE_USART)
@@ -57,11 +145,14 @@ void usbDisconnectCB(void *ptr){
 #endif
  
 #ifdef ENABLE_CLI
+    // redirect cli to physical com port
     con.setOutput(&pcom);
 #endif
 }
+
 /**
- * @brief
+ * @brief Operating mode change request
+ * 
  * */
 void appReqModeChange(uint8_t new_mode){
 uint8_t cur_state = state & STATE_MASK;
@@ -75,24 +166,41 @@ uint8_t cur_state = state & STATE_MASK;
             return;
         } 
     }
+#ifdef ENABLE_DISPLAY
+    LCD_Fill(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
+#endif
     // set the requested mode by overlaping the previous
     state = (new_mode << STATE_BITS) | REQ_MODE_CHANGE;
 }
 
+/**
+ * @brief Change mode request handler
+ * 
+ * */
 static void changeMode(uint8_t new_mode){
     switch(new_mode){
         case MODE_MULTIPROTOCOL:
             DBG_PRINT("\n ***** Starting Multiprotocol *****\n");
             multiprotocol_setup();
             buzPlayTone(500,100);
+#ifdef ENABLE_DISPLAY
+            if(radio.mode_select == 14){
+                MPANEL_drawIcon(ico_35mhz.posx, ico_35mhz.posy, ico_35mhz.data);  
+            }else{
+                MPANEL_drawIcon(ico_2_4ghz.posx, ico_2_4ghz.posy, ico_2_4ghz.data);   
+            }
+#endif
             break;
         case MODE_HID:
 #ifdef ENABLE_GAME_CONTROLLER
             DBG_PRINT("\n ***** Starting game controller ***** \n");
             CONTROLLER_Init();
-#endif
-            LED_OFF;
             buzPlayTone(400,100);
+#ifdef ENABLE_DISPLAY
+            MPANEL_drawIcon(ico_usb.posx, ico_usb.posy, ico_usb.data);
+#endif /* ENABLE_DISPLAY */
+#endif /* ENABLE_GAME_CONTROLLER */
+            LED_OFF;
             break;
         default:
             return;
@@ -100,18 +208,45 @@ static void changeMode(uint8_t new_mode){
 }
 
 /**
- * @brief Periodic called function to check battery voltage
+ * @brief Periodic called function to display battery voltage
  * 
  * */
 void appCheckBattery(void){
-uint32_t vbat;
-    if(batteryReadVoltage(&vbat)){
-        if(vbat < BATTERY_VOLTAGE_MIN){
-            DBG_PRINT("Battery voltage: %dmV\n", vbat);
-        }        
+vires_t res;
+    if(batteryReadVI(&res)){
+        if(res.vbat < BATTERY_VOLTAGE_MIN && bat_low == NO){
+            bat_low = YES;
+            DBG_PRINT("!!Low battery !! (%dmV)\n", res.vbat);
+#ifdef ENABLE_DISPLAY
+            startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
+        }
+        bat_consumed += res.cur; 
+        dro_bat.update(res.vbat/1000.0f);
+        dro_amph.update(bat_consumed/ 1000.0f); // * (TIMER_BATTERY_TIME/1000));
+        dro_ma.update(res.cur);
+        LCD_Update();
+#else
+        }
+#endif /* ENABLE_DISPLAY */
     }    
 }
 
+#ifdef ENABLE_DISPLAY
+/**
+ * @brief blink low battery icon
+ * */
+void appToggleLowBatIco(void){
+static uint8_t last_state = OFF;
+    if(last_state == OFF){
+        MPANEL_drawIcon(ico_low_bat.posx, ico_low_bat.posy, ico_low_bat.data);
+        last_state = ON;
+    }else{
+        LCD_Fill(ico_low_bat.posx, ico_low_bat.posy, ico_low_bat.data->width, ico_low_bat.data->hight, BLACK);
+        last_state = OFF;
+    }
+    LCD_Update();
+}
+#endif /* ENABLE_DISPLAY */
 /**
  * @brief
  * 
@@ -150,10 +285,13 @@ void appSaveEEPROM(void){
     }
 }
 
-
+/**
+ * @brief Application setup call
+ * */
 void setup(void){    
 
     state = STARTING;
+    bat_low = NO;
     
     laser4Init();
     NV_Init();
@@ -199,11 +337,25 @@ void setup(void){
     DBG_PRINT("Battery voltage: %dmV\n", batteryGetVoltage());
     // wait for melody to finish
     buzWaitEnd();
-    startTimer(TIMER_BATTERY_TIME, SWTIM_AUTO, appCheckBattery);
+
+#ifdef ENABLE_DISPLAY
+    
+    dro_bat.setIcon(&ico_volt);
+    dro_amph.setIcon(&ico_amph);
+	dro_bat.draw();
+    dro_amph.draw();
+    dro_ma.draw();
+    startTimer(TIMER_BATTERY_TIME, SWTIM_AUTO_RELOAD, appCheckBattery);
+
+    appCheckBattery();
+#endif    
     // Configure watchdog
     enableWatchDog(WATCHDOG_TIME);
 }
 
+/**
+ * @brief Application main loop
+ * */
 void loop(void){
 
     switch(state & STATE_MASK){
@@ -220,6 +372,9 @@ void loop(void){
         case REQ_MODE_CHANGE:
             state = state >> STATE_BITS;
             changeMode(state);
+#ifdef ENABLE_DISPLAY
+            LCD_Update();
+#endif            
             break;
 
         case STARTING:
