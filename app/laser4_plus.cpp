@@ -219,10 +219,11 @@ vires_t res;
             DBG_PRINT("!!Low battery !! (%dmV)\n", res.vbat);
 #ifdef ENABLE_DISPLAY
             startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
-        }
-        bat_consumed += res.cur; 
+        }       
+        bat_consumed += res.cur;
         dro_bat.update(res.vbat/1000.0f);
-        dro_amph.update(bat_consumed/ 1000.0f); // * (TIMER_BATTERY_TIME/1000));
+        // [Ah] are given by the periodic call        
+        dro_amph.update(bat_consumed / 1000.0f); 
         dro_ma.update(res.cur);
         LCD_Update();
 #else
@@ -318,9 +319,7 @@ void setup(void){
     con.init(&pcom, "laser4+ >");
     con.registerCommandList(laser4_commands);
     con.cls();
-#endif    
-        
-    appReqModeChange(MODE_MULTIPROTOCOL);
+#endif     
 
     buzPlay(chime);   
     
@@ -334,9 +333,7 @@ void setup(void){
     adcSetSenseResistor(tmp.f);
 
     /* Get battery voltage */
-    DBG_PRINT("Battery voltage: %dmV\n", batteryGetVoltage());
-    // wait for melody to finish
-    buzWaitEnd();
+    DBG_PRINT("Battery voltage: %dmV\n", batteryGetVoltage());   
 
 #ifdef ENABLE_DISPLAY
     
@@ -348,7 +345,11 @@ void setup(void){
     startTimer(TIMER_BATTERY_TIME, SWTIM_AUTO_RELOAD, appCheckBattery);
 
     appCheckBattery();
-#endif    
+#endif 
+    // wait for melody to finish
+    buzWaitEnd();
+    // default mode
+    appReqModeChange(MODE_MULTIPROTOCOL);
     // Configure watchdog
     enableWatchDog(WATCHDOG_TIME);
 }

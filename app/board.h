@@ -214,6 +214,8 @@ extern "C" {
 
 #define ISENSE_GAIN             40
 #define BATTERY_VOLTAGE_MIN     3100U
+#define BATTERY_VOLTAGE_MAX     4200U
+#define BATTERY_CURRENT_MAX     600U
 
 #define BUZ_PLAYING             (1 << 0)
 
