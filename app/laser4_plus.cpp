@@ -169,7 +169,7 @@ uint8_t cur_state = state & STATE_MASK;
 #ifdef ENABLE_DISPLAY
     LCD_Fill(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
 #endif
-    // set the requested mode by overlaping the previous
+    // set the requested mode by overwriting the previous
     state = (new_mode << STATE_BITS) | REQ_MODE_CHANGE;
 }
 
@@ -321,6 +321,9 @@ void setup(void){
     con.cls();
 #endif     
 
+    // default mode, if connected to USB then the default mode
+    // is overwritten
+    appReqModeChange(MODE_MULTIPROTOCOL);
     buzPlay(chime);   
     
     // Load eeprom data
@@ -347,9 +350,7 @@ void setup(void){
     appCheckBattery();
 #endif 
     // wait for melody to finish
-    buzWaitEnd();
-    // default mode
-    appReqModeChange(MODE_MULTIPROTOCOL);
+    buzWaitEnd();    
     // Configure watchdog
     enableWatchDog(WATCHDOG_TIME);
 }

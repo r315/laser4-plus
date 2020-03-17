@@ -571,8 +571,8 @@ uint32_t batteryReadCurrent(uint32_t *dst){
  * */
 uint32_t batteryReadVI(vires_t *dst){
     if(hadc.status & ADC_RDY){
-        dst->vbat = (hadc.battery_voltage > BATTERY_VOLTAGE_MAX) ? 9999U : hadc.battery_voltage;
-        dst->cur = (hadc.battery_current > BATTERY_CURRENT_MAX) ? 9999U : hadc.battery_current;
+        dst->vbat = hadc.battery_voltage;
+        dst->cur = hadc.battery_current;
         adcStartConversion();
         return 1;
     }

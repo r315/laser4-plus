@@ -187,15 +187,17 @@ public:
 			"Change protocol [%d]\n"
 			"Range           [%d]\n"
 			"PPM             [%d]\n"
-			"Bind done       [%d]\n"
-			"Wait bind       [%d]\n"
-			"Tx pause        [%d]\n"
-			"Input signal    [%d]\n",
+			"Bind done       [%d]\n",
 			IS_RX_FLAG_on,
 			IS_CHANGE_PROTOCOL_FLAG_on,
 			IS_RANGE_FLAG_on,
 			IS_PPM_FLAG_on,
-			IS_BIND_DONE,
+			IS_BIND_DONE
+		);
+		console->print(	
+			"Wait bind       [%d]\n"
+			"Tx pause        [%d]\n"
+			"Input signal    [%d]\n",			
 			IS_WAIT_BIND_on,
 			IS_TX_MAIN_PAUSE_on,
 			IS_INPUT_SIGNAL_on

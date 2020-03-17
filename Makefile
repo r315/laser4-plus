@@ -224,7 +224,7 @@ C_DEFS += \
 -DFIFO_SIZE=1024 \
 -DCONSOLE_PRINT_MAX_LEN=256 \
 
-ifeq ($(XTAL), 12)
+ifeq ($(XTAL), 12MHZ)
 C_DEFS +=-DXTAL12MHZ
 endif
 # compile gcc flags
