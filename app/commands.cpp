@@ -380,7 +380,8 @@ public:
 	void id(void){
 		console->print(			
 			"ID \t	\t\t0x%X\n",
-			*(uint32_t*)(eeprom_data+EEPROM_ID_OFFSET));	
+			*((uint32_t*)eeprom_data + EEPROM_ID_OFFSET)
+		);	
 	}
 
 	void channelRanges(void){
@@ -572,6 +573,33 @@ public:
 }cmdbuz;
 
 
+//dfu-util -a 0 -s 0x08001000 -D ../build/psu_v3.bin -R
+
+#define ENABLE_DFU_MAGIC *(((uint64_t*)&_estack) - 1) = 0xDEADBEEFCC00FFEEULL
+#define DISABLE_DFU_MAGIC *(((uint64_t*)&_estack) - 1) = 0x0UL
+
+extern uint32_t _estack;
+
+class CmdDfu : public ConsoleCommand{
+    Console *console;
+public:
+    void init(void *params) { DISABLE_DFU_MAGIC; console = static_cast<Console*>(params); }
+    CmdDfu () : ConsoleCommand("dfu") { }
+    char execute(void *ptr){
+
+    	console->print("Entering DFU mode\n");
+    	//LCD_Fill(0, 0, LCD_W, LCD_H, BLACK);
+    	//LCD_Update();
+
+		ENABLE_DFU_MAGIC;
+    	NVIC_SystemReset();
+    
+    	return CMD_OK; 
+	}
+    void help(void){}
+}cmddfu;
+
+
 ConsoleCommand *laser4_commands[]{
     &cmdhelp,
     &cmdcc25,
@@ -584,6 +612,7 @@ ConsoleCommand *laser4_commands[]{
 	&cmdeeprom,
 	&cmdadc,
 	&cmdbuz,
+	&cmddfu,
     NULL
 };
 #endif

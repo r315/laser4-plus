@@ -248,7 +248,7 @@ CPPFLAGS +=$(DEBUGFLAGS)
 # LDFLAGS
 #######################################
 # link script
-LDSCRIPT = startup/STM32F103C8Tx_FLASH.ld
+LDSCRIPT := startup/STM32F103C8Tx_FLASH.ld
 #LDSCRIPT =startup/f103c8tx_dfu.ld
 
 SPECS =-specs=nano.specs
@@ -263,10 +263,7 @@ LDFLAGS = $(MCU) $(SPECS) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/
 # Rules
 #######################################
 # default action: build all
-all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin size #$(BUILD_DIR)/$(TARGET).hex
-
-hid:
-	$(MAKE) USB_DEVICE=HID
+all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).bin size
 
 ifeq ($(shell uname -s), Linux)
 $(TARGET).cfg:
@@ -292,10 +289,18 @@ $(TARGET).jlink:
 
 program: $(BUILD_DIR)/$(TARGET).bin $(TARGET).jlink
 	$(JLINK) -device $(DEVICE) -if SWD -speed auto -CommanderScript $(TARGET).jlink
+
 endif
-# DFU upload
+# DFU rules
+bootloader:
+	$(MAKE) -C $(LIB_DFU_PATH) CONFIG="-DENABLE_GPIO_DFU_BOOT -DGPIO_DFU_BOOT_PORT=GPIOB -DGPIO_DFU_BOOT_PIN=4 -DENABLE_SAFEWRITE -DENABLE_CHECKSUM -DHSE12MHZ" CROSS_COMPILE=arm-none-eabi-
+
+dfu:
+	$(MAKE) LDSCRIPT=startup/f103c8tx_dfu.ld XTAL=12MHZ
+	python "$(LIB_DFU_PATH)/checksum.py" $(BUILD_DIR)/$(TARGET).bin
+
 upload: $(BUILD_DIR)/$(TARGET).bin
-	dfu-util -a 0 -s 0x08001000 -D $< -R
+	sudo dfu-util -a 0 -s 0x08001000 -D $< -R
 
 test:
 #@echo $(CURDIR)
