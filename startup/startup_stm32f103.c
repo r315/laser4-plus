@@ -13,6 +13,7 @@
 #define RCC_CR_PLLON_bb     (*(uint8_t *)0x42420060UL)
 #define RCC_CR_PLLRDY_bb    (*(uint8_t *)0x42420064UL)
 
+ISR void *g_pfnVectors[];
 uint32_t SystemCoreClock = 8000000UL;
 extern uint32_t _sidata, _sdata, _edata, _sbss, _ebss, _stack, _estack;
 extern uint32_t _siram_code, _sram_code, _eram_code;
@@ -76,7 +77,8 @@ volatile uint32_t *src, *dest;
     SCB->VTOR = SRAM_BASE | VECT_TAB_OFFSET; /* Vector Table Relocation in Internal SRAM. */
 #else
     /* Vector Table Relocation to startup (g_pfnVectors) vector table  */
-    SCB->VTOR = FLASH_BASE;
+    //SCB->VTOR = FLASH_BASE;
+    SCB->VTOR = (uint32_t)(&g_pfnVectors) & 0xFFFF;
 #endif
 
     /* ------------- Configure system clock --------------- */
