@@ -766,10 +766,17 @@ tone_t *pt = tones;
  * duty cycle
  * 
  * @param level : Tone volume 0 to tone frequency period
+ * 
+ * @return : Current tone volume
  *  
  * */
-void buzSetLevel(uint16_t level){
-    BUZ_TIM->CCR1 = level-1;
+uint16_t buzSetLevel(uint16_t level){
+    level -= 1;
+    if(level < BUZ_TIM->ARR){
+        BUZ_TIM->CCR1 = level;
+    }
+
+    return BUZ_TIM->CCR1 + 1;
 }
 
 /**

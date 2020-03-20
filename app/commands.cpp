@@ -5,7 +5,7 @@
 
 #ifdef ENABLE_CLI
 
-char *getOptValue(char *opt, uint32_t argc, char **argv){
+char *getOptValue(const char *opt, uint32_t argc, char **argv){
     for(uint32_t i = 0; i < argc; i++){
         if(xstrcmp(opt, argv[i]) == 0){
             return argv[i+1];
@@ -79,6 +79,7 @@ public:
 	void help(void) {
 		console->xputs("usage: cc2500 <[-r, --reset, -rs, status]>");	
 		console->xputs("\t-r <0-2E>, Read Register");
+		console->xputs("\t-w <0-2E>, Write Register");
 		console->xputs("\t-rs <30-3D>, Read status register");	
 		console->xputs("\t--reset, Reset CC2500 module");
 	}
@@ -160,6 +161,17 @@ public:
 			if(nextHex((char**)&param, &int_value)){
 				console->print("Status [0x%02x] = %x\n", int_value, CC2500_ReadStatus(int_value & 255));
 				return CMD_OK;
+			}
+		}
+
+		if((param = getOptValue("-w", argc, argv)) != NULL){
+			uint32_t reg, val;
+			if(nextHex(&param, &reg)){
+				param++; // skip string terminator
+				if(nextHex(&param, &val)){
+					CC2500_WriteReg(reg, val);
+					return CMD_OK;
+				}
 			}
 		}
 
@@ -274,8 +286,12 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(void *ptr) {
+		appReqModeChange(MODE_MULTIPROTOCOL);
 		CHANGE_PROTOCOL_FLAG_on;
-		BIND_IN_PROGRESS;	
+		BIND_IN_PROGRESS;
+		if(IS_INPUT_SIGNAL_off){
+			console->xputs("No input signal!!");
+		}
 		return CMD_OK;
 	}
 }cmdbind;
@@ -507,6 +523,55 @@ public:
 }cmdadc;
 
 
+class CmdBuz : public ConsoleCommand {
+	Console *console;    
+public:
+    CmdBuz() : ConsoleCommand("buz") {}
+	void init(void *params) { console = static_cast<Console*>(params); }
+	void help(void) {
+		console->xputs("usage: buz <-r|-v|-t>");
+		console->xputs(
+			"-v <volume>, set volume\n"
+			"-t <freq> <duration>\n"
+		);
+	}
+	char execute(void *ptr) {
+		char *argv[4], *param;
+        uint32_t argc;
+		argc = strToArray((char*)ptr, argv);
+
+		if(argc == 0){
+			help();
+			console->print("Current level %u\n", buzSetLevel(0));
+			return CMD_OK;
+		}
+
+		if((param = getOptValue("-v", argc, argv)) != NULL){
+			int32_t val;
+			if(nextInt(&param, &val)){
+				console->print("Current level %u\n", buzSetLevel(val));
+				*((uint8_t*)eeprom_data + IDX_BUZ_VOLUME) = val&255;
+				return CMD_OK;
+			}
+		}
+
+		if((param = getOptValue("-t",argc,argv)) != NULL){
+			int32_t freq, duration;
+			if(nextInt(&param, &freq)){
+				param++; // skip string terminator
+				if(nextInt(&param, &duration)){
+					buzPlayTone(freq, duration);
+					return CMD_OK;
+				}
+			}
+			return CMD_OK;
+		}
+
+		return CMD_BAD_PARAM;
+	}
+}cmdbuz;
+
+
 ConsoleCommand *laser4_commands[]{
     &cmdhelp,
     &cmdcc25,
@@ -518,6 +583,7 @@ ConsoleCommand *laser4_commands[]{
 	&cmdmode,
 	&cmdeeprom,
 	&cmdadc,
+	&cmdbuz,
     NULL
 };
 #endif

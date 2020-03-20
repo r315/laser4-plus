@@ -492,7 +492,7 @@ static uint32_t random_id(uint8_t create_new)
 
     eeprom_data[EEPROM_ID_OFFSET] = (uint16_t)id;
     eeprom_data[EEPROM_ID_OFFSET + 1] = (uint16_t)(id >> 16);
-    *((uint8_t*)eeprom_data + EEPROM_BIND_FLAG) = 0xF0;
+    *((uint8_t*)eeprom_data + EEPROM_BIND_FLAG) = BIND_FLAG_VALUE;
 
     appSaveEEPROM();
     return id;

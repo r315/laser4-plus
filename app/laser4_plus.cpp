@@ -104,8 +104,10 @@ uint16_t eeprom_data[EEPROM_SIZE / 2] = {
     (uint16_t)DEFAULT_VOLTAGE_DIV,(uint16_t)(DEFAULT_VOLTAGE_DIV>>16),
     (uint16_t)DEFAULT_SENSE_RESISTOR,(uint16_t)(DEFAULT_SENSE_RESISTOR>>16),
     CHANNEL_MAX_100, CHANNEL_MIN_100,
-    CHANNEL_MAX_125, CHANNEL_MIN_125, CHANNEL_SWITCH, 
-    PPM_MAX_100, PPM_MIN_100, PPM_DEFAULT_VALUE,
+    CHANNEL_MAX_125, CHANNEL_MIN_125, 
+    PPM_MAX_100, PPM_MIN_100, 
+    CHANNEL_SWITCH, PPM_DEFAULT_VALUE,
+    BUZ_DEFAULT_VOLUME
 };
 
 /**
@@ -260,7 +262,7 @@ uint8_t bind_flag;
         return;
     }
         
-    if(bind_flag == 0xF0){    
+    if(bind_flag == BIND_FLAG_VALUE){    
         if(NV_Restore(dst, EEPROM_SIZE) != EEPROM_SIZE){
             DBG_PRINT("Error reading EEPROM\n");
             return;
@@ -272,11 +274,14 @@ uint8_t bind_flag;
 
 /**
  * @brief Save the ram eeprom content to flash memory
- * Note: In order to save eeprom, Multiprotocol must
- * write the bind flag
+ * Note: In order to save eeprom
  * 
  * */
 void appSaveEEPROM(void){
+
+    // FIXME: Really should implement CRC
+    *((uint8_t*)eeprom_data+EEPROM_BIND_FLAG) = BIND_FLAG_VALUE;
+
     EEPROM_Write(EEPROM_ID_OFFSET, (uint8_t*)eeprom_data, EEPROM_SIZE);
 
     if(!EEPROM_Sync()){
@@ -324,10 +329,13 @@ void setup(void){
     // default mode, if connected to USB then the default mode
     // is overwritten
     appReqModeChange(MODE_MULTIPROTOCOL);
-    buzPlay(chime);   
     
     // Load eeprom data
     appInitEEPROM((uint8_t*)eeprom_data);
+    // Set volume from stored value
+    buzSetLevel(*((uint8_t*)eeprom_data + IDX_BUZ_VOLUME));
+    // Play som random tone
+    buzPlay(chime);   
     // Configure adc calibration values
     f2u_u tmp;
     tmp.u = (uint32_t)(eeprom_data[IDX_BAT_VOLTAGE_DIV] | (eeprom_data[IDX_BAT_VOLTAGE_DIV + 1] << 16));

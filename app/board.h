@@ -282,7 +282,7 @@ void ppmOut(uint16_t *data);
 
 void buzPlayTone(uint16_t freq, uint16_t duration);
 void buzPlay(tone_t *tones);
-void buzSetLevel(uint16_t level);
+uint16_t buzSetLevel(uint16_t level);
 void buzWaitEnd(void);
 
 uint32_t xrand(void);
