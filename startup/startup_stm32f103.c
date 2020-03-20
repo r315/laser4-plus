@@ -86,7 +86,7 @@ volatile uint32_t *src, *dest;
     uint32_t timeout = CLOCK_CFG_TIMEOUT;
 
     /* Enable HSE */
-    RCC_CR_HSEON_bb = 1;
+    RCC->CR |= RCC_CR_HSEON;
     while ((RCC->CR & RCC_CR_HSERDY) == 0){
         timeout--;
         if (timeout == 0)
@@ -108,8 +108,8 @@ volatile uint32_t *src, *dest;
                 (4 << 8);                   // PPRE1 = 2
 
     timeout = CLOCK_CFG_TIMEOUT;
-    RCC_CR_PLLON_bb = 1;
-    while (RCC_CR_PLLRDY_bb == 0){
+    RCC->CR |= RCC_CR_PLLON;
+    while ((RCC->CR & RCC_CR_PLLRDY) == 0){
         timeout--;
         if (timeout == 0)
         {

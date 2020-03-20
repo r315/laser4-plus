@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 /* Indexes of constants in eeprom */
-#define EEPROM_ID_OFFSET        0
+#define EEPROM_ID_OFFSET        0UL
 #define IDX_BUZ_VOLUME          28          
 #define EEPROM_BIND_FLAG        29 //EEPROM_SIZE - 1
 // 32-bit indexes

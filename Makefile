@@ -18,11 +18,13 @@ TARGET =laser4+
 ######################################
 # building variables
 ######################################
-# debug build?
+ifeq ($(RELEASE), 1)
 DEBUG = 1
-# optimization
+OPT = -Os
+else
+DEBUG = 1
 OPT = -Og
-
+endif
 
 #######################################
 # paths
@@ -253,7 +255,7 @@ LDSCRIPT := startup/STM32F103C8Tx_FLASH.ld
 
 SPECS =-specs=nano.specs
 # libraries
-#LIBS =-nostartfiles #-nostdlib
+#LIBS =-nostartfiles -nostdlib
 LIBS =-lstdc++#-lnosys -lm
 LIBDIR = 
 LDFLAGS = $(MCU) $(SPECS) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
@@ -296,7 +298,7 @@ bootloader:
 	$(MAKE) -C $(LIB_DFU_PATH) CONFIG="-DENABLE_GPIO_DFU_BOOT -DGPIO_DFU_BOOT_PORT=GPIOB -DGPIO_DFU_BOOT_PIN=4 -DENABLE_SAFEWRITE -DENABLE_CHECKSUM -DHSE12MHZ" CROSS_COMPILE=arm-none-eabi-
 
 dfu:
-	$(MAKE) LDSCRIPT=startup/f103c8tx_dfu.ld XTAL=12MHZ
+	$(MAKE) LDSCRIPT=startup/f103c8tx_dfu.ld XTAL=12MHZ RELEASE=1
 	python "$(LIB_DFU_PATH)/checksum.py" $(BUILD_DIR)/$(TARGET).bin
 
 upload: $(BUILD_DIR)/$(TARGET).bin
