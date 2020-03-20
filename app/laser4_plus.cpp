@@ -7,6 +7,8 @@
 volatile uint8_t state;
 static uint8_t bat_low;
 static float bat_consumed = 0;  //mAh
+static uint8_t bat_low_tim;
+static uint8_t bat_low_ico_state = OFF;
 
 tone_t chime[] = {
     {493,200},
@@ -220,8 +222,16 @@ vires_t res;
             bat_low = YES;
             DBG_PRINT("!!Low battery !! (%dmV)\n", res.vbat);
 #ifdef ENABLE_DISPLAY
-            startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
-        }       
+            bat_low_tim = startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
+        }else{
+            if(bat_low == YES){
+                bat_low = NO;
+                stopTimer(bat_low_tim);
+                if(bat_low_ico_state == ON){
+                    appToggleLowBatIco();
+                }
+            }
+        }
         bat_consumed += res.cur;
         dro_bat.update(res.vbat/1000.0f);
         // [Ah] are given by the periodic call        
@@ -239,13 +249,12 @@ vires_t res;
  * @brief blink low battery icon
  * */
 void appToggleLowBatIco(void){
-static uint8_t last_state = OFF;
-    if(last_state == OFF){
+    if(bat_low_ico_state == OFF){
         MPANEL_drawIcon(ico_low_bat.posx, ico_low_bat.posy, ico_low_bat.data);
-        last_state = ON;
+        bat_low_ico_state = ON;
     }else{
         LCD_Fill(ico_low_bat.posx, ico_low_bat.posy, ico_low_bat.data->width, ico_low_bat.data->hight, BLACK);
-        last_state = OFF;
+        bat_low_ico_state = OFF;
     }
     LCD_Update();
 }
