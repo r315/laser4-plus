@@ -232,9 +232,9 @@ vires_t res;
                 }
             }
         }
-        bat_consumed += res.cur;
         dro_bat.update(res.vbat/1000.0f);
         // [Ah] are given by the periodic call        
+        bat_consumed += (float)(res.cur/(float)(3600/30));   //1h/30s
         dro_amph.update(bat_consumed / 1000.0f); 
         dro_ma.update(res.cur);
         LCD_Update();
