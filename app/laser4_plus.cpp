@@ -126,7 +126,7 @@ uint8_t appGetCurrentMode(void){
  * @param ptr : pointer passed when the callback is registered
  * */
 void usbConnectCB(void *ptr){
-   appReqModeChange(MODE_HID);
+    appReqModeChange(MODE_HID);
 #if defined(ENABLE_DEBUG) && defined(ENABLE_VCOM)
     dbg_init(&vcom);
 #endif
@@ -166,7 +166,7 @@ uint8_t cur_state = state & STATE_MASK;
     }
     // Request in progress, if same return
     if(cur_state == REQ_MODE_CHANGE){
-        if((state >> STATE_BITS) == cur_state){
+        if((state >> STATE_BITS) == new_mode){
             return;
         } 
     }
@@ -186,7 +186,7 @@ static void changeMode(uint8_t new_mode){
         case MODE_MULTIPROTOCOL:
             DBG_PRINT("\n ***** Starting Multiprotocol *****\n");
             multiprotocol_setup();
-            buzPlayTone(500,100);
+            buzPlayTone(400,150);
 #ifdef ENABLE_DISPLAY
             if(radio.mode_select == 14){
                 MPANEL_drawIcon(ico_35mhz.posx, ico_35mhz.posy, ico_35mhz.data);  
@@ -199,7 +199,7 @@ static void changeMode(uint8_t new_mode){
 #ifdef ENABLE_GAME_CONTROLLER
             DBG_PRINT("\n ***** Starting game controller ***** \n");
             CONTROLLER_Init();
-            buzPlayTone(400,100);
+            buzPlayTone(2000,150);
 #ifdef ENABLE_DISPLAY
             MPANEL_drawIcon(ico_usb.posx, ico_usb.posy, ico_usb.data);
 #endif /* ENABLE_DISPLAY */
@@ -311,9 +311,10 @@ void setup(void){
     laser4Init();
     NV_Init();
 
-#ifdef ENABLE_USART
+#if defined(ENABLE_USART) && defined(ENABLE_DEBUG)
     usart_init();
-#endif  
+    dbg_init(&pcom);
+#endif
 
 #if defined(ENABLE_VCOM) || defined(ENABLE_GAME_CONTROLLER)
     USB_DEVICE_Init();
@@ -325,20 +326,11 @@ void setup(void){
     CONTROLLER_Init();
 #endif
 
-#ifdef ENABLE_DEBUG
-    dbg_init(&pcom);
-#endif
-
 #ifdef ENABLE_CLI
     con.init(&pcom, "laser4+ >");
     con.registerCommandList(laser4_commands);
     con.cls();
-#endif     
-
-    // default mode, if connected to USB then the default mode
-    // is overwritten
-    appReqModeChange(MODE_MULTIPROTOCOL);
-    
+#endif    
     // Load eeprom data
     appInitEEPROM((uint8_t*)eeprom_data);
     // Set volume from stored value
@@ -356,7 +348,12 @@ void setup(void){
     DBG_PRINT("Battery voltage: %dmV\n", batteryGetVoltage());   
 
 #ifdef ENABLE_DISPLAY
-    
+
+    MPANEL_print(8,8,&pixelDustFont, "V%u.%u.%u", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+    LCD_Update();
+    delayMs(1000);
+    LCD_Fill(8,8,64,pixelDustFont.h, BLACK);
+
     dro_bat.setIcon(&ico_volt);
     dro_amph.setIcon(&ico_amph);
 	dro_bat.draw();
@@ -397,6 +394,7 @@ void loop(void){
             break;
 
         case STARTING:
+            appReqModeChange(MODE_MULTIPROTOCOL);            
             break;
 
         default:

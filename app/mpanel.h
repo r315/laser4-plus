@@ -50,5 +50,6 @@ public:
 extern font_t font_seven_seg;
 
 void MPANEL_drawIcon(uint16_t x, uint16_t y, idata_t *data);
+void MPANEL_print(uint16_t x, uint16_t y, font_t *font, const char *fmt, ...);
 
 #endif /* _mpanel_h_ */

@@ -418,7 +418,7 @@ public:
 		}
 
 		if(xstrcmp(p,"erase") == 0){
-			DBG_PRINT("Erasing NV Data: %s\n", NV_Erase() == 0? "Fail": "ok");
+			console->print("Erasing NV Data: %s\n", NV_Erase() == 0? "Fail": "ok");
 			return CMD_OK;
 		}
 		
