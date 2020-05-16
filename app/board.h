@@ -58,12 +58,14 @@ extern "C" {
 #define LED_TOGGLE              GPO_TOGGLE(LED_PORT, LED_PIN)
 #endif
 
+#if 0
 #define DBG_PIN                 10
 #define DBG_PORT                GPIOB
 #define DBG_PIN_HIGH            GPO_SET(DBG_PORT, DBG_PIN)
 #define DBG_PIN_LOW             GPO_CLR(DBG_PORT, DBG_PIN)
 #define DBG_PIN_INIT            GPO_INIT(DBG_PORT, DBG_PIN); DBG_PIN_LOW
 #define DBG_PIN_TOGGLE          GPO_TOGGLE(DBG_PORT, DBG_PIN)
+#endif
 
 /* CC250 Chip select PB6 */
 #define CC25_CS_PIN             12

@@ -66,7 +66,6 @@ void Error_Handler(char * file, int line){
 void laser4Init(void){
     GPIO_ENABLE;
     AFIO->MAPR = (2 << 24); // SW-DP Enabled
-    DBG_PIN_INIT;
     CC25_CS_INIT;
     LED_INIT;
     HW_SW_INIT;
