@@ -12,6 +12,7 @@ static controller_t laser4;
 volatile uint16_t *ppm_data, last_tim;
 volatile uint32_t gflags;
 static uint8_t *channel_map;
+static uint32_t lastppm;
 
 #ifdef TEST_CONTROLLER
 #undef ENABLE_PPM
@@ -38,10 +39,12 @@ RAM_CODE void CONTROLLER_Process(void){
 #endif
 
     if(IS_PPM_FRAME_READY)
-    {            
+    {
 #if !defined(TEST_CONTROLLER)
         uint8_t i;
         uint8_t *data = (uint8_t*)&laser4.pitch;
+        lastppm = getTick();
+        
         for(i = 0; i < MIN_PPM_CHANNELS; i++){
             //PAUSE_CAPTURE;
             uint16_t val = ppm_data[i];
@@ -81,7 +84,13 @@ RAM_CODE void CONTROLLER_Process(void){
 
 #endif  
         CLR_PPM_FRAME;
-        USB_DEVICE_SendReport((uint8_t*)&laser4, REPORT_SIZE);
+        USB_DEVICE_SendReport((uint8_t*)&laser4, REPORT_SIZE);        
+    }
+
+    if(getTick() - lastppm > 70){
+        INPUT_SIGNAL_off;
+    }else{
+        INPUT_SIGNAL_on;
     }
 }
 
@@ -123,6 +132,7 @@ void CONTROLLER_Init(void){
     NVIC_EnableIRQ(TIM2_IRQn);  // Enable timer 2 interupt
     TIM2->CR1 |= (1 << 0);      // Start counter
 #endif /* ENABLE_PPM */
+    BIND_DONE;
 }
 
 #if defined(ENABLE_PWM)
