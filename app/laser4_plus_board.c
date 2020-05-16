@@ -214,6 +214,40 @@ void I2C2_EV_IRQHandler(void){
 void I2C2_ER_IRQHandler(void){
     HAL_I2C_ER_IRQHandler(&hi2c2);
 }
+
+static volatile uint8_t lcd_busy;
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c){
+    lcd_busy = 0;
+}
+
+void I2C_WriteBlock(uint16_t address, uint8_t *data, uint16_t size){
+#if 0    
+    uint32_t retry = 100;
+    while(retry--){
+        if(HAL_I2C_Master_Transmit_IT(&hi2c2, address << 1, data, size) == HAL_OK){
+            break;
+        }
+    }
+#else
+    if(lcd_busy == 0){
+        lcd_busy = 1;
+        HAL_I2C_Master_Transmit_IT(&hi2c2, address << 1, data, size);
+    }
+#endif
+}
+/**
+ * @brief request lcd update
+ * @return : 0 if lcd is busy, otherwise success
+ * */
+uint8_t requestLcdUpdate(void){
+    if(!lcd_busy){
+        lcd_busy = 1;
+        LCD_Update();
+        return 1;
+    }
+    return 0;
+}
+
 #endif
 
 /**

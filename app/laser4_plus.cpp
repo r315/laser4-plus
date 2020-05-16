@@ -5,10 +5,10 @@
 
 
 volatile uint8_t state;
-static uint8_t bat_low;
 static float bat_consumed = 0;  //mAh
 static uint8_t bat_low_tim;
-static uint8_t bat_low_ico_state = OFF;
+uint32_t app_flags = 0;
+
 
 tone_t chime[] = {
     {493,200},
@@ -25,21 +25,29 @@ Console con;
 #ifdef ENABLE_DISPLAY
 #define DRO_BAT_POS     4, 10
 #define DRO_AMPH_POS    74, 10
+#define ICO_LOWBAT_POS  1, 1  // 29x7
+#define ICO_ERROR_POS   31, 1 // 7x7
+#define ICO_BIND_POS    55, 9 // 7x7
+#define ICO_35MHZ_POS   38, 1 // 15x7
+#define ICO_2_4GHZ_POS  53, 1 // 17x7
+#define ICO_USB_POS     70, 1 // 13x7
 #define DRO_MA_POS      88, 1
-#define ICO_35MHZ_POS   34, 1
-#define ICO_2_4GHZ_POS  52, 1
-#define ICO_USB_POS     70, 1
-#define ICO_LOWBAT_POS  1, 1
 
 #define ICO_CLR_START   ICO_35MHZ_POS
-#define ICO_CLR_SIZE    56, 8
+#define ICO_CLR_SIZE    15+17+13, 8
 
+#define APP_DRAW_ICON(ICO)      MPANEL_drawIcon(ICO.posx, ICO.posy, ICO.data)
+#define APP_ERASE_ICON(ICO)     LCD_Fill(ICO.posx, ICO.posy, ICO.data->width, ICO.data->hight, BLACK);                
+
+/**
+ * Icons bitmaps
+ * */
 const uint8_t ico_volt_data[] = {7,8,
     0x7f,0x5d,0x5d,0x5d,0x5d,0x6b,0x77,0x7f
 };
 
 const uint8_t ico_amph_data[] = {10, 8,
-   0x03,0xff,0x03,0x3f,0x02,0xd7,0x02,0xd7,0x02,0x13,0x02,0xd5,0x02,0xd5,0x03,0xff
+    0x03,0xff,0x03,0x3f,0x02,0xd7,0x02,0xd7,0x02,0x13,0x02,0xd5,0x02,0xd5,0x03,0xff
 };
 
 const uint8_t ico_lowbat_data[] = {29, 7,    
@@ -59,6 +67,17 @@ const uint8_t ico_usb_data[] = {13, 7,
     0x1f,0xff,0x15,0x13,0x15,0x75,0x15,0x13,0x15,0xd5,0x11,0x13,0x1f,0xff
 };
 
+const uint8_t ico_error_data[] = {7, 7,
+    0x08,0x14,0x1c,0x2a,0x22,0x49,0x7f,
+};
+
+const uint8_t ico_bind_data[] = {7,7,
+    0x04,0x0a,0x01,0x2a,0x40,0x28,0x10,
+};
+
+/**
+ * Icons structures
+ * */
 static mpanelicon_t ico_volt = {
     (uint16_t)(font_seven_seg.w * 3 + 7),
     (uint16_t)(font_seven_seg.h/2),
@@ -89,6 +108,16 @@ static mpanelicon_t ico_usb = {
 static mpanelicon_t ico_low_bat = {
     ICO_LOWBAT_POS,
     (idata_t*)ico_lowbat_data
+};
+
+static mpanelicon_t ico_error = {
+    ICO_ERROR_POS,
+    (idata_t*)ico_error_data
+};
+
+static mpanelicon_t ico_bind = {
+    ICO_BIND_POS,
+    (idata_t*)ico_bind_data
 };
 
 MpanelDro dro_bat(DRO_BAT_POS, "%.2f",&font_seven_seg);
@@ -189,9 +218,9 @@ static void changeMode(uint8_t new_mode){
             buzPlayTone(400,150);
 #ifdef ENABLE_DISPLAY
             if(radio.mode_select == 14){
-                MPANEL_drawIcon(ico_35mhz.posx, ico_35mhz.posy, ico_35mhz.data);  
+                APP_DRAW_ICON(ico_35mhz);
             }else{
-                MPANEL_drawIcon(ico_2_4ghz.posx, ico_2_4ghz.posy, ico_2_4ghz.data);   
+                APP_DRAW_ICON(ico_2_4ghz);
             }
 #endif
             break;
@@ -201,7 +230,7 @@ static void changeMode(uint8_t new_mode){
             CONTROLLER_Init();
             buzPlayTone(2000,150);
 #ifdef ENABLE_DISPLAY
-            MPANEL_drawIcon(ico_usb.posx, ico_usb.posy, ico_usb.data);
+            APP_DRAW_ICON(ico_usb);
 #endif /* ENABLE_DISPLAY */
 #endif /* ENABLE_GAME_CONTROLLER */
             LED_OFF;
@@ -218,26 +247,26 @@ static void changeMode(uint8_t new_mode){
 void appCheckBattery(void){
 vires_t res;
     if(batteryReadVI(&res)){
-        if(res.vbat < BATTERY_VOLTAGE_MIN && bat_low == NO){
-            bat_low = YES;
+        if(res.vbat < BATTERY_VOLTAGE_MIN && !(IS_BAT_LOW)){
+            SET_BAT_LOW;
             DBG_PRINT("!!Low battery !! (%dmV)\n", res.vbat);
 #ifdef ENABLE_DISPLAY
             bat_low_tim = startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
         }else{
-            if(bat_low == YES){
-                bat_low = NO;
+            if(IS_BAT_LOW){
+                CLR_BAT_LOW;
                 stopTimer(bat_low_tim);
-                if(bat_low_ico_state == ON){
+                if(IS_BAT_ICO_ON){
                     appToggleLowBatIco();
                 }
             }
         }
         dro_bat.update(res.vbat/1000.0f);
         // [Ah] are given by the periodic call        
-        bat_consumed += (float)(res.cur/(float)(3600/30));   //1h/30s
+        bat_consumed += (float)(res.cur/(float)(3600/(TIMER_BATTERY_TIME/1000)));   //1h/30s
         dro_amph.update(bat_consumed / 1000.0f); 
         dro_ma.update(res.cur);
-        LCD_Update();
+        SET_LCD_UPDATE;
 #else
         }
 #endif /* ENABLE_DISPLAY */
@@ -249,15 +278,51 @@ vires_t res;
  * @brief blink low battery icon
  * */
 void appToggleLowBatIco(void){
-    if(bat_low_ico_state == OFF){
-        MPANEL_drawIcon(ico_low_bat.posx, ico_low_bat.posy, ico_low_bat.data);
-        bat_low_ico_state = ON;
+    if(!(IS_BAT_ICO_ON)){
+        SET_BAT_ICO;
+        APP_DRAW_ICON(ico_low_bat);
     }else{
-        LCD_Fill(ico_low_bat.posx, ico_low_bat.posy, ico_low_bat.data->width, ico_low_bat.data->hight, BLACK);
-        bat_low_ico_state = OFF;
+        CLR_BAT_ICO;
+        APP_ERASE_ICON(ico_low_bat);
     }
-    LCD_Update();
+    SET_LCD_UPDATE;
 }
+
+/**
+ * @brief check multiprotocol flags and place icons 
+ * accordingly
+ * */
+void appCheckProtocolFlags(void){
+
+    if(IS_INPUT_SIGNAL_off){
+        if(!(IS_ERROR_ICO_ON)){
+            SET_ERROR_ICO;
+            APP_DRAW_ICON(ico_error);
+            SET_LCD_UPDATE;
+        }
+    }else{
+         if(IS_ERROR_ICO_ON){
+            CLR_ERROR_ICO;
+            APP_ERASE_ICON(ico_error);
+            SET_LCD_UPDATE;
+        }
+    }
+
+    if(IS_BIND_IN_PROGRESS){
+         if(!(IS_BIND_ICO_ON)){
+            SET_BIND_ICO;
+            APP_DRAW_ICON(ico_bind);
+            SET_LCD_UPDATE;
+        }
+    }else{
+         if(IS_BIND_ICO_ON){
+            CLR_BIND_ICO;
+            APP_ERASE_ICON(ico_bind);
+            SET_LCD_UPDATE;
+        }
+    }
+}
+
 #endif /* ENABLE_DISPLAY */
 /**
  * @brief
@@ -306,8 +371,7 @@ void appSaveEEPROM(void){
 void setup(void){    
 
     state = STARTING;
-    bat_low = NO;
-    
+        
     laser4Init();
     NV_Init();
 
@@ -362,6 +426,8 @@ void setup(void){
     startTimer(TIMER_BATTERY_TIME, SWTIM_AUTO_RELOAD, appCheckBattery);
 
     appCheckBattery();
+
+    startTimer(TIMER_PPM_TIME, SWTIM_AUTO_RELOAD, appCheckProtocolFlags);
 #endif 
     // wait for melody to finish
     buzWaitEnd();    
@@ -389,7 +455,7 @@ void loop(void){
             state = state >> STATE_BITS;
             changeMode(state);
 #ifdef ENABLE_DISPLAY
-            LCD_Update();
+            SET_LCD_UPDATE;
 #endif            
             break;
 
@@ -406,6 +472,11 @@ void loop(void){
 #endif
 
     processTimers();
+    if(IS_LCD_UPDATE){
+        if(requestLcdUpdate()){
+            CLR_LCD_UPDATE;
+        }
+    }
     reloadWatchDog();
     //DBG_PIN_TOGGLE;
 }

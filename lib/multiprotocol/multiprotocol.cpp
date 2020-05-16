@@ -204,7 +204,10 @@ uint8_t count=0;
         }
     }
 }
-
+/**
+ * @brief process PPM channel data and aux channels
+ * @return : 1 - if protocol change was requested, 0 - otherwise
+ * */
 static uint8_t Update_All(void){
 
     #ifdef ENABLE_SERIAL
@@ -360,7 +363,7 @@ static uint16_t next_callback;
         DBG_PRINT("Protocol selected: %d, sub proto %d, rxnum %d, option %d\n", radio.protocol, radio.sub_protocol, radio.rx_num, radio.option);
         if(IS_BIND_IN_PROGRESS){
             DBG_PRINT("Bind started\n");
-    }
+        }
     }
     
     #if defined(WAIT_FOR_BIND) && defined(ENABLE_BIND_CH)
@@ -371,8 +374,10 @@ static uint16_t next_callback;
         }
     #endif
 
+    // Clear bind request flags
     WAIT_BIND_off;
     CHANGE_PROTOCOL_FLAG_off;
+    BIND_BUTTON_FLAG_off;
 
     if(next_callback > 32000)
     { // next_callback should not be more than 32767 so we will wait here...
@@ -384,7 +389,6 @@ static uint16_t next_callback;
     TIMER_BASE->CCR1 = TIMER_BASE->CNT + next_callback * 2;	// set compare A for callback
     TIMER_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;				// Clear Timer2/Comp1 interrupt flag
     sei();										            // enable global int
-    BIND_BUTTON_FLAG_off;
 }
 
 /**

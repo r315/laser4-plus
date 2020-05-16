@@ -243,7 +243,7 @@ struct PPM_Parameters
 
 #pragma pack (1)
 typedef struct radio{
-    uint32_t flags;       
+    volatile uint32_t flags;       
     uint8_t mode_select;    
 
     // Servo data 

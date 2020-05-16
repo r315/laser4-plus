@@ -286,11 +286,15 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(void *ptr) {
-		appReqModeChange(MODE_MULTIPROTOCOL);
-		CHANGE_PROTOCOL_FLAG_on;
-		BIND_IN_PROGRESS;
-		if(IS_INPUT_SIGNAL_off){
-			console->xputs("No input signal!!");
+		if(IS_BIND_IN_PROGRESS){
+			console->xputs("Bind already in progress");
+		}else{
+			appReqModeChange(MODE_MULTIPROTOCOL);
+			CHANGE_PROTOCOL_FLAG_on;
+			BIND_IN_PROGRESS;
+			if(IS_INPUT_SIGNAL_off){
+				console->xputs("No input signal!!");
+			}
 		}
 		return CMD_OK;
 	}
@@ -339,10 +343,11 @@ public:
 				tim = -1;
 				break;
 			case 4:
-				uint32_t start = HAL_GetTick();				
-				
-				console->print("Time: %ums\n", HAL_GetTick() - start);
+				//uint32_t start = HAL_GetTick();				
+				/* Some function to test */ 
+				//console->print("Time: %ums\n", HAL_GetTick() - start);				
 				break;
+
 		}		
 		return CMD_OK;
 	}
