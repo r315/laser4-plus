@@ -37,8 +37,8 @@ font_t font_seven_seg = {
 };
 
 static uint16_t seven_seg_dp(uint16_t x, uint16_t y){
-    LCD_Fill(x-1, y, 4, 20, BLACK);
-    LCD_Fill(x, y + 20 - 2, 2, 2, WHITE);
+    LCD_FillRect(x-1, y, 4, 20, BLACK);
+    LCD_FillRect(x, y + 20 - 2, 2, 2, WHITE);
     return x + 3; 
 }
 

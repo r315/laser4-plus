@@ -86,8 +86,8 @@ void laser4Init(void){
 #ifdef ENABLE_DISPLAY
     i2cInit();
     LCD_Init();
-    LCD_Fill(0, 0, 128, 32, BLACK);
-    LCD_Update();
+    //LCD_Fill(0, 0, 128, 32, BLACK);
+    //LCD_Update();
 #endif
 }
 
@@ -240,7 +240,6 @@ void I2C_WriteBlock(uint16_t address, uint8_t *data, uint16_t size){
  * */
 uint8_t requestLcdUpdate(void){
     if(!lcd_busy){
-        lcd_busy = 1;
         LCD_Update();
         return 1;
     }

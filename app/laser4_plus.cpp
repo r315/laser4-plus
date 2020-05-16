@@ -33,11 +33,13 @@ Console con;
 #define ICO_USB_POS     70, 1 // 13x7
 #define DRO_MA_POS      88, 1
 
+#define VERSION_POS     8,8
+
 #define ICO_CLR_START   ICO_35MHZ_POS
 #define ICO_CLR_SIZE    15+17+13, 8
 
 #define APP_DRAW_ICON(ICO)      MPANEL_drawIcon(ICO.posx, ICO.posy, ICO.data)
-#define APP_ERASE_ICON(ICO)     LCD_Fill(ICO.posx, ICO.posy, ICO.data->width, ICO.data->hight, BLACK);                
+#define APP_ERASE_ICON(ICO)     LCD_FillRect(ICO.posx, ICO.posy, ICO.data->width, ICO.data->hight, BLACK);                
 
 /**
  * Icons bitmaps
@@ -200,7 +202,7 @@ uint8_t cur_state = state & STATE_MASK;
         } 
     }
 #ifdef ENABLE_DISPLAY
-    LCD_Fill(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
+    LCD_FillRect(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
 #endif
     // set the requested mode by overwriting the previous
     state = (new_mode << STATE_BITS) | REQ_MODE_CHANGE;
@@ -413,10 +415,10 @@ void setup(void){
 
 #ifdef ENABLE_DISPLAY
 
-    MPANEL_print(8,8,&pixelDustFont, "V%u.%u.%u", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+    MPANEL_print(VERSION_POS, &pixelDustFont, "V%u.%u.%u", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
     LCD_Update();
     delayMs(1000);
-    LCD_Fill(8,8,64,pixelDustFont.h, BLACK);
+    LCD_FillRect(VERSION_POS, 64, pixelDustFont.h, BLACK); // Erase version from display
 
     dro_bat.setIcon(&ico_volt);
     dro_amph.setIcon(&ico_amph);
@@ -428,6 +430,7 @@ void setup(void){
     appCheckBattery();
 
     startTimer(TIMER_PPM_TIME, SWTIM_AUTO_RELOAD, appCheckProtocolFlags);
+    SET_LCD_UPDATE;
 #endif 
     // wait for melody to finish
     buzWaitEnd();    
@@ -478,7 +481,6 @@ void loop(void){
         }
     }
     reloadWatchDog();
-    //DBG_PIN_TOGGLE;
 }
 
 

@@ -187,9 +187,9 @@ uint8_t count=0;
                 }
                 count=0;
                 Update_All();
-            #ifdef ENABLE_DEBUG
-                    if(TIMER_BASE->SR & TIM_SR_CC1IF )
-                        DBG_PRINT("Long update\n");
+                #ifdef ENABLE_DEBUG
+                if(TIMER_BASE->SR & TIM_SR_CC1IF )
+                    DBG_PRINT("Long update\n");
                 #endif
                 if(radio.remote_callback == NULL)
                     break;
