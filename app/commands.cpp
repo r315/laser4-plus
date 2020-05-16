@@ -451,7 +451,7 @@ public:
     CmdAdc() : ConsoleCommand("adc") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {
-		console->xputs("usage: adc [calibrate|-r]");
+		console->xputs("usage: adc [ calibrate | -div | -rs ]");
 		console->xputs("\t calibrate  Adc calibration based on internal voltage reference\n"
 						"\t-div <racio> : Battery voltage divider racio\n"
 						"\t-rs <resistor> Sense resistor");
