@@ -72,7 +72,7 @@ PCB Installed (external antenna not installed yet)
 
 ### Block diagram
 
-![Block diagram](/doc/Laser4+_bd.png)
+![Block diagram](/doc/l4_bd.png)
 
 ### OLED Display
 
@@ -120,4 +120,4 @@ The features that were defined for the project are all included to the current r
 
 Features fo be added:
 
-- Binging message on display.
+- Configurable channel limits and center.
