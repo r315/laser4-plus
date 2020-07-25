@@ -73,6 +73,8 @@ extern "C" {
 #define CC25_CS_INIT            GPO_INIT(CC25_CS_PORT, CC25_CS_PIN); CC25_CS_FALSE
 #define CC25_CS_FALSE           GPO_SET(CC25_CS_PORT, CC25_CS_PIN)
 #define CC25_CS_TRUE            GPO_CLR(CC25_CS_PORT, CC25_CS_PIN)
+#define RFX240_TXEN             CC2500_00_IOCFG2
+#define RFX240_RXEN             CC2500_02_IOCFG0
 #define HW_CC2500_MODULE_RESET
 
 

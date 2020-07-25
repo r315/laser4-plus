@@ -25,7 +25,7 @@ extern "C" {
 //******************
 #define VERSION_MAJOR               1
 #define VERSION_MINOR               1
-#define VERSION_PATCH               0
+#define VERSION_PATCH               1
 
 #define BAUD                        100000
 #define RXBUFFER_SIZE               36	// 26 + 1 + 9

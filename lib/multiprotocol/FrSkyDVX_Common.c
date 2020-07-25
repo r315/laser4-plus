@@ -99,8 +99,9 @@ void Frsky_init_hop(void)
 		radio.hopping_frequency[i] = (i > 46) ? 0 : val;
 	}
 
-	DBG_PRINT("Hopping frequency: ");
+	DBG_PRINT("Hopping frequency: \r\n[");
 	DBG_DUMP_LINE(radio.hopping_frequency, 50, 0);
+	DBG_PRINT("]\r\n");
 	
 }
 #endif

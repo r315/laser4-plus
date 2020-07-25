@@ -92,20 +92,20 @@ void CC2500_WriteReg(uint8_t address, uint8_t data)
 void CC2500_SetTxRxMode(uint8_t mode)
 {
 	if(mode == TX_EN)
-	{//from deviation firmware
-		CC2500_WriteReg(CC2500_00_IOCFG2, 0x2F);
-		CC2500_WriteReg(CC2500_02_IOCFG0, 0x2F | 0x40);
+	{
+		CC2500_WriteReg(RFX240_TXEN, GDO_HIGH);
+		CC2500_WriteReg(RFX240_RXEN, GDO_LOW);
 	}
 	else
 		if (mode == RX_EN)
 		{
-			CC2500_WriteReg(CC2500_02_IOCFG0, 0x2F);
-			CC2500_WriteReg(CC2500_00_IOCFG2, 0x2F | 0x40);
+			CC2500_WriteReg(RFX240_TXEN, GDO_LOW);
+			CC2500_WriteReg(RFX240_RXEN, GDO_HIGH);
 		}
 		else
 		{
-			CC2500_WriteReg(CC2500_02_IOCFG0, 0x2F);
-			CC2500_WriteReg(CC2500_00_IOCFG2, 0x2F);
+			CC2500_WriteReg(RFX240_TXEN, GDO_LOW);
+			CC2500_WriteReg(RFX240_RXEN, GDO_LOW);
 		}
 }
 
