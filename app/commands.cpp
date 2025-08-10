@@ -15,7 +15,7 @@ char *getOptValue(const char *opt, uint32_t argc, char **argv){
 }
 
 char *skipSpaces(char *str){
-	while((*str == ' ' || *str == '\t') && *str != '\0') 
+	while((*str == ' ' || *str == '\t') && *str != '\0')
 		str++;
 	return str;
 }
@@ -51,13 +51,13 @@ uint32_t argc = 0;
 class CmdHelp : public ConsoleCommand {
 	Console *console;
 public:
-    CmdHelp() : ConsoleCommand("help") {}	
+    CmdHelp() : ConsoleCommand("help") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 
 	void help(void) {
 		console->xputs("Available commands:\n");
-		
-		for (uint8_t i = 0; i < console->getCmdListSize(); i++) {			
+
+		for (uint8_t i = 0; i < console->getCmdListSize(); i++) {
 				console->print("\t%s\n", console->getCmdIndexed(i)->getName());
 		}
 		console->xputchar('\n');
@@ -66,7 +66,7 @@ public:
 	char execute(void *ptr) {
 		help();
 		return CMD_OK;
-	}	
+	}
 }cmdhelp;
 
 
@@ -74,13 +74,13 @@ class CmdCC25 : public ConsoleCommand {
 	Console *console;
 
 public:
-    CmdCC25() : ConsoleCommand("cc2500") {}	
+    CmdCC25() : ConsoleCommand("cc2500") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {
-		console->xputs("usage: cc2500 <[-r, --reset, -rs, status]>");	
+		console->xputs("usage: cc2500 <[-r, --reset, -rs, status]>");
 		console->xputs("\t-r <0-2E>, Read Register");
 		console->xputs("\t-w <0-2E>, Write Register");
-		console->xputs("\t-rs <30-3D>, Read status register");	
+		console->xputs("\t-rs <30-3D>, Read status register");
 		console->xputs("\t--reset, Reset CC2500 module");
 	}
 
@@ -94,12 +94,12 @@ public:
 	}
 
 	char readRegister(uint8_t reg){
-		uint8_t val;	
+		uint8_t val;
 		val = CC2500_ReadReg(reg);
 		console->print("Reg[0x%02x] = %x\n", reg, val);
 		return CMD_OK;
 	}
-	
+
 	uint32_t dataRate(void){
 		uint8_t drate_m = CC2500_ReadReg(CC2500_11_MDMCFG3);
 		uint8_t drate_e = CC2500_ReadReg(CC2500_10_MDMCFG4) & 15;
@@ -114,7 +114,7 @@ public:
 		return rssi_dec / 2 - rssi_offset;
 	}
 
-    
+
 	char execute(void *ptr) {
         char *argv[4], *param;
         uint32_t argc, int_value;
@@ -175,8 +175,8 @@ public:
 			}
 		}
 
-        return CMD_BAD_PARAM;        
-	}	
+        return CMD_BAD_PARAM;
+	}
 }cmdcc25;
 
 class CmdStatus : public ConsoleCommand {
@@ -184,7 +184,7 @@ class CmdStatus : public ConsoleCommand {
 public:
     CmdStatus() : ConsoleCommand("status") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
-	void help(void) {}  
+	void help(void) {}
 
 	void batteryVoltage(void){
 		console->print(
@@ -206,22 +206,22 @@ public:
 			IS_PPM_FLAG_on,
 			IS_BIND_DONE
 		);
-		console->print(	
+		console->print(
 			"Wait bind       [%d]\n"
 			"Tx pause        [%d]\n"
-			"Input signal    [%d]\n",			
+			"Input signal    [%d]\n",
 			IS_WAIT_BIND_on,
 			IS_TX_MAIN_PAUSE_on,
 			IS_INPUT_SIGNAL_on
 		);
 	}
-
+#ifdef ENABLE_PPM
 	void channelValues(void){
-		for(uint8_t i = 0; i < radio.ppm_chan_max + MAX_AUX_CHANNELS; i++){
+		for(uint8_t i = 0; i < radio.channel_aux + MAX_AUX_CHANNELS; i++){
         	console->print("CH[%u]:\t%u\n", i, radio.channel_data[i]);
     	}
 	}
-
+#endif
 	void mode(void){
 		uint8_t aux = appGetCurrentMode();
 		console->print("Mode: %s\n", aux == MODE_MULTIPROTOCOL ? "Multiprotocol" : "Game Controller");
@@ -232,17 +232,19 @@ public:
         batteryVoltage();
 		console->xputs("----------------------------------------");
         systemFlags();
-		console->xputs("----------------------------------------");		
+#ifdef ENABLE_PPM
+		console->xputs("----------------------------------------");
 		channelValues();
+#endif
 		console->xputs("----------------------------------------");
 		mode();
 		console->xputs("----------------------------------------");
-        return CMD_OK;        
-	}	
+        return CMD_OK;
+	}
 }cmdstatus;
 
 class CmdMockPPM : public ConsoleCommand {
-	Console *console;    
+	Console *console;
 public:
     CmdMockPPM() : ConsoleCommand("id") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
@@ -255,7 +257,7 @@ public:
 		char *p = (char*)ptr;
 		uint32_t int_value;
 
-		if(xstrcmp(p,"help") == 0){	
+		if(xstrcmp(p,"help") == 0){
 			help();
 			return CMD_OK;
 		}
@@ -265,13 +267,13 @@ public:
 			console->print("Random ID: %x\n", xrand());
 		}else{
 			console->print("Current ID: %x\n", radio.protocol_id_master);
-		}	
-		return CMD_OK;		
+		}
+		return CMD_OK;
 	}
-}cmdid;	
+}cmdid;
 
 class CmdReset : public ConsoleCommand {
-	Console *console;    
+	Console *console;
 public:
     CmdReset() : ConsoleCommand("reset") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
@@ -280,7 +282,7 @@ public:
 }cmdreset;
 
 class CmdBind : public ConsoleCommand {
-	Console *console;    
+	Console *console;
 public:
     CmdBind() : ConsoleCommand("bind") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
@@ -314,7 +316,7 @@ public:
 	void help(void) {}
 	char execute(void *ptr) {
 		uint32_t test_code;
-		
+
 		if(!nextHex((char**)&ptr, &test_code)){
 			return CMD_OK;
 		}
@@ -343,18 +345,18 @@ public:
 				tim = -1;
 				break;
 			case 4:
-				//uint32_t start = HAL_GetTick();				
-				/* Some function to test */ 
-				//console->print("Time: %ums\n", HAL_GetTick() - start);				
+				//uint32_t start = HAL_GetTick();
+				/* Some function to test */
+				//console->print("Time: %ums\n", HAL_GetTick() - start);
 				break;
 
-		}		
+		}
 		return CMD_OK;
 	}
 }cmdtest;
 
 class CmdMode : public ConsoleCommand {
-	Console *console;    
+	Console *console;
 public:
     CmdMode() : ConsoleCommand("mode") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
@@ -373,7 +375,7 @@ public:
 }cmdmode;
 
 class CmdEeprom : public ConsoleCommand {
-	Console *console;    
+	Console *console;
 public:
     CmdEeprom() : ConsoleCommand("eeprom") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
@@ -385,10 +387,10 @@ public:
 	void id(void){
 		uint32_t *ptr = (uint32_t*)eeprom_data;
 
-		console->print(			
+		console->print(
 			"ID \t	\t\t0x%X\n",
 			*(ptr + EEPROM_ID_OFFSET)
-		);	
+		);
 	}
 
 	void channelRanges(void){
@@ -417,7 +419,7 @@ public:
 			return CMD_OK;
 		}
 
-		if(xstrcmp(p,"help") == 0){	
+		if(xstrcmp(p,"help") == 0){
 			help();
 			return CMD_OK;
 		}
@@ -426,13 +428,13 @@ public:
 			console->print("Erasing NV Data: %s\n", NV_Erase() == 0? "Fail": "ok");
 			return CMD_OK;
 		}
-		
+
 		if(xstrcmp(p,"dump") == 0){
-			DBG_DUMP_LINE((uint8_t*)eeprom_data, EEPROM_SIZE, 0);			
+			DBG_DUMP_LINE((uint8_t*)eeprom_data, EEPROM_SIZE, 0);
 			return CMD_OK;
 		}
-		
-		if(xstrcmp(p,"save") == 0){			
+
+		if(xstrcmp(p,"save") == 0){
 			appSaveEEPROM();
 			return CMD_OK;
 		}
@@ -446,7 +448,7 @@ public:
 }cmdeeprom;
 
 class CmdAdc : public ConsoleCommand {
-	Console *console;    
+	Console *console;
 public:
     CmdAdc() : ConsoleCommand("adc") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
@@ -461,21 +463,21 @@ public:
 		f2u_u t;
 		char *param = getOptValue((char*)opt, argc, argv);
 		double d;
-		
+
 		if(param == NULL){
 			return CMD_NOT_FOUND;
-		}		
+		}
 
 		if(nextDouble(&param, &d) == 0){
 			return CMD_BAD_PARAM;
 		}
 
-		t.f = d;		
+		t.f = d;
 		*dst = (uint16_t)t.u;
 		*(dst + 1) = (uint16_t)(t.u>>16);
 		func(t.f);
 
-		return CMD_OK;	
+		return CMD_OK;
 	}
 
 	void batVoltageCalibration(void){
@@ -499,21 +501,21 @@ public:
         uint32_t argc;
 
 		argc = strToArray((char*)ptr, argv);
-		
+
 		if(argc == 0){
 			batVoltageCalibration();
 			adcResolution();
 			current();
-			senseResistor();			
+			senseResistor();
 			return CMD_OK;
 		}
 
-		if(xstrcmp(argv[0],"help") == 0){	
+		if(xstrcmp(argv[0],"help") == 0){
 			help();
 			return CMD_OK;
 		}
 
-		if(xstrcmp(argv[0],"calibrate") == 0){	
+		if(xstrcmp(argv[0],"calibrate") == 0){
 			if(adcCalibrate()){
 				adcResolution();
 			}else{
@@ -532,7 +534,7 @@ public:
 
 
 class CmdBuz : public ConsoleCommand {
-	Console *console;    
+	Console *console;
 public:
     CmdBuz() : ConsoleCommand("buz") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
@@ -596,8 +598,8 @@ public:
 
 		DFU_Enable();
     	NVIC_SystemReset();
-    
-    	return CMD_OK; 
+
+    	return CMD_OK;
 	}
     void help(void){}
 }cmddfu;

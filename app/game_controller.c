@@ -25,7 +25,7 @@ static int16_t map(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, i
 static void setControllerPpmFlag(volatile uint16_t *buf, uint8_t chan){
     SET_PPM_FRAME;
     ppm_data = buf;
-    radio.ppm_chan_max = chan;
+    radio.channel_aux = chan;
 }
 #endif
 
@@ -44,7 +44,7 @@ RAM_CODE void CONTROLLER_Process(void){
         uint8_t i;
         uint8_t *data = (uint8_t*)&laser4.pitch;
         lastppm = getTick();
-        
+
         for(i = 0; i < MIN_PPM_CHANNELS; i++){
             //PAUSE_CAPTURE;
             uint16_t val = ppm_data[i];
@@ -61,7 +61,7 @@ RAM_CODE void CONTROLLER_Process(void){
         }
 
         update_channels_aux();
-        laser4.aux2 = radio.channel_data[radio.ppm_chan_max + MAX_AUX_CHANNELS - 1];       
+        laser4.aux2 = radio.channel_data[radio.channel_aux + MAX_AUX_CHANNELS - 1];
         laser4.buttons = HW_SW_READ;
 #else
         //float t = angle * 0.15915f; // Normalize t = x/2pi - floor(x/2pi)
@@ -71,9 +71,9 @@ RAM_CODE void CONTROLLER_Process(void){
 
         laser4.roll = (LOGICAL_MAXIMUM/2) + sin(angle) * (LOGICAL_MAXIMUM/2);
         laser4.pitch = (LOGICAL_MAXIMUM/2) + cos(angle) * (LOGICAL_MAXIMUM/2);
-        
+
         laser4.throttle = laser4.roll;
-        laser4.yaw = laser4.pitch;        
+        laser4.yaw = laser4.pitch;
 
         if( (count--) == 0){
             uint8_t tmp = (uint8_t)laser4.buttons;
@@ -82,9 +82,9 @@ RAM_CODE void CONTROLLER_Process(void){
             count = 20;
         }
 
-#endif  
+#endif
         CLR_PPM_FRAME;
-        USB_DEVICE_SendReport((uint8_t*)&laser4, REPORT_SIZE);        
+        USB_DEVICE_SendReport((uint8_t*)&laser4, REPORT_SIZE);
     }
 
     if(getTick() - lastppm > 70){
@@ -96,9 +96,9 @@ RAM_CODE void CONTROLLER_Process(void){
 
 
 /**
- *  Code for PPM input PB5, TIM3_CH1 
+ *  Code for PPM input PB5, TIM3_CH1
  * */
-void CONTROLLER_Init(void){   
+void CONTROLLER_Init(void){
 
     laser4.roll = LOGICAL_MAXIMUM;
     laser4.pitch = LOGICAL_MAXIMUM/2;
@@ -124,8 +124,8 @@ void CONTROLLER_Init(void){
     TIM2->CR1 = 0;              // Stop counter
 
     TIM2->PSC = SystemCoreClock/1000000;      // 1Mhz
-    TIM2->CCMR1 = 0x0101;       // CC1-2S = 01, ch1-2 mapped to TI1,TI2 
-    TIM2->CCMR2 = 0x0101;       // CC3-4S = 01, map to TI1 
+    TIM2->CCMR1 = 0x0101;       // CC1-2S = 01, ch1-2 mapped to TI1,TI2
+    TIM2->CCMR2 = 0x0101;       // CC3-4S = 01, map to TI1
     TIM2->CCER  = 0x1111;       // CC1E, CC1; Configure all channels as input, Capture on rising edge
 
     TIM2->DIER = (0x0f << 1);   // Enable interrupt on capture for all channels
@@ -139,14 +139,14 @@ void CONTROLLER_Init(void){
 /**
  * Handles a radio channel with the cirrespondent captured value from interrupt.
  * Hw capture flag is cleared when the correspondent regiter is read.
- * This is a synchronous algorithm, since the ready flag is set only if all channels were 
- * measured.  
+ * This is a synchronous algorithm, since the ready flag is set only if all channels were
+ * measured.
  * */
 RAM_CODE void HandleChannel(volatile uint16_t *dst, volatile uint16_t *ccr, uint8_t ch){
 
     // check if overcapture occurred
-    if(TIM2->SR & (1 << (8 + ch))){ 
-        // if set ignore capture and set capture for rising edge 
+    if(TIM2->SR & (1 << (8 + ch))){
+        // if set ignore capture and set capture for rising edge
         TIM2->CCER &= ~(TIM_CAP_POL(ch));
         TIM2->SR &= ~((1 << (8 + ch)) | (1 << ch));
         return;
@@ -155,23 +155,23 @@ RAM_CODE void HandleChannel(volatile uint16_t *dst, volatile uint16_t *ccr, uint
     // If interrupt was from a rising edge, save capture value on the remote channel
     // and change the polarity of the capturing edge for the give channel
     if(!(TIM2->CCER & TIM_CAP_POL(ch))){
-        // First capture, save it on buffer 
+        // First capture, save it on buffer
         *dst =  *ccr;
         TIM2->CCER |= TIM_CAP_POL(ch);
         if(ch == 1) ready = 0;
-    }else{            
-        // If caused by falling edge, calculate the pulse width and save it on the 
+    }else{
+        // If caused by falling edge, calculate the pulse width and save it on the
         // remote channel.
         *dst =  (*ccr > *dst) ? *ccr - *dst : (0xFFFF - *dst) + *ccr;
         TIM2->CCER &= ~(TIM_CAP_POL(ch));
         // The calculated pulse value is stored on the lower half of the buffer
         *(dst-4) = *dst;
         if(ch == 4) ready = 1;
-    }    
+    }
 }
 
 /**
- * Every capture of any channel will generate an interrupt on capture event (rising or falling edge), 
+ * Every capture of any channel will generate an interrupt on capture event (rising or falling edge),
  * then the handler will evaluate which channel caused the interrupt and call the channel handler
  * with the correspondent radio channel buffer.
  * As each remote channel requires two captures we send the address of
@@ -182,7 +182,7 @@ RAM_CODE void TIM2_IRQHandler(void){
     if(TIM2->SR & (1 << 1)){
         HandleChannel(&remote_channels[4], (uint16_t*)&TIM2->CCR1, 1);
     }
-    
+
     if(TIM2->SR & (1 << 2)){
         HandleChannel(&remote_channels[5], (uint16_t*)&TIM2->CCR2, 2);
     }
@@ -193,7 +193,7 @@ RAM_CODE void TIM2_IRQHandler(void){
 
     if(TIM2->SR & (1 << 4)){
         HandleChannel(&remote_channels[7], (uint16_t*)&TIM2->CCR4, 4);
-    }  
+    }
 }
 #endif /* ENABLE_PWM */
 #endif /* ENABLE_GAME_CONTROLLER */

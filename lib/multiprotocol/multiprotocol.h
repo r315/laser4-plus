@@ -50,7 +50,7 @@ extern "C" {
 #define RX_FLAG_on                   _FLAGS_ |= (1<<0)
 #define IS_RX_FLAG_on		        ((_FLAGS_ & (1<<0)) != 0)
 //
-#define CHANGE_PROTOCOL_FLAG_off     _FLAGS_ &= ~(1<<1)   
+#define CHANGE_PROTOCOL_FLAG_off     _FLAGS_ &= ~(1<<1)
 #define CHANGE_PROTOCOL_FLAG_on      _FLAGS_ |= (1<<1)
 #define IS_CHANGE_PROTOCOL_FLAG_on   ((_FLAGS_ & (1<<1)) != 0)
 //
@@ -243,12 +243,12 @@ struct PPM_Parameters
 
 #pragma pack (1)
 typedef struct radio{
-    volatile uint32_t flags;       
-    uint8_t mode_select;    
+    volatile uint32_t flags;
+    uint8_t mode_select;
 
-    // Servo data 
+    // Servo data
     uint16_t channel_data[MAX_CHN_NUM];
-    uint8_t  channel_aux;
+    uint8_t  channel_aux;               // index of aux channels
     // Encoder count
     uint16_t enc_count;
 #ifdef FAILSAFE_ENABLE
@@ -271,7 +271,7 @@ typedef struct radio{
     uint8_t option;
     uint8_t cur_protocol[3];
     uint8_t prev_option;
-    uint8_t prev_power; 
+    uint8_t prev_power;
     uint8_t rx_num;
 
 #ifdef ENABLE_SERIAL
@@ -280,13 +280,12 @@ typedef struct radio{
     volatile uint8_t rx_ok_buff[RXBUFFER_SIZE];
     volatile uint8_t discard_frame;
     volatile uint8_t rx_idx;
-    volatile uint8_t rx_len;    
+    volatile uint8_t rx_len;
 #endif
 
 #ifdef ENABLE_PPM
     // PPM variable
     volatile uint16_t *ppm_data;
-    volatile uint8_t  ppm_chan_max;
     uint8_t chan_order;
 #endif
     //Received packets buffer

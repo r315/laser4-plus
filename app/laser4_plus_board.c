@@ -54,7 +54,9 @@ static void timInit(void);
 static void adcInit(void);
 static void encInit(void);
 static void crcInit(void);
+#ifdef ENABLE_VCOM
 static void ppmOutInit(void);
+#endif
 static void buzInit(void);
 
 // Functions implemenation
@@ -70,12 +72,14 @@ void laser4Init(void){
     LED_INIT;
     HW_SW_INIT;
     HW_TX_35MHZ_EN_INIT;
-    
+
     spiInit();
     timInit();
     adcInit();
     encInit();
+#ifdef ENABLE_VCOM
     ppmOutInit();
+#endif
     buzInit();
     crcInit();
 #ifdef ENABLE_SERIAL_FIFOS
@@ -93,21 +97,21 @@ void laser4Init(void){
 
 void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode) {
 
-    
+
     if(mode == GPI_PD){
         port->BRR = (1 << pin);
     }
 
     if(mode == GPI_PU){
         port->BSRR = (1 << pin);
-    }    
+    }
 
     mode &= 0x0f;
 
-    if(pin <  8){ 
+    if(pin <  8){
         port->CRL = (port->CRL & ~(15 << (pin << 2))) | (mode << (pin << 2));
-    }else{ 
-        port->CRH = (port->CRH & ~(15 << ((pin - 8) << 2))) | (mode << ((pin - 8) << 2)); 
+    }else{
+        port->CRH = (port->CRH & ~(15 << ((pin - 8) << 2))) | (mode << ((pin - 8) << 2));
     }
 }
 
@@ -129,7 +133,7 @@ void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin){
 
 void SPI_Write(uint8_t data){
   HAL_SPI_Transmit(&hspi, &data, 1, 10);
-} 
+}
 
 uint8_t SPI_Read(void){
 uint8_t data;
@@ -138,7 +142,7 @@ uint8_t data;
 }
 
 /**
- * 
+ *
  */
 static void spiInit(){
 
@@ -191,7 +195,7 @@ uint32_t HAL_RCC_GetPCLK1Freq(void){
 * @brief I2C MSP Initialization
 * This function configures the hardware resources used in this example
 * PB10     ------> I2C2_SCL
-* PB11     ------> I2C2_SDA 
+* PB11     ------> I2C2_SDA
 * @param hi2c: I2C handle pointer
 * @retval None
 */
@@ -220,7 +224,7 @@ void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c){
 }
 
 void I2C_WriteBlock(uint16_t address, uint8_t *data, uint16_t size){
-#if 0    
+#if 0
     uint32_t retry = 100;
     while(retry--){
         if(HAL_I2C_Master_Transmit_IT(&hi2c2, address << 1, data, size) == HAL_OK){
@@ -251,12 +255,12 @@ uint8_t requestLcdUpdate(void){
 /**
  * @brief Initialyze 1ms general purpose time base
  *          using timer4
- * 
+ *
  * */
 static void timInit(void){
 
     ticks = 0;
-    
+
     RCC->APB1ENR    |= RCC_APB1ENR_TIM4EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM2EN;
     RCC->APB2ENR    |= RCC_APB2ENR_TIM1EN;
     RCC->APB1RSTR   |= RCC_APB1RSTR_TIM4RST | RCC_APB1RSTR_TIM3RST | RCC_APB1RSTR_TIM2RST;
@@ -273,7 +277,7 @@ static void timInit(void){
 #else
     SysTick_Config(SystemCoreClock / 1000);
     NVIC_EnableIRQ(SysTick_IRQn);
-#endif   
+#endif
     /* Configure 0.5us time base for multiprotocol */
     TIMER_BASE->CR1 = 0;                               // Stop counter
     TIMER_BASE->PSC = (SystemCoreClock/2000000) - 1;	// 36-1;for 72 MHZ /0.5sec/(35+1)
@@ -287,7 +291,7 @@ static void timInit(void){
 
 void delayMs(uint32_t ms){
 uint32_t timeout = ticks + ms;
-    while(ticks < timeout){        
+    while(ticks < timeout){
     }
 }
 
@@ -302,11 +306,11 @@ uint16_t *src = (uint16_t*)data;
 uint32_t res, address = (uint32_t)dst;
 
     res = HAL_FLASH_Unlock();
-    if( res == HAL_OK){    
+    if( res == HAL_OK){
         for (uint16_t i = 0; i < count; i+= 2, src++){
             res = HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, address + i, *src);
             if(res != HAL_OK){
-                break; 
+                break;
             }
         }
     }
@@ -316,7 +320,7 @@ uint32_t res, address = (uint32_t)dst;
 
 /**
  * @brief Erase 1k selctor on flash
- * 
+ *
  * @param address:  start address for erasing
  * @return : 0 on fail
  * */
@@ -328,7 +332,7 @@ uint32_t res;
     if( res == HAL_OK){
         FLASH_PageErase(address);
     }
-    
+
     HAL_FLASH_Lock();
     return 1;
 }
@@ -336,7 +340,7 @@ uint32_t res;
 /**
  * @brief Configure watchdog timer according a given interval
  *  in wich the timer will expire and a system reset is performed
- * 
+ *
  * @param interval : Interval in wich the watchdog will perform a system reset
  * */
 void enableWatchDog(uint32_t interval){
@@ -347,7 +351,7 @@ uint8_t pres = 0;
 
     if(interval > 0xFFFF){
         interval = 0xFFFF;
-    }    
+    }
 
     while( interval > timeout){
         timeout <<= 1;
@@ -368,7 +372,7 @@ uint8_t pres = 0;
 /**
  * @brief Watchdog reset that mus be called before the interval
  *          specified on configuration
- * 
+ *
  * */
 void reloadWatchDog(void){
     IWDG->KR = 0xAAAA; // Reload RLR on counter
@@ -376,7 +380,7 @@ void reloadWatchDog(void){
 
 /**
  * @brief Read digital switches values
- * 
+ *
  * @return : bitmask with active switches
  * */
 uint32_t readSwitches(void){
@@ -388,7 +392,7 @@ uint16_t state = 0;
 }
 /**
  * @brief Configure sample time for one adc channel
- * 
+ *
  * */
 static void adcSampleTime(uint16_t ch, uint16_t time){
     if(ch > 17){  // Max 17 channels
@@ -403,14 +407,14 @@ static void adcSampleTime(uint16_t ch, uint16_t time){
 }
 
 /**
- * @brief calibrate ADC and get resolution based 
+ * @brief calibrate ADC and get resolution based
  * on 1.20V internal reference
  * */
 uint32_t adcCalibrate(void){
 uint32_t bsqr3;
 
     ADC1->CR2 |= ADC_CR2_CAL;                     // Perform ADC calibration
-    while(ADC1->CR2 & ADC_CR2_CAL){               
+    while(ADC1->CR2 & ADC_CR2_CAL){
         asm volatile("nop");
     }
 
@@ -420,7 +424,7 @@ uint32_t bsqr3;
     // select VREFINT channel for first conversion
     bsqr3 = ADC1->SQR3;
     ADC1->SQR3 = (HW_VREFINT_CHANNEL << 0);
-    // wake up Vrefint 
+    // wake up Vrefint
     ADC1->CR2 |= ADC_CR2_TSVREFE;
     delayMs(5);
     // Start conversion
@@ -440,7 +444,7 @@ uint32_t bsqr3;
 
 /**
  * @brief Set voltage divider racio, used to measure battery voltage
- * 
+ *
  * @param r : Racio = R2/(R1+R2)
  * */
 void adcSetVdivRacio(float r){
@@ -450,7 +454,7 @@ void adcSetVdivRacio(float r){
 
 /**
  * @brief Set current sense resistor value for current calculation
- * 
+ *
  * @param rs : Sense resistor value in ohms
  * */
 void adcSetSenseResistor(float rs){
@@ -459,7 +463,7 @@ void adcSetSenseResistor(float rs){
 
 /**
  * @brief get current voltage divider racio, used to measure battery voltage
- * 
+ *
  * @return : R2/(R1+R2)
  * */
 float adcGetVdivRacio(void){
@@ -468,7 +472,7 @@ float adcGetVdivRacio(void){
 
 /**
  * @brief Get current sense resistor value for current calculation
- * 
+ *
  * @return : Sense resistor value in ohms
  * */
 float adcGetSenseResistor(void){
@@ -479,7 +483,7 @@ float adcGetSenseResistor(void){
 /**
  * @brief Configure ADC for a HW_VBAT_CHANNEL channel in interrupt mode and initiates a convertion.
  *  After convertion the result is stored locally through the interrupt
- *  
+ *
  * PA0/AN0 is the default channel
  * */
 static void adcInit(void){
@@ -519,7 +523,7 @@ static void adcInit(void){
 }
 
 /**
- * @brief 
+ * @brief
  * */
 static void adcStartConversion(void){
     hadc.status &= ~ADC_RDY;
@@ -527,7 +531,7 @@ static void adcStartConversion(void){
     DMA1_Channel1->CMAR = (uint32_t)&hadc.result[0];
     // ADC sequence length
     DMA1_Channel1->CNDTR = ADC_SEQ_LEN;
-    DMA1_Channel1->CCR |= DMA_CCR_EN;   
+    DMA1_Channel1->CCR |= DMA_CCR_EN;
     // Start
     ADC1->CR2 |= ADC_CR2_SWSTART;
 }
@@ -535,13 +539,13 @@ static void adcStartConversion(void){
 /**
  * @brief Get current adc resolution (mV/step)
  * */
-float adcGetResolution(void){    
+float adcGetResolution(void){
     return hadc.resolution;
 }
 
 /**
  * @brief Get battery voltage by start a convertion and wait for it to end
- * 
+ *
  * @return : battery voltage in mV
  * */
 uint32_t batteryGetVoltage(void){
@@ -551,11 +555,11 @@ uint32_t batteryGetVoltage(void){
 }
 
 /**
- * @brief Read battery voltage, if a battery measurement is ready, starts a new 
+ * @brief Read battery voltage, if a battery measurement is ready, starts a new
  * conversion and return the last measured value. If a measurement is not available return
- * 
+ *
  * @param dst : Pointer to place measured value
- * 
+ *
  * @return : 0 if no measure is available (don't change dst), != 0 on success
  * */
 uint32_t batteryReadVoltage(uint32_t *dst){
@@ -577,11 +581,11 @@ uint32_t batteryGetCurrent(void){
 }
 
 /**
- * @brief Read current consumption, if measurement is ready, starts a new 
+ * @brief Read current consumption, if measurement is ready, starts a new
  * conversion and return the last measured value. If a measurement is not available return
- * 
+ *
  * @param dst : Pointer to place measured value
- * 
+ *
  * @return : 0 if no measure is available (don't change dst), != 0 on success
  * */
 uint32_t batteryReadCurrent(uint32_t *dst){
@@ -594,11 +598,11 @@ uint32_t batteryReadCurrent(uint32_t *dst){
 }
 
 /**
- * @brief Read current consumption and vattery voltage, if measurement is ready, starts a new 
+ * @brief Read current consumption and vattery voltage, if measurement is ready, starts a new
  * conversion and return the last measured value. If a measurement is not available return
- * 
+ *
  * @param dst : Pointer to place measured value
- * 
+ *
  * @return : 0 if no measure is available (don't change dst), != 0 on success
  * */
 uint32_t batteryReadVI(vires_t *dst){
@@ -615,15 +619,15 @@ uint32_t batteryReadVI(vires_t *dst){
  * @brief Rotary encorder init
  *  Configures a timer as pulse counter, the counter is incremented/decremented
  *  on edges from the two signals from the encoder
- * 
+ *
  * Using TIM2 CH1 and CH2 as TI1 and TI2, also filter is configured
  * */
 void encInit(void){
     gpioInit(GPIOB, 3, GPI_PU);
     gpioInit(GPIOA, 15, GPI_PU);
-    AFIO->MAPR = (AFIO->MAPR & ~(3 << 8)) | (1 << 8);       // Partial remap for TIM2; PA15 -> CH1, PB3 -> CH2 
+    AFIO->MAPR = (AFIO->MAPR & ~(3 << 8)) | (1 << 8);       // Partial remap for TIM2; PA15 -> CH1, PB3 -> CH2
 
-    ENC_TIM->CR2 = 
+    ENC_TIM->CR2 = 0;
     ENC_TIM->SMCR = TIM_SMCR_SMS_1 | TIM_SMCR_SMS_0;        // External clock, Encoder mode 3
     ENC_TIM->CCMR1 = (15 << 12) | (15 << 4)                 // Map TIxFP1 to TIx,
                   | TIM_CCMR1_CC2S_0 | TIM_CCMR1_CC1S_0     // and max length if input filter
@@ -639,12 +643,13 @@ void encInit(void){
  * pulse of the last channel. Another channel is added just to avoid wasting
  * cpu cycles waiting for the transmission of the last channel, this way the DMA
  * transfer complete interrupt doesn't stop the timer in the middle of the transmission.
- * 
+ *
  * @param data : pointer to the six channels data
- * 
+ *
  * */
+#if defined(ENABLE_PPM)
 void ppmOut(uint16_t *data){
-static uint16_t ppm_data[MAX_PPM_CHANNELS + 2];
+    static uint16_t ppm_data[MAX_PPM_CHANNELS + 2];
     // Copy channel data to temp buffer
     for (uint16_t i = 0; i < MAX_PPM_CHANNELS; i++){
         ppm_data[i] = data[i];
@@ -662,7 +667,7 @@ static uint16_t ppm_data[MAX_PPM_CHANNELS + 2];
     // to generate the channel time.
     DMA1_Channel7->CMAR = (uint32_t)(ppm_data);
     DMA1_Channel7->CNDTR = MAX_PPM_CHANNELS + 2;
-    DMA1_Channel7->CCR |= DMA_CCR_EN;   
+    DMA1_Channel7->CCR |= DMA_CCR_EN;
     // Resume timer
     PPM_TIM->CR1 |= TIM_CR1_CEN;
     //DBG_PIN_HIGH;
@@ -694,21 +699,21 @@ void ppmOutInit(void){
     PPM_TIM->ARR = PPM_MAX_PERIOD;
     PPM_TIM->CNT = PPM_MAX_PERIOD;
     PPM_TIM->CCR2 = PPM_PULSE_WIDTH;
-    // Enable DMA Request 
-    PPM_TIM->DIER |= TIM_DIER_UDE; 
+    // Enable DMA Request
+    PPM_TIM->DIER |= TIM_DIER_UDE;
 }
-
+#endif
 /**
  * @brief Basic tone generation on pin PA8 using TIM1_CH1
- * and DMA 
- * 
+ * and DMA
+ *
  * Buzzer timer is configured as PWM mode1 in downcount mode.
  * The counter starts from ARR register (top) that defines the frequency perioud in us,
  * and counts down, when matches CCR1 the output is set to high.
  * When the counter reaches zero, set the output to low and request a DMA transfer to ARR register.
- * On the last DMA transfer an interrupt is issued, that will configure the next tone periout to be 
- * loaded to ARR or stop the melody. 
- * 
+ * On the last DMA transfer an interrupt is issued, that will configure the next tone periout to be
+ * loaded to ARR or stop the melody.
+ *
  * */
 void buzInit(void){
     gpioInit(GPIOA, 8, GPO_AF | GPO_2MHZ);
@@ -722,12 +727,12 @@ void buzInit(void){
             DMA_CCR_TCIE;                           // Enable end of transfer interrupt
     NVIC_EnableIRQ(DMA1_Channel5_IRQn);
 
-    // Configure timer    
+    // Configure timer
 #ifdef BUZ_IDLE_HIGH
-    BUZ_TIM->CR1 = 0; 
+    BUZ_TIM->CR1 = 0;
     BUZ_TIM->CCMR1 = (7 << 4);                      // PWM mode 2
 #else
-    BUZ_TIM->CR1 = TIM_CR1_DIR; 
+    BUZ_TIM->CR1 = TIM_CR1_DIR;
     BUZ_TIM->CCMR1 = (6 << 4);                      // PWM mode 1
 #endif
     BUZ_TIM->PSC = (SystemCoreClock/1000000) - 1;	// 72-1;for 72 MHZ (1us clock)
@@ -737,13 +742,13 @@ void buzInit(void){
     BUZ_TIM->CCR1 = BUZ_DEFAULT_VOLUME;             // Low volume level
     BUZ_TIM->ARR = 0xFFF;
     BUZ_TIM->EGR |= TIM_EGR_UG;
-    // Enable DMA Request 
+    // Enable DMA Request
     BUZ_TIM->DIER |= TIM_DIER_UDE;
 }
 
 /**
  * @brief Private helper to initiate tone generation
- * 
+ *
  * @param tone : pointer to first tone to be played
  * */
 static void buzStartTone(tone_t *tone){
@@ -757,7 +762,7 @@ static void buzStartTone(tone_t *tone){
 
 /**
  * @brief Plays a single tone for a given time
- * 
+ *
  * @param freq     : Tone fundamental frequency
  * @param duration : duration of tone in ms
  * */
@@ -773,7 +778,7 @@ uint32_t d = duration * 1000UL;    // Convert to us
 /**
  * @brief Plays a melody composed of multiple tones.
  * The last tone on melody must have duration of zero
- * 
+ *
  * @param tones : pointer to tones array.
  * */
 void buzPlay(tone_t *tones){
@@ -782,7 +787,7 @@ tone_t *pt = tones;
     // Convert each tone frequency to time in us
     while(pt->t > 0){
         uint32_t d = pt->t * 1000UL;
-        pt->f = FREQ_TO_US(pt->f) - BUZ_TIM->CCR1;  
+        pt->f = FREQ_TO_US(pt->f) - BUZ_TIM->CCR1;
         pt->t = d / pt->f;
         pt++;
     }
@@ -790,17 +795,17 @@ tone_t *pt = tones;
     // Set next tone
     hbuz.ptone = tones + 1;
     // Play first tone
-    buzStartTone(tones);   
+    buzStartTone(tones);
 }
 
 /**
- * @brief Change tone volume by changing 
+ * @brief Change tone volume by changing
  * duty cycle
- * 
+ *
  * @param level : Tone volume 0 to tone frequency period
- * 
+ *
  * @return : Current tone volume
- *  
+ *
  * */
 uint16_t buzSetLevel(uint16_t level){
     level -= 1;
@@ -830,11 +835,11 @@ void crcInit(void){
 
 /**
  * @brief Start a software timer
- * 
+ *
  * @param time : Timer duration
  * @param flags : Extra flags for continuous mode, 0 for single time
  * @param cb : callback function when timer expires
- * 
+ *
  * @return : Assigned timer index
  * */
 uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void)){
@@ -859,7 +864,7 @@ void stopTimer(uint32_t tim){
 
 /**
  * @brief Check if timers have expired and execute correspondent action
- * 
+ *
  * */
 void processTimers(void){
 static uint32_t last_tick = 0;
@@ -884,7 +889,7 @@ swtimer_t *tim = timers;
 
 /**
  * @brief meh close enougth
- * 
+ *
  * @return : CRC'd number with timer
  * */
 uint32_t xrand(void){
@@ -901,12 +906,14 @@ uint32_t xrand(void){
   * @retval None
   */
 void USB_LP_CAN1_RX0_IRQHandler(void){
+#ifdef ENABLE_VCOM
     HAL_PCD_IRQHandler(&hpcd_USB_FS);
+#endif
 }
 
 void EXTI9_5_IRQHandler(void){
 uint32_t pr = EXTI->PR;
-    if((pr & EXTI_PR_PR5) != 0){        
+    if((pr & EXTI_PR_PR5) != 0){
         pinIntCB();
     }
     EXTI->PR = pr;
@@ -927,7 +934,7 @@ void SysTick_Handler(void){
 void DMA1_Channel1_IRQHandler(void){
     //if(DMA1->ISR & DMA_ISR_TCIF1){
         DMA1_Channel1->CCR &= ~DMA_CCR_EN;
-        hadc.battery_voltage = (float)(hadc.result[0] * hadc.resolution) / hadc.vdiv_racio;   
+        hadc.battery_voltage = (float)(hadc.result[0] * hadc.resolution) / hadc.vdiv_racio;
         hadc.battery_current = (hadc.result[1] * hadc.resolution)/hadc.sense_resistor;
         hadc.status |= ADC_RDY;
     //}
@@ -963,7 +970,7 @@ void DMA1_Channel7_IRQHandler(void){
         // As the timer is stoped we get only a rising edge due to update event
         // and cancel the last channel transmission.
         PPM_TIM->CR1 &= ~TIM_CR1_CEN;
-        //DBG_PIN_LOW;        
+        //DBG_PIN_LOW;
     }
     DMA1->IFCR |= DMA_IFCR_CGIF7;  // Clear DMA Flags TODO: ADD DMA Error handling ?
 }

@@ -22,7 +22,7 @@ extern "C" {
 #define GPIO_CNF_AF             (2 << 2)     // OUTPUT: Alternative function, INPUT: pull-up/pull-down
 
 /* Default push-pull */
-#define GPO_2MHZ                GPIO_MODE_O2MHZ 
+#define GPO_2MHZ                GPIO_MODE_O2MHZ
 #define GPO_10MHZ               GPIO_MODE_O10MHZ
 #define GPO_50MHZ               GPIO_MODE_O50MHZ
 #define GPO_OD                  GPIO_CNF_OD
@@ -30,7 +30,7 @@ extern "C" {
 #define GPI_ANALOG              0
 #define GPI_OD                  (1 << 2) // floating
 #define GPI_PD                  (2 << 2)
-#define GPI_PU                  (6 << 2) // 2 | 4               
+#define GPI_PU                  (6 << 2) // 2 | 4
 
 #define GPIO_ENABLE             RCC->APB2ENR |=      \
                                 RCC_APB2ENR_IOPCEN \
@@ -78,24 +78,24 @@ extern "C" {
 #define HW_CC2500_MODULE_RESET
 
 
-/** 
+/**
  * SPI2
- * 
+ *
  * PB13 (SCK)
  * PB14 (MISO)
  * PB15 (MOSI)
- * 
+ *
  * */
 
 //Output AF_PP, IN no pull
-#define SPI_PINS_INIT           GPIOB->CRH = (GPIOB->CRH & ~(0xFFF << 20)) | (0xB4B << 20); 
+#define SPI_PINS_INIT           GPIOB->CRH = (GPIOB->CRH & ~(0xFFF << 20)) | (0xB4B << 20);
 
 //Main Clock Output, requires prior MCO bit in RCC_CFG
 #define MCO_EN                  GPIOA->CRH = (GPIOA->CRH & ~(15<<0)) | (11 << 0); \
                                 RCC->APB2ENR |= (1 << 0)
 
 /**
- * Switches 
+ * Switches
  * AUX1 -> PC14
  * AUX2 -> PC15
  * AUX3 -> PB4
@@ -119,9 +119,8 @@ extern "C" {
 #define IS_BIND_BUTTON_PRESSED  IS_HW_SW_AUX1_PRESSED
 
 /** RF enable for 35MHz transmiter */
-#define TX35_MHZ_INSTALLED
-#define HW_TX_35MHZ_EN_PIN      13
-#define HW_TX_35MHZ_EN_PORT     GPIOC
+#define HW_TX_35MHZ_EN_PIN      3
+#define HW_TX_35MHZ_EN_PORT     GPIOA
 #define HW_TX_35MHZ_EN_INIT     gpioInit(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN, GPO_2MHZ); HW_TX_35MHZ_OFF
 #define HW_TX_35MHZ_ON          GPO_SET(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN)
 #define HW_TX_35MHZ_OFF         GPO_CLR(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN)
@@ -153,11 +152,11 @@ extern "C" {
 #define sei                     __enable_irq
 
 #ifdef TX35_MHZ_INSTALLED
-#define HW_PROTOCOL_SWITCH      (IS_HW_SW_AUX3_PRESSED)? 14 : 10      // 1...14
+#define HW_PROTOCOL_SWITCH      (IS_HW_SW_AUX3_PRESSED)? 14 : 10      /* 1...14 */
 #else
-#define HW_PROTOCOL_SWITCH      10      // 1...14
+#define HW_PROTOCOL_SWITCH      10      /* 1...14 */
 #endif
-#define HW_BANK_SWITCH          0       //bank_switch();                           
+#define HW_BANK_SWITCH          0       /* bank_switch(); */
 
 #if defined(ENABLE_PPM)
 #define MIN_PPM_CHANNELS        4
@@ -197,7 +196,7 @@ extern "C" {
 #define RAM_CODE                __attribute__((section(".ram_code")))
 
 /* Symbols for NVDATA */
-#define NVDATA_SECTOR_INIT      
+#define NVDATA_SECTOR_INIT
 #define NVDATA_SECTOR_START     &_seeprom
 #define NVDATA_SECTOR_END       &_eeeprom
 #define NVDATA_SECTOR_READ      memcpy

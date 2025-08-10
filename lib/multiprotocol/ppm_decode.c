@@ -1,6 +1,7 @@
 #include "multiprotocol.h"
 #include "board.h"
 
+#if defined(ENABLE_PPM)
 static volatile uint16_t ppm_data[MAX_CHN_NUM];
 static void (*ppmFrameCB)(volatile uint16_t *, uint8_t);
 
@@ -20,24 +21,24 @@ uint16_t *ppm_getData(void){
 
 /**
  * @brief Configure callback for PPM input pin interrupt
- * 
+ *
  * @param cb : callback function
- * 
+ *
  * */
 void ppm_setCallBack(void(*cb)(volatile uint16_t*, uint8_t)){
      if(cb == NULL){
         return;
     }
-    gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);    
+    gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);
     ppmFrameCB = cb;
-    gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, ppm_decode);        
+    gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, ppm_decode);
 }
 
 /**
  * @brief PPM_decode from multiprotocol project.
  * This function is calledfrom PPM pin input interrupt handler
  * */
-RAM_CODE static void ppm_decode(void){	
+RAM_CODE static void ppm_decode(void){
     static int8_t chan = 0, bad_frame = 1;
     static uint16_t Prev_TCNT1 = 0;
     uint16_t Cur_TCNT1;
@@ -48,7 +49,7 @@ RAM_CODE static void ppm_decode(void){
     }else if(Cur_TCNT1 > PPM_MAX_PERIOD){
         //start of frame
         if(chan >= MIN_PPM_CHANNELS){
-            //DBG_PIN_TOGGLE;                
+            //DBG_PIN_TOGGLE;
             ppmFrameCB(ppm_data, chan);
         }
         chan = 0;						// reset channel counter
@@ -61,3 +62,4 @@ RAM_CODE static void ppm_decode(void){
     }
     Prev_TCNT1 += Cur_TCNT1;
 }
+#endif

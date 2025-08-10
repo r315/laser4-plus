@@ -2,7 +2,7 @@
 #include "multiprotocol.h"
 #include "usb_device.h"
 #include "mpanel.h"
-
+#include "usart.h"
 
 volatile uint8_t state;
 static float bat_consumed = 0;  //mAh
@@ -18,7 +18,7 @@ tone_t chime[] = {
     {0,0}
 };
 
-#ifdef ENABLE_CLI 
+#ifdef ENABLE_CLI
 Console con;
 #endif
 
@@ -39,7 +39,7 @@ Console con;
 #define ICO_CLR_SIZE    15+17+13, 8
 
 #define APP_DRAW_ICON(ICO)      MPANEL_drawIcon(ICO.posx, ICO.posy, ICO.data)
-#define APP_ERASE_ICON(ICO)     LCD_FillRect(ICO.posx, ICO.posy, ICO.data->width, ICO.data->hight, BLACK);                
+#define APP_ERASE_ICON(ICO)     LCD_FillRect(ICO.posx, ICO.posy, ICO.data->width, ICO.data->hight, BLACK);
 
 /**
  * Icons bitmaps
@@ -52,7 +52,7 @@ const uint8_t ico_amph_data[] = {10, 8,
     0x03,0xff,0x03,0x3f,0x02,0xd7,0x02,0xd7,0x02,0x13,0x02,0xd5,0x02,0xd5,0x03,0xff
 };
 
-const uint8_t ico_lowbat_data[] = {29, 7,    
+const uint8_t ico_lowbat_data[] = {29, 7,
     0x1f,0xff,0xff,0xff,0x17,0xff,0xff,0xff,0x17,0x9b,0xb7,0xb1,0x17,0x6b,
     0xb3,0x5b,0x17,0x6a,0xb5,0x1b,0x11,0x9d,0x71,0x5b,0x1f,0xff,0xff,0xff
 };
@@ -137,8 +137,8 @@ uint16_t eeprom_data[EEPROM_SIZE / 2] = {
     (uint16_t)DEFAULT_VOLTAGE_DIV,(uint16_t)(DEFAULT_VOLTAGE_DIV>>16),
     (uint16_t)DEFAULT_SENSE_RESISTOR,(uint16_t)(DEFAULT_SENSE_RESISTOR>>16),
     CHANNEL_MAX_100, CHANNEL_MIN_100,
-    CHANNEL_MAX_125, CHANNEL_MIN_125, 
-    PPM_MAX_100, PPM_MIN_100, 
+    CHANNEL_MAX_125, CHANNEL_MIN_125,
+    PPM_MAX_100, PPM_MIN_100,
     CHANNEL_SWITCH, PPM_DEFAULT_VALUE,
     BUZ_DEFAULT_VOLUME
 };
@@ -153,7 +153,7 @@ uint8_t appGetCurrentMode(void){
 /**
  * @brief Usb connect callback, called when usb cable is connected
  * or if the system is power on with the usb cable plugged in
- * 
+ *
  * @param ptr : pointer passed when the callback is registered
  * */
 void usbConnectCB(void *ptr){
@@ -170,7 +170,7 @@ void usbConnectCB(void *ptr){
 
 /**
  * @brief Usb disconnect callback, called when usb cable is removed.
- * 
+ *
  * @param ptr : pointer passed when the callback is registered
  * */
 void usbDisconnectCB(void *ptr){
@@ -178,7 +178,7 @@ void usbDisconnectCB(void *ptr){
 #if defined(ENABLE_DEBUG) && defined(ENABLE_USART)
     dbg_init(&pcom);
 #endif
- 
+
 #ifdef ENABLE_CLI
     // redirect cli to physical com port
     con.setOutput(&pcom);
@@ -187,7 +187,7 @@ void usbDisconnectCB(void *ptr){
 
 /**
  * @brief Operating mode change request
- * 
+ *
  * */
 void appReqModeChange(uint8_t new_mode){
 uint8_t cur_state = state & STATE_MASK;
@@ -199,7 +199,7 @@ uint8_t cur_state = state & STATE_MASK;
     if(cur_state == REQ_MODE_CHANGE){
         if((state >> STATE_BITS) == new_mode){
             return;
-        } 
+        }
     }
 #ifdef ENABLE_DISPLAY
     LCD_FillRect(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
@@ -210,7 +210,7 @@ uint8_t cur_state = state & STATE_MASK;
 
 /**
  * @brief Change mode request handler
- * 
+ *
  * */
 static void changeMode(uint8_t new_mode){
     switch(new_mode){
@@ -244,7 +244,7 @@ static void changeMode(uint8_t new_mode){
 
 /**
  * @brief Periodic called function to display battery voltage
- * 
+ *
  * */
 void appCheckBattery(void){
 vires_t res;
@@ -264,15 +264,15 @@ vires_t res;
             }
         }
         dro_bat.update(res.vbat/1000.0f);
-        // [Ah] are given by the periodic call        
+        // [Ah] are given by the periodic call
         bat_consumed += (float)(res.cur/(float)(3600/(TIMER_BATTERY_TIME/1000)));   //1h/30s
-        dro_amph.update(bat_consumed / 1000.0f); 
+        dro_amph.update(bat_consumed / 1000.0f);
         dro_ma.update(res.cur);
         SET_LCD_UPDATE;
 #else
         }
 #endif /* ENABLE_DISPLAY */
-    }    
+    }
 }
 
 #ifdef ENABLE_DISPLAY
@@ -291,7 +291,7 @@ void appToggleLowBatIco(void){
 }
 
 /**
- * @brief check multiprotocol flags and place icons 
+ * @brief check multiprotocol flags and place icons
  * accordingly
  * */
 void appCheckProtocolFlags(void){
@@ -328,17 +328,17 @@ void appCheckProtocolFlags(void){
 #endif /* ENABLE_DISPLAY */
 /**
  * @brief
- * 
+ *
  * */
 void appInitEEPROM(uint8_t *dst){
 uint8_t bind_flag;
-    
+
     if(EEPROM_Read(EEPROM_BIND_FLAG, &bind_flag, 1) != 1){
         DBG_PRINT("Error reading EEPROM\n");
         return;
     }
-        
-    if(bind_flag == BIND_FLAG_VALUE){    
+
+    if(bind_flag == BIND_FLAG_VALUE){
         if(NV_Restore(dst, EEPROM_SIZE) != EEPROM_SIZE){
             DBG_PRINT("Error reading EEPROM\n");
             return;
@@ -351,7 +351,7 @@ uint8_t bind_flag;
 /**
  * @brief Save the ram eeprom content to flash memory
  * Note: In order to save eeprom
- * 
+ *
  * */
 void appSaveEEPROM(void){
 
@@ -370,12 +370,12 @@ void appSaveEEPROM(void){
 /**
  * @brief Application setup call
  * */
-void setup(void){    
+void setup(void){
 
     state = STARTING;
-        
+
     laser4Init();
-    NV_Init();
+    // TODO:  NV_Init();
 
 #if defined(ENABLE_USART) && defined(ENABLE_DEBUG)
     usart_init();
@@ -396,13 +396,13 @@ void setup(void){
     con.init(&pcom, "laser4+ >");
     con.registerCommandList(laser4_commands);
     con.cls();
-#endif    
+#endif
     // Load eeprom data
     appInitEEPROM((uint8_t*)eeprom_data);
     // Set volume from stored value
     buzSetLevel(*((uint8_t*)eeprom_data + IDX_BUZ_VOLUME));
     // Play som random tone
-    buzPlay(chime);   
+    buzPlay(chime);
     // Configure adc calibration values
     f2u_u tmp;
     tmp.u = (uint32_t)(eeprom_data[IDX_BAT_VOLTAGE_DIV] | (eeprom_data[IDX_BAT_VOLTAGE_DIV + 1] << 16));
@@ -411,7 +411,7 @@ void setup(void){
     adcSetSenseResistor(tmp.f);
 
     /* Get battery voltage */
-    DBG_PRINT("Battery voltage: %dmV\n", batteryGetVoltage());   
+    DBG_PRINT("Battery voltage: %dmV\n", batteryGetVoltage());
 
 #ifdef ENABLE_DISPLAY
 
@@ -431,9 +431,9 @@ void setup(void){
 
     startTimer(TIMER_PPM_TIME, SWTIM_AUTO_RELOAD, appCheckProtocolFlags);
     SET_LCD_UPDATE;
-#endif 
+#endif
     // wait for melody to finish
-    buzWaitEnd();    
+    buzWaitEnd();
     // Configure watchdog
     enableWatchDog(WATCHDOG_TIME);
 }
@@ -459,11 +459,11 @@ void loop(void){
             changeMode(state);
 #ifdef ENABLE_DISPLAY
             SET_LCD_UPDATE;
-#endif            
+#endif
             break;
 
         case STARTING:
-            appReqModeChange(MODE_MULTIPROTOCOL);            
+            appReqModeChange(MODE_MULTIPROTOCOL);
             break;
 
         default:
@@ -475,11 +475,14 @@ void loop(void){
 #endif
 
     processTimers();
+
+#ifdef ENABLE_DISPLAY
     if(IS_LCD_UPDATE){
         if(requestLcdUpdate()){
             CLR_LCD_UPDATE;
         }
     }
+#endif
     reloadWatchDog();
 }
 
