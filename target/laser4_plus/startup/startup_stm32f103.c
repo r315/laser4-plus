@@ -2,7 +2,7 @@
 #include "board.h"
 
 #define WEAK __attribute__((weak))
-#define NAKED __attribute__((naked))
+#define NAKED __attribute__((naked, aligned(8)))
 #define ISR __attribute__((section(".isr_vector")))
 
 /* RCC_CR Bit Banding definitions

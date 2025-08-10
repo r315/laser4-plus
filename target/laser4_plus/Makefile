@@ -177,7 +177,7 @@ DEBUG = 1
 OPT = -Os
 else
 DEBUG = 1
-OPT = -O0 -g
+OPT = -O0
 endif
 
 # macros for gcc
@@ -199,22 +199,18 @@ ifeq ($(ENABLE_DFU), 1)
 C_DEFS +=ENABLE_DFU
 endif
 
-# compile gcc flags
-ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
-
-CFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OPT) -Wall -fdata-sections -ffunction-sections -std=gnu11
-CPPFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OPT) -Wall -fdata-sections -ffunction-sections
-
 ifeq ($(DEBUG), 1)
-DEBUGFLAGS =-g -gdwarf-2
+DEBUGFLAGS =-Wall -g -gdwarf-2
 endif
 
-CFLAGS +=$(DEBUGFLAGS)
-CPPFLAGS +=$(DEBUGFLAGS)
+
+# compile gcc flags
+ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) $(DEBUGFLAGS) -fdata-sections -ffunction-sections
+CFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OPT) $(DEBUGFLAGS) -fdata-sections -ffunction-sections -std=gnu11
+CPPFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OPT) $(DEBUGFLAGS) -fdata-sections -ffunction-sections -fno-unwind-tables -fno-exceptions -fno-rtti
 
 # Generate dependency information
 #CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst))
-
 
 #######################################
 # LDFLAGS
