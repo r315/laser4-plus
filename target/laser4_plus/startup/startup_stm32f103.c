@@ -5,7 +5,7 @@
 #define NAKED __attribute__((naked))
 #define ISR __attribute__((section(".isr_vector")))
 
-/* RCC_CR Bit Banding definitions 
+/* RCC_CR Bit Banding definitions
     address = bit_banding_peripheral_base + (offset * 32) + (bit * 4)
 */
 #define RCC_CR_HSEON_bb     (*(uint8_t *)0x42420040UL)
@@ -51,7 +51,7 @@ volatile uint32_t *src, *dest;
     for (src = &_siram_code, dest = &_sram_code; dest < &_eram_code; src++, dest++)
     {
        *dest = *src;
-    }    
+    }
 
     /* Clear .bss */
     dest = &_sbss;
@@ -96,7 +96,7 @@ volatile uint32_t *src, *dest;
     }
 
     /* Configure and enable PLL oscillator (sysclk = 72Mhz) */
-    
+
     RCC->CFGR = //(4 << 24) |                 // MCO = sysclk
 #ifdef XTAL12MHZ
                 (4 << 18) |                 // PLLMUL = 6
@@ -143,7 +143,7 @@ volatile uint32_t *src, *dest;
     }
     /* Start scheduler */
     vTaskStartScheduler();
-#else    
+#else
     main();
 #endif
     /* case returns... */

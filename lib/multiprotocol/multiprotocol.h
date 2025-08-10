@@ -168,6 +168,10 @@ extern "C" {
 #define _FLAGS_             radio.flags
 #define BIND_FLAG_VALUE     0xF0
 
+#define MULTIPROTO_DBG(...)
+#define MULTIPROTO_DBG_INF(...)
+#define MULTIPROTO_DBG_WRN(...)
+
 enum protocols_e{
     MODE_SERIAL     = 0,
     PROTO_FLYSKY 	= 1,	// =>A7105

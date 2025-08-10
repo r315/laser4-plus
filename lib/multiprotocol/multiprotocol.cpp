@@ -22,9 +22,12 @@
  along with Multiprotocol.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "app.h"
 #include "multiprotocol.h"
 #include "FrSkyDVX_Common.h"
+#include "board.h"
+
+//TOOD: Fix this dependency
+#include "laser4_plus.h"
 
 //Personal config file
 #if defined(USE_MY_CONFIG)
@@ -53,7 +56,7 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
  * @brief
  * */
 void multiprotocol_setup(void){
-    DBG_PRINT("Laser4+ version: %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+    MULTIPROTO_DBG_INF("Laser4+ version: %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
     /* Configure PPM input pin PB5*/
     gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);
 
@@ -62,14 +65,14 @@ void multiprotocol_setup(void){
     {
         BIND_BUTTON_FLAG_on;	// If bind button pressed save the status
         BIND_IN_PROGRESS;		// Request bind
-        DBG_PRINT("Bind button pressed\n");
+        MULTIPROTO_DBG_INF("Bind button pressed\n");
     }
     else
         BIND_DONE;
 
     radio.mode_select = HW_PROTOCOL_SWITCH;
 
-    DBG_PRINT("Protocol selection switch reads as %d\n", radio.mode_select);
+    MULTIPROTO_DBG_INF("Protocol selection switch reads as %d\n", radio.mode_select);
 
     uint16_t channel_default = (eeprom_data[IDX_CHANNEL_MAX_100] - eeprom_data[IDX_CHANNEL_MIN_100]) >> 1;
 
@@ -84,7 +87,7 @@ void multiprotocol_setup(void){
     modules_reset();
 
     radio.protocol_id_master = random_id(0);
-    DBG_PRINT("Module Id: %lx\n", radio.protocol_id_master);
+    MULTIPROTO_DBG_INF("Module Id: %lx\n", radio.protocol_id_master);
 
 #ifdef ENABLE_PPM
     // Setup callback for ppm frame ready
@@ -159,7 +162,7 @@ uint8_t count=0;
     sei();										    // Enable global int
     if((diff&0x8000) && !(next_callback&0x8000))
     { // Negative result=callback should already have been called...
-        DBG_PRINT("Short CB:%d\n", next_callback);
+        MULTIPROTO_DBG_WRN("Short CB:%d\n", next_callback);
     }
     else
     {
@@ -168,7 +171,7 @@ uint8_t count=0;
             if(++count>10)
             { //The protocol does not leave enough time for an update so forcing it
                 count=0;
-                DBG_PRINT("Force update\n");
+                MULTIPROTO_DBG_WRN("Force update\n");
                 Update_All();
             }
         }
@@ -182,14 +185,14 @@ uint8_t count=0;
             {	//If at least 1ms is available update values
                 if((diff&0x8000) && !(next_callback&0x8000))
                 {//Should never get here...
-                    DBG_PRINT("!!!BUG!!!\n");
+                    MULTIPROTO_DBG_WRN("!!!BUG!!!\n");
                     break;
                 }
                 count=0;
                 Update_All();
                 #ifdef ENABLE_DEBUG
                 if(TIMER_BASE->SR & TIM_SR_CC1IF )
-                    DBG_PRINT("Long update\n");
+                    MULTIPROTO_DBG_WRN("Long update\n");
                 #endif
                 if(radio.remote_callback == NULL)
                     break;
@@ -280,7 +283,7 @@ static void update_led_status(void)
         if(millis() - radio.last_signal > 70)
         {
             INPUT_SIGNAL_off;							//no valid signal (PPM or Serial) received for 70ms
-            DBG_PRINT("Lost input signal\n");
+            MULTIPROTO_DBG_WRN("Lost input signal\n");
         }
     if(radio.blink < millis())
     {
@@ -356,13 +359,13 @@ static uint16_t next_callback;
                         next_callback = 10000;
                         radio.remote_callback = ppm_tx;
                         HW_TX_35MHZ_ON;
-                        DBG_PRINT("TX 35MHz enabled\n");
+                        MULTIPROTO_DBG_INF("TX 35MHz enabled\n");
                         break;
             #endif
         }
-        DBG_PRINT("Protocol selected: %d, sub proto %d, rxnum %d, option %d\n", radio.protocol, radio.sub_protocol, radio.rx_num, radio.option);
+        MULTIPROTO_DBG_INF("Protocol selected: %d, sub proto %d, rxnum %d, option %d\n", radio.protocol, radio.sub_protocol, radio.rx_num, radio.option);
         if(IS_BIND_IN_PROGRESS){
-            DBG_PRINT("Bind started\n");
+            MULTIPROTO_DBG_INF("Bind started\n");
         }
     }
 

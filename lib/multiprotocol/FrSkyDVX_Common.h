@@ -8,12 +8,15 @@ extern "C" {
 
 #include <stdint.h>
 #include "multiprotocol.h"
-#include "app.h"
 
-#ifdef STM32_BOARD
+
+#ifndef PROGMEM
 #define PROGMEM
 #define pgm_read_byte_near(_X) (*(const unsigned char *)(_X))
 #endif
+
+#define FRSKYDVX_DBG(...)
+#define FRSKYDVX_DBG_INF(...)
 
 #if defined(FRSKYD_CC2500_INO) || defined(FRSKYX_CC2500_INO)
 enum {

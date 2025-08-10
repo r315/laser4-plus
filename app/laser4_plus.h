@@ -6,19 +6,11 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include <nvdata.h>
-#include <stdout.h>
-#include <fifo.h>
-#include <console.h>
-#include <dbg.h>
-#include "board.h"
+#include "nvdata.h"
+#include "console.h"
 
-#ifdef ENABLE_VCOM
+#ifdef ENABLE_VCP
 #include "usbd_cdc_if.h"
-#endif
-
-#ifdef ENABLE_USART
-#include "usart.h"
 #endif
 
 #ifdef ENABLE_GAME_CONTROLLER
@@ -27,7 +19,7 @@ extern "C" {
 
 /* Indexes of constants in eeprom */
 #define EEPROM_ID_OFFSET        0UL
-#define IDX_BUZ_VOLUME          28          
+#define IDX_BUZ_VOLUME          28
 #define EEPROM_BIND_FLAG        29 //EEPROM_SIZE - 1
 // 32-bit indexes
 #define IDX_BAT_VOLTAGE_DIV     2
@@ -68,7 +60,7 @@ extern "C" {
 #define SET_LCD_UPDATE          APP_FLAGS = (APP_FLAGS | (1<<4))
 #define CLR_LCD_UPDATE          APP_FLAGS = APP_FLAGS & ~(1<<4)
 
-//#define USE_FREERTOS
+#define EEPROM_SIZE             30
 
 #if defined(ENABLE_DEBUG)
     #define DBG_PRINT dbg_printf
@@ -109,11 +101,11 @@ extern uint32_t app_flags;
 
 void appReqModeChange(uint8_t new_mode);
 uint8_t appGetCurrentMode(void);
-void appInitEEPROM(uint8_t *dst);
+void appInitEEPROM(uint8_t *buf, const uint8_t *defaults, uint16_t size);
 void appSaveEEPROM(void);
 
 #ifdef __cplusplus
-#ifdef ENABLE_CLI
+#if defined(ENABLE_CLI) && defined(ENABLE_VCP)
 extern Console con;
 extern ConsoleCommand *laser4_commands[];
 #endif /* ENABLE_CLI */

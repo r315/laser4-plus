@@ -1,16 +1,15 @@
-#include "app.h"
+#include "laser4_plus.h"
+#include "board.h"
 #include "multiprotocol.h"
 #include "usb_device.h"
+#include "usbd_cdc_if.h"
 #include "mpanel.h"
-#include "usart.h"
+#include "tone.h"
 
 volatile uint8_t state;
-static float bat_consumed = 0;  //mAh
-static uint8_t bat_low_tim;
 uint32_t app_flags = 0;
 
-
-tone_t chime[] = {
+static tone_t chime[] = {
     {493,200},
     {932,200},
     {1244,200},
@@ -18,7 +17,7 @@ tone_t chime[] = {
     {0,0}
 };
 
-#ifdef ENABLE_CLI
+#if defined(ENABLE_CLI) && defined(ENABLE_VCP)
 Console con;
 #endif
 
@@ -126,13 +125,18 @@ MpanelDro dro_bat(DRO_BAT_POS, "%.2f",&font_seven_seg);
 MpanelDro dro_amph(DRO_AMPH_POS, "%.2f",&font_seven_seg);
 MpanelDro dro_ma(DRO_MA_POS, "%3uMA", &pixelDustFont);
 
+static uint8_t bat_low_tim;
+static float bat_consumed = 0;  //mAh
+
 void appToggleLowBatIco(void);
 #endif
 
 /**
  * EEPROM ram copy
  * */
-uint16_t eeprom_data[EEPROM_SIZE / 2] = {
+uint16_t eeprom_data[EEPROM_SIZE / 2];
+
+static const uint16_t eeprom_default_data[EEPROM_SIZE / 2] = {
     (uint16_t)DEFAULT_ID, (uint16_t)(DEFAULT_ID>>16),
     (uint16_t)DEFAULT_VOLTAGE_DIV,(uint16_t)(DEFAULT_VOLTAGE_DIV>>16),
     (uint16_t)DEFAULT_SENSE_RESISTOR,(uint16_t)(DEFAULT_SENSE_RESISTOR>>16),
@@ -158,13 +162,13 @@ uint8_t appGetCurrentMode(void){
  * */
 void usbConnectCB(void *ptr){
     appReqModeChange(MODE_HID);
-#if defined(ENABLE_DEBUG) && defined(ENABLE_VCOM)
+#if defined(ENABLE_DEBUG)
     dbg_init(&vcom);
 #endif
 
 #ifdef ENABLE_CLI
     // redirect cli to vcom
-    con.setOutput(&vcom);
+    con.setOutput(&vcp);
 #endif
 }
 
@@ -181,7 +185,8 @@ void usbDisconnectCB(void *ptr){
 
 #ifdef ENABLE_CLI
     // redirect cli to physical com port
-    con.setOutput(&pcom);
+    // TODO: This is not necessary
+    //con.setOutput(&pcom);
 #endif
 }
 
@@ -326,12 +331,24 @@ void appCheckProtocolFlags(void){
 }
 
 #endif /* ENABLE_DISPLAY */
+void appDefaultEEPROM(uint8_t *buf, const uint8_t *defaults, uint16_t size)
+{
+    memcpy(buf, defaults, size);
+}
+
 /**
  * @brief
  *
  * */
-void appInitEEPROM(uint8_t *dst){
-uint8_t bind_flag;
+void appInitEEPROM(uint8_t *buf, const uint8_t *defaults, uint16_t size)
+{
+    uint8_t bind_flag;
+
+    if(!EEPROM_Init(buf, size)){
+        appDefaultEEPROM(buf, defaults, size);
+        DBG_PRINT("Defaults loaded\n");
+        return;
+    }
 
     if(EEPROM_Read(EEPROM_BIND_FLAG, &bind_flag, 1) != 1){
         DBG_PRINT("Error reading EEPROM\n");
@@ -339,7 +356,7 @@ uint8_t bind_flag;
     }
 
     if(bind_flag == BIND_FLAG_VALUE){
-        if(NV_Restore(dst, EEPROM_SIZE) != EEPROM_SIZE){
+        if(EEPROM_Read(0, buf, size) != size){
             DBG_PRINT("Error reading EEPROM\n");
             return;
         }
@@ -370,19 +387,19 @@ void appSaveEEPROM(void){
 /**
  * @brief Application setup call
  * */
-void setup(void){
+void setup(void)
+{
 
     state = STARTING;
 
     laser4Init();
-    // TODO:  NV_Init();
 
 #if defined(ENABLE_USART) && defined(ENABLE_DEBUG)
     usart_init();
     dbg_init(&pcom);
 #endif
 
-#if defined(ENABLE_VCOM) || defined(ENABLE_GAME_CONTROLLER)
+#if defined(ENABLE_VCP) || defined(ENABLE_GAME_CONTROLLER)
     USB_DEVICE_Init();
     USB_DEVICE_RegisterCallback(HAL_PCD_SUSPEND_CB_ID, usbDisconnectCB, NULL);
     USB_DEVICE_RegisterCallback(HAL_PCD_RESUME_CB_ID, usbConnectCB, NULL);
@@ -392,13 +409,13 @@ void setup(void){
     CONTROLLER_Init();
 #endif
 
-#ifdef ENABLE_CLI
-    con.init(&pcom, "laser4+ >");
+#if defined(ENABLE_CLI) && defined(ENABLE_VCP)
+    con.init(&vcp, "laser4+ >");
     con.registerCommandList(laser4_commands);
     con.cls();
 #endif
     // Load eeprom data
-    appInitEEPROM((uint8_t*)eeprom_data);
+    appInitEEPROM((uint8_t*)eeprom_data, (uint8_t*)eeprom_default_data, EEPROM_SIZE);
     // Set volume from stored value
     buzSetLevel(*((uint8_t*)eeprom_data + IDX_BUZ_VOLUME));
     // Play som random tone
@@ -441,8 +458,8 @@ void setup(void){
 /**
  * @brief Application main loop
  * */
-void loop(void){
-
+void loop(void)
+{
     switch(state & STATE_MASK){
         case MODE_MULTIPROTOCOL:
             multiprotocol_loop();
@@ -470,7 +487,7 @@ void loop(void){
             break;
     }
 
-#ifdef ENABLE_CLI
+#if defined(ENABLE_CLI) && defined(ENABLE_VCP)
     con.process();
 #endif
 
@@ -486,11 +503,13 @@ void loop(void){
     reloadWatchDog();
 }
 
-
-int main(void){
+int main(void)
+{
     setup();
+
     while(1){
         loop();
     }
+
     return 0;
 }

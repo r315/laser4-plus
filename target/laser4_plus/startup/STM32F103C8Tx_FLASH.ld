@@ -82,12 +82,12 @@ SECTIONS
         . = ALIGN(4);
     } >FLASH
 
-    .ARM.extab : 
-    { 
-        *(.ARM.extab* .gnu.linkonce.armextab.*) 
+    .ARM.extab :
+    {
+        *(.ARM.extab* .gnu.linkonce.armextab.*)
     } >FLASH
-    
-    .ARM : 
+
+    .ARM :
     {
         __exidx_start = .;
         *(.ARM.exidx*)
@@ -120,7 +120,7 @@ SECTIONS
     /* used by the startup to copy functions that execute on ram */
     _siram_code = LOADADDR(.ram_code);
     /* ram code (fast code) sections goes into RAM */
-    .ram_code : 
+    .ram_code :
     {
         . = ALIGN(4);
         _sram_code = .;    /* create a global symbol at data start */
@@ -129,13 +129,13 @@ SECTIONS
 
         . = ALIGN(4);
         _eram_code = .;    /* define a global symbol at data end */
-    } >RAM AT> FLASH  
+    } >RAM AT> FLASH
 
     /* used by the startup to initialize data */
     _sidata = LOADADDR(.data);
 
     /* Initialized data sections goes into RAM, load LMA copy after code */
-    .data : 
+    .data :
     {
         . = ALIGN(4);
         _sdata = .;        /* create a global symbol at data start */
@@ -145,16 +145,16 @@ SECTIONS
         . = ALIGN(4);
         _edata = .;        /* define a global symbol at data end */
     } >RAM AT> FLASH
-    
+
     /* used for EEPROM emulation, must be placed at next flash free page */
-    .eeprom : ALIGN(1024)
-    {       
-        _seeprom = .;
-        *(.eeprom*)
-        . += 1024;
+     .eeprom : ALIGN(1024)
+    {
+       _seeprom = .;
+       BYTE(0xFF)
+       . += 1023;
         _eeeprom = .;
     } >FLASH
-    
+
     /* Uninitialized data section */
     . = ALIGN(4);
     .bss :
@@ -182,7 +182,7 @@ SECTIONS
         . = ALIGN(8);
     } >RAM
 
-    
+
 
     /* Remove information from the standard libraries */
     /DISCARD/ :

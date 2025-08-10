@@ -6,8 +6,11 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+//TODO: Remove hal dependency
 #include "stm32f1xx_hal.h"
-#include "fifo.h"
+#include "uart.h"
+#include "tone.h"
+
 #ifdef ENABLE_DISPLAY
 #include "ssd1306.h"
 #endif
@@ -195,18 +198,6 @@ extern "C" {
 /* fast code */
 #define RAM_CODE                __attribute__((section(".ram_code")))
 
-/* Symbols for NVDATA */
-#define NVDATA_SECTOR_INIT
-#define NVDATA_SECTOR_START     &_seeprom
-#define NVDATA_SECTOR_END       &_eeeprom
-#define NVDATA_SECTOR_READ      memcpy
-#define NVDATA_SECTOR_WRITE     flashWrite
-#define NVDATA_SECTOR_ERASE     flashPageErase
-#define EEPROM_Read             NV_Read
-#define EEPROM_Write(_A,_B,_C)  NV_Write(_A,_B,_C)
-#define EEPROM_Sync             NV_Sync
-#define EEPROM_SIZE             30
-
 /* General symbols */
 #define ADC_RDY                 (1 << 0)
 #define ADC_DIV                 (1 << 1)
@@ -227,11 +218,11 @@ extern "C" {
 #define SWTIM_AUTO_RELOAD       (1 << 1)
 #define SWTIM_IN_USE            (1 << 2)
 
+#define EEPROM_Read             NV_Read
+#define EEPROM_Write(_A,_B,_C)  NV_Write(_A,_B,_C)
+#define EEPROM_Sync             NV_Sync
 
-typedef struct tone{
-    uint16_t f;
-    uint16_t t;
-}tone_t;
+uint32_t EEPROM_Init(uint8_t *eep, uint16_t size);
 
 typedef struct vires {
     uint32_t vbat;
@@ -241,12 +232,6 @@ typedef struct vires {
 
 /* Public variables */
 extern uint32_t SystemCoreClock;
-extern uint32_t _seeprom, _eeeprom;     //declared on linker script
-
-#ifdef ENABLE_SERIAL_FIFOS
-extern fifo_t serial_tx_fifo;
-extern fifo_t serial_rx_fifo;
-#endif
 
 /* Function prototyes */
 void delayMs(uint32_t ms);
@@ -256,11 +241,6 @@ uint8_t SPI_Read(void);
 void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode);
 void gpioAttachInterrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*)(void));
 void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin);
-
-uint32_t flashWrite(uint8_t *dst, uint8_t *data, uint16_t count);
-uint32_t flashPageErase(uint32_t PageAddress);
-void FLASH_PageErase(uint32_t PageAddress);       // HAL Function
-
 void enableWatchDog(uint32_t interval);
 void reloadWatchDog(void);
 

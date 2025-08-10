@@ -1,7 +1,8 @@
 
-#include "app.h"
+#include "laser4_plus.h"
 #include "iface_cc2500.h"
 #include "multiprotocol.h"
+#include "board.h"
 
 #ifdef ENABLE_CLI
 
@@ -14,40 +15,6 @@ char *getOptValue(const char *opt, uint32_t argc, char **argv){
     return NULL;
 }
 
-char *skipSpaces(char *str){
-	while((*str == ' ' || *str == '\t') && *str != '\0')
-		str++;
-	return str;
-}
-
-uint32_t strToArray(char *str, char **argv){
-uint32_t argc = 0;
-
-    if(str == NULL){
-        return 0;
-    }
-
-	str = skipSpaces(str);
-
-	if(*str == '\0')
-		return 0;
-
-	argv[argc++] = str;
-
-    while(*str != '\0'){
-        if(*str == ' '){
-			*str = '\0';
-			str = skipSpaces(str + 1);
-			if(*str != '\0')
-				argv[argc++] = str;
-        }else{
-			str++;
-		}
-    }
-
-	return argc;
-}
-
 class CmdHelp : public ConsoleCommand {
 	Console *console;
 public:
@@ -55,12 +22,12 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 
 	void help(void) {
-		console->xputs("Available commands:\n");
+		console->println("Available commands:");
 
 		for (uint8_t i = 0; i < console->getCmdListSize(); i++) {
-				console->print("\t%s\n", console->getCmdIndexed(i)->getName());
+				console->printf("\t%s\n", console->getCmdIndexed(i)->getName());
 		}
-		console->xputchar('\n');
+		console->printchar('\n');
 	}
 
 	char execute(void *ptr) {
@@ -77,11 +44,11 @@ public:
     CmdCC25() : ConsoleCommand("cc2500") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {
-		console->xputs("usage: cc2500 <[-r, --reset, -rs, status]>");
-		console->xputs("\t-r <0-2E>, Read Register");
-		console->xputs("\t-w <0-2E>, Write Register");
-		console->xputs("\t-rs <30-3D>, Read status register");
-		console->xputs("\t--reset, Reset CC2500 module");
+		console->print("usage: cc2500 <[-r, --reset, -rs, status]>");
+		console->print("\t-r <0-2E>, Read Register");
+		console->print("\t-w <0-2E>, Write Register");
+		console->print("\t-rs <30-3D>, Read status register");
+		console->print("\t--reset, Reset CC2500 module");
 	}
 
 	char reset(void){
@@ -96,7 +63,7 @@ public:
 	char readRegister(uint8_t reg){
 		uint8_t val;
 		val = CC2500_ReadReg(reg);
-		console->print("Reg[0x%02x] = %x\n", reg, val);
+		console->printf("Reg[0x%02x] = %x\n", reg, val);
 		return CMD_OK;
 	}
 
@@ -132,7 +99,7 @@ public:
 
 		if(getOptValue((char*)"status", argc, argv) != NULL){
 			uint32_t rdata = dataRate();
-			console->print("Data Rate: %dbps\n", rdata);
+			console->printf("Data Rate: %dbps\n", rdata);
 			uint8_t rssi_offset;
 			if(rdata < 10000)
 				rssi_offset = 71;
@@ -141,7 +108,7 @@ public:
 			else
 				rssi_offset = 72;
 
-			console->print("RSSI: %ddBm\n", rssi(rssi_offset));
+			console->printf("RSSI: %ddBm\n", rssi(rssi_offset));
 			return CMD_OK;
 		}
 
@@ -159,7 +126,7 @@ public:
 		param = getOptValue((char*)"-rs", argc, argv);
 		if(param != NULL){
 			if(nextHex((char**)&param, &int_value)){
-				console->print("Status [0x%02x] = %x\n", int_value, CC2500_ReadStatus(int_value & 255));
+				console->printf("Status [0x%02x] = %x\n", int_value, CC2500_ReadStatus(int_value & 255));
 				return CMD_OK;
 			}
 		}
@@ -187,14 +154,14 @@ public:
 	void help(void) {}
 
 	void batteryVoltage(void){
-		console->print(
+		console->printf(
 			"Battery voltage: %umV\n",
 			batteryGetVoltage()
 		);
 	}
 
 	void systemFlags(void){
-		console->print(
+		console->printf(
 			"RX              [%d]\n"
 			"Change protocol [%d]\n"
 			"Range           [%d]\n"
@@ -206,7 +173,7 @@ public:
 			IS_PPM_FLAG_on,
 			IS_BIND_DONE
 		);
-		console->print(
+		console->printf(
 			"Wait bind       [%d]\n"
 			"Tx pause        [%d]\n"
 			"Input signal    [%d]\n",
@@ -224,21 +191,21 @@ public:
 #endif
 	void mode(void){
 		uint8_t aux = appGetCurrentMode();
-		console->print("Mode: %s\n", aux == MODE_MULTIPROTOCOL ? "Multiprotocol" : "Game Controller");
+		console->printf("Mode: %s\n", aux == MODE_MULTIPROTOCOL ? "Multiprotocol" : "Game Controller");
 	}
 
 	char execute(void *ptr) {
-		console->xputs("\n----------------------------------------");
+		console->print("\n----------------------------------------");
         batteryVoltage();
-		console->xputs("----------------------------------------");
+		console->print("----------------------------------------");
         systemFlags();
 #ifdef ENABLE_PPM
-		console->xputs("----------------------------------------");
+		console->print("----------------------------------------");
 		channelValues();
 #endif
-		console->xputs("----------------------------------------");
+		console->print("----------------------------------------");
 		mode();
-		console->xputs("----------------------------------------");
+		console->print("----------------------------------------");
         return CMD_OK;
 	}
 }cmdstatus;
@@ -249,7 +216,7 @@ public:
     CmdMockPPM() : ConsoleCommand("id") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {
-		console->xputs("usage: id [0|1]\n"
+		console->print("usage: id [0|1]\n"
 				"\t0,1 : Generate random id\n");
 	}
 
@@ -264,9 +231,9 @@ public:
 
 		nextHex(&p, &int_value);
 		if(int_value == 1){
-			console->print("Random ID: %x\n", xrand());
+			console->printf("Random ID: %x\n", xrand());
 		}else{
-			console->print("Current ID: %x\n", radio.protocol_id_master);
+			console->printf("Current ID: %x\n", radio.protocol_id_master);
 		}
 		return CMD_OK;
 	}
@@ -289,13 +256,13 @@ public:
 	void help(void) {}
 	char execute(void *ptr) {
 		if(IS_BIND_IN_PROGRESS){
-			console->xputs("Bind already in progress");
+			console->print("Bind already in progress");
 		}else{
 			appReqModeChange(MODE_MULTIPROTOCOL);
 			CHANGE_PROTOCOL_FLAG_on;
 			BIND_IN_PROGRESS;
 			if(IS_INPUT_SIGNAL_off){
-				console->xputs("No input signal!!");
+				console->print("No input signal!!");
 			}
 		}
 		return CMD_OK;
@@ -324,23 +291,23 @@ public:
 		switch(test_code){
 			case 0:
 				for(uint8_t i = 0; i < MAX_CHN_NUM; i++ ){
-					console->print("\nChannel[%u]: %u", i, radio.channel_data[i]);
+					console->printf("\nChannel[%u]: %u", i, radio.channel_data[i]);
 				}
-				console->xputchar('\n');
+				console->printchar('\n');
 				break;
 			case 1:
-				dbg_HexDump((uint8_t*)eeprom_data, EEPROM_SIZE);
+				//TODO: dbg_HexDump((uint8_t*)eeprom_data, EEPROM_SIZE);
 				break;
 
 			case 2:
 				if(tim != -1 ){
 					break;
 				}
-				console->xputs("Starting ppm simulation");
+				console->print("Starting ppm simulation");
 				tim = startTimer(20, SWTIM_AUTO_RELOAD, ppm_sim);
 				break;
 			case 3:
-				console->xputs("Stoping ppm simulation");
+				console->print("Stoping ppm simulation");
 				stopTimer(tim);
 				tim = -1;
 				break;
@@ -363,7 +330,7 @@ public:
 	void help(void) {}
 	char execute(void *ptr) {
 		if(*(char*)ptr == '\0'){
-			console->print("Current mode: %d\n",appGetCurrentMode());
+			console->printf("Current mode: %d\n",appGetCurrentMode());
 			return CMD_OK;
 		}
 		uint32_t int_value;
@@ -381,20 +348,20 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 
 	void help(void) {
-		console->xputs("usage: eeprom [dump|save|erase]");
+		console->print("usage: eeprom [dump|save|erase]");
 	}
 
 	void id(void){
 		uint32_t *ptr = (uint32_t*)eeprom_data;
 
-		console->print(
+		console->printf(
 			"ID \t	\t\t0x%X\n",
 			*(ptr + EEPROM_ID_OFFSET)
 		);
 	}
 
 	void channelRanges(void){
-		console->print(
+		console->printf(
 			"CH MAX      \t\t%d\n"
 			"CH MIN      \t\t%d\n"
 			"CH switch   \t\t%d\n"
@@ -412,10 +379,10 @@ public:
 		char *p = (char*)ptr;
 
 		if(*p == '\0'){
-			console->xputs("----------------------------------------");
+			console->print("----------------------------------------");
 			channelRanges();
 			id();
-			console->xputs("----------------------------------------");
+			console->print("----------------------------------------");
 			return CMD_OK;
 		}
 
@@ -425,7 +392,7 @@ public:
 		}
 
 		if(xstrcmp(p,"erase") == 0){
-			console->print("Erasing NV Data: %s\n", NV_Erase() == 0? "Fail": "ok");
+			console->printf("Erasing NV Data: %s\n", NV_Erase() == 0? "Fail": "ok");
 			return CMD_OK;
 		}
 
@@ -453,8 +420,8 @@ public:
     CmdAdc() : ConsoleCommand("adc") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {
-		console->xputs("usage: adc [ calibrate | -div | -rs ]");
-		console->xputs("\t calibrate  Adc calibration based on internal voltage reference\n"
+		console->print("usage: adc [ calibrate | -div | -rs ]");
+		console->print("\t calibrate  Adc calibration based on internal voltage reference\n"
 						"\t-div <racio> : Battery voltage divider racio\n"
 						"\t-rs <resistor> Sense resistor");
 	}
@@ -481,19 +448,19 @@ public:
 	}
 
 	void batVoltageCalibration(void){
-		console->print("Bat voltage divider \t%.3f\n", adcGetVdivRacio());
+		console->printf("Bat voltage divider \t%.3f\n", adcGetVdivRacio());
 	}
 
 	void adcResolution(void){
-		console->print("Adc resolution  \t%.3fmV/step\n", adcGetResolution());
+		console->printf("Adc resolution  \t%.3fmV/step\n", adcGetResolution());
 	}
 
 	void current(void){
-		console->print("Current  \t\t%umA\n", batteryGetCurrent());
+		console->printf("Current  \t\t%umA\n", batteryGetCurrent());
 	}
 
 	void senseResistor(void){
-		console->print("Sense resistor  \t%.3f Ohm\n", adcGetSenseResistor());
+		console->printf("Sense resistor  \t%.3f Ohm\n", adcGetSenseResistor());
 	}
 
 	char execute(void *ptr) {
@@ -539,8 +506,8 @@ public:
     CmdBuz() : ConsoleCommand("buz") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {
-		console->xputs("usage: buz <-r|-v|-t>");
-		console->xputs(
+		console->print("usage: buz <-r|-v|-t>");
+		console->print(
 			"-v <volume>, set volume\n"
 			"-t <freq> <duration>\n"
 		);
@@ -552,14 +519,14 @@ public:
 
 		if(argc == 0){
 			help();
-			console->print("Current level %u\n", buzSetLevel(0));
+			console->printf("Current level %u\n", buzSetLevel(0));
 			return CMD_OK;
 		}
 
 		if((param = getOptValue("-v", argc, argv)) != NULL){
 			int32_t val;
 			if(nextInt(&param, &val)){
-				console->print("Current level %u\n", buzSetLevel(val));
+				console->printf("Current level %u\n", buzSetLevel(val));
 				*((uint8_t*)eeprom_data + IDX_BUZ_VOLUME) = val&255;
 				return CMD_OK;
 			}

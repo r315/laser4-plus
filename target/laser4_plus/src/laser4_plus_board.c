@@ -1,7 +1,7 @@
 
 #include "board.h"
+#include "nvdata.h"
 #include "stm32f1xx_hal.h"
-#include <stdout.h>
 #include "usbd_conf.h"
 
 typedef struct {
@@ -54,15 +54,29 @@ static void timInit(void);
 static void adcInit(void);
 static void encInit(void);
 static void crcInit(void);
-#ifdef ENABLE_VCOM
+#ifdef ENABLE_PPM
 static void ppmOutInit(void);
 #endif
 static void buzInit(void);
 
+#if defined(ENABLE_USART)
+int serial_available(void) { return UART_Available(&uartbus); }
+int serial_read(char *buf, int len) { return UART_Read(&uartbus, buf, len); }
+int serial_write(const char *buf, int len) { return UART_Write(&uartbus, buf, len); }
+
+stdinout_t serial_ops = {
+    .available = serial_available,
+    .read = serial_read,
+    .write = serial_write
+};
+
+#endif
+
 // Functions implemenation
-void Error_Handler(char * file, int line){
-  while(1){
-  }
+void Error_Handler(char * file, int line)
+{
+    while(1){
+    }
 }
 
 void laser4Init(void){
@@ -77,7 +91,7 @@ void laser4Init(void){
     timInit();
     adcInit();
     encInit();
-#ifdef ENABLE_VCOM
+#ifdef ENABLE_PPM
     ppmOutInit();
 #endif
     buzInit();
@@ -301,21 +315,22 @@ uint32_t HAL_GetTick(void){ return getTick(); }
 /**
  * @brief Flash write functions for EEPROM emulation
  */
-uint32_t flashWrite(uint8_t *dst, uint8_t *data, uint16_t count){
-uint16_t *src = (uint16_t*)data;
-uint32_t res, address = (uint32_t)dst;
+static void flashWrite(uint32_t address, const uint8_t *data, uint32_t count)
+{
+    uint16_t *psrc = (uint16_t*)data;
 
-    res = HAL_FLASH_Unlock();
+    HAL_StatusTypeDef res = HAL_FLASH_Unlock();
+
     if( res == HAL_OK){
-        for (uint16_t i = 0; i < count; i+= 2, src++){
-            res = HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, address + i, *src);
+        for (uint16_t i = 0; i < count; i+= 2, psrc++){
+            res = HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, address + i, *psrc);
             if(res != HAL_OK){
                 break;
             }
         }
     }
+
     HAL_FLASH_Lock();
-    return res;
 }
 
 /**
@@ -324,8 +339,10 @@ uint32_t res, address = (uint32_t)dst;
  * @param address:  start address for erasing
  * @return : 0 on fail
  * */
-uint32_t flashPageErase(uint32_t address){
-uint32_t res;
+void flashPageErase(uint32_t address)
+{
+    uint32_t res;
+    extern void FLASH_PageErase(uint32_t PageAddress);
 
     res = HAL_FLASH_Unlock();
 
@@ -334,8 +351,34 @@ uint32_t res;
     }
 
     HAL_FLASH_Lock();
-    return 1;
 }
+
+extern uint32_t _seeprom, _eeeprom;     //declared on linker script
+
+void flashRead (uint32_t addr, uint8_t *dst, uint32_t len)
+{
+    memcpy(dst, (void*)addr, len);
+}
+
+static nvdata_t laser4_plus_nvdata = {
+    .sector = {
+        .start = (uint32_t)&_seeprom,
+        .end = (uint32_t)&_eeeprom,
+        .init = NULL,
+        .read = flashRead,
+        .write = flashWrite,
+        .erase = flashPageErase
+    }
+};
+
+uint32_t EEPROM_Init(uint8_t *buf, uint16_t size)
+{
+    laser4_plus_nvdata.nvb.data = buf;
+    laser4_plus_nvdata.nvb.size = size;
+
+    return NV_Init(&laser4_plus_nvdata);
+}
+
 
 /**
  * @brief Configure watchdog timer according a given interval
@@ -753,7 +796,7 @@ void buzInit(void){
  * */
 static void buzStartTone(tone_t *tone){
     DMA1_Channel5->CMAR = (uint32_t)(&tone->f);
-    DMA1_Channel5->CNDTR = tone->t;
+    DMA1_Channel5->CNDTR = tone->d;
     DMA1_Channel5->CCR |= DMA_CCR_EN;
     BUZ_TIM->EGR = TIM_EGR_UG;
     BUZ_TIM->CR1 |=  TIM_CR1_CEN;
@@ -769,10 +812,10 @@ static void buzStartTone(tone_t *tone){
 void buzPlayTone(uint16_t freq, uint16_t duration){
 uint32_t d = duration * 1000UL;    // Convert to us
     hbuz.tone.f = FREQ_TO_US(freq) - BUZ_TIM->CCR1; // Subtract volume pulse
-    hbuz.tone.t = d / hbuz.tone.f;
+    hbuz.tone.d = d / hbuz.tone.f;
     hbuz.ptone = &hbuz.tone;
     buzStartTone(hbuz.ptone);
-    hbuz.ptone->t = 0;       //force tone ending
+    hbuz.ptone->d = 0;       //force tone ending
 }
 
 /**
@@ -785,10 +828,10 @@ void buzPlay(tone_t *tones){
 tone_t *pt = tones;
 
     // Convert each tone frequency to time in us
-    while(pt->t > 0){
-        uint32_t d = pt->t * 1000UL;
+    while(pt->d > 0){
+        uint32_t d = pt->d * 1000UL;
         pt->f = FREQ_TO_US(pt->f) - BUZ_TIM->CCR1;
-        pt->t = d / pt->f;
+        pt->d = d / pt->f;
         pt++;
     }
 
@@ -906,7 +949,7 @@ uint32_t xrand(void){
   * @retval None
   */
 void USB_LP_CAN1_RX0_IRQHandler(void){
-#ifdef ENABLE_VCOM
+#ifdef ENABLE_VCP
     HAL_PCD_IRQHandler(&hpcd_USB_FS);
 #endif
 }
@@ -945,10 +988,10 @@ void DMA1_Channel1_IRQHandler(void){
 void DMA1_Channel5_IRQHandler(void){
     if(DMA1->ISR & DMA_ISR_TCIF5){
         DMA1_Channel5->CCR &= ~DMA_CCR_EN;
-        if(hbuz.ptone->t != 0){
+        if(hbuz.ptone->d != 0){
             // Load next tone
             DMA1_Channel5->CMAR = (uint32_t)(&hbuz.ptone->f);
-            DMA1_Channel5->CNDTR = hbuz.ptone->t;
+            DMA1_Channel5->CNDTR = hbuz.ptone->d;
             DMA1_Channel5->CCR |= DMA_CCR_EN;
             hbuz.ptone++;
         }else{

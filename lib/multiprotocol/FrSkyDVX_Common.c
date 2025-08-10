@@ -58,11 +58,11 @@ void Frsky_SetPower(void){
 	if(IS_RANGE_FLAG_on){
 		power = CC2500_RANGE_POWER;
 	}
-	
+
 	if(radio.prev_power != power){
 		CC2500_SetPower(power);
 		radio.prev_power = power;
-	}	
+	}
 }
 
 // Channel value for FrSky (PPM is multiplied by 1.5)
@@ -80,14 +80,14 @@ void Frsky_init_hop(void)
 	uint8_t channel = radio.rx_tx_addr[0] & 0x07;
 	uint8_t channel_spacing = radio.rx_tx_addr[1];
 
-	DBG_PRINT("Channel: %x\n", channel);
-	DBG_PRINT("Channel spacing: %x\n", channel_spacing);
-	
+	FRSKYDVX_DBG_INF("Channel: %x\n", channel);
+	FRSKYDVX_DBG_INF("Channel spacing: %x\n", channel_spacing);
+
 	//Filter bad tables
 	if(channel_spacing < 0x02) channel_spacing += 0x02;
 	if(channel_spacing > 0xE9) channel_spacing -= 0xE7;
 	if((channel_spacing % 0x2F) == 0) channel_spacing++;
-		
+
 	radio.hopping_frequency[0] = channel;
 
 	for(uint8_t i = 1; i < 50; i++){
@@ -99,10 +99,10 @@ void Frsky_init_hop(void)
 		radio.hopping_frequency[i] = (i > 46) ? 0 : val;
 	}
 
-	DBG_PRINT("Hopping frequency: \r\n[");
-	DBG_DUMP_LINE(radio.hopping_frequency, 50, 0);
-	DBG_PRINT("]\r\n");
-	
+	FRSKYDVX_DBG_INF("Hopping frequency: \r\n[");
+	FRSKYDVX_DBG(radio.hopping_frequency, 50, 0);
+	FRSKYDVX_DBG_INF("]\r\n");
+
 }
 #endif
 /******************************/
@@ -110,7 +110,7 @@ void Frsky_init_hop(void)
 /******************************/
 #if defined(FRSKYV_CC2500_INO) || defined(FRSKYD_CC2500_INO) || defined(FRSKYX_CC2500_INO)
 	const PROGMEM uint8_t FRSKY_common_startreg_cc2500_conf[]= {
-		 CC2500_02_IOCFG0 ,		
+		 CC2500_02_IOCFG0 ,
 		 CC2500_00_IOCFG2 ,
 		 CC2500_17_MCSM1 ,
 		 CC2500_18_MCSM0 ,
@@ -120,10 +120,10 @@ void Frsky_init_hop(void)
 		 CC2500_3E_PATABLE ,
 		 CC2500_0B_FSCTRL1 ,
 		 CC2500_0C_FSCTRL0 ,	// replaced by option value
-		 CC2500_0D_FREQ2 ,	
+		 CC2500_0D_FREQ2 ,
 		 CC2500_0E_FREQ1 ,
 		 CC2500_0F_FREQ0 ,
-		 CC2500_10_MDMCFG4 ,		
+		 CC2500_10_MDMCFG4 ,
 		 CC2500_11_MDMCFG3 ,
 		 CC2500_12_MDMCFG2 ,
 		 CC2500_13_MDMCFG1 ,
@@ -132,7 +132,7 @@ void Frsky_init_hop(void)
 
 	#if defined(FRSKYV_CC2500_INO)
 		const PROGMEM uint8_t FRSKYV_cc2500_conf[]= {
-		/*02_IOCFG0*/  	 0x06 ,		
+		/*02_IOCFG0*/  	 0x06 ,
 		/*00_IOCFG2*/  	 0x06 ,
 		/*17_MCSM1*/   	 0x0c ,
 		/*18_MCSM0*/   	 0x18 ,
@@ -142,10 +142,10 @@ void Frsky_init_hop(void)
 		/*3E_PATABLE*/ 	 0xfe ,
 		/*0B_FSCTRL1*/ 	 0x08 ,
 		/*0C_FSCTRL0*/ 	 0x00 ,
-		/*0D_FREQ2*/   	 0x5c ,	
+		/*0D_FREQ2*/   	 0x5c ,
 		/*0E_FREQ1*/   	 0x58 ,
 		/*0F_FREQ0*/   	 0x9d ,
-		/*10_MDMCFG4*/ 	 0xAA ,		
+		/*10_MDMCFG4*/ 	 0xAA ,
 		/*11_MDMCFG3*/ 	 0x10 ,
 		/*12_MDMCFG2*/ 	 0x93 ,
 		/*13_MDMCFG1*/ 	 0x23 ,
@@ -155,7 +155,7 @@ void Frsky_init_hop(void)
 
 	#if defined(FRSKYD_CC2500_INO)
 		const PROGMEM uint8_t FRSKYD_cc2500_conf[]= {
-		/*02_IOCFG0*/  	 0x06 ,		
+		/*02_IOCFG0*/  	 0x06 ,
 		/*00_IOCFG2*/  	 0x06 ,
 		/*17_MCSM1*/   	 0x0c ,
 		/*18_MCSM0*/   	 0x18 ,
@@ -165,10 +165,10 @@ void Frsky_init_hop(void)
 		/*3E_PATABLE*/ 	 0xff ,
 		/*0B_FSCTRL1*/ 	 0x08 ,
 		/*0C_FSCTRL0*/ 	 0x00 ,
-		/*0D_FREQ2*/   	 0x5c ,	
+		/*0D_FREQ2*/   	 0x5c ,
 		/*0E_FREQ1*/   	 0x76 ,
 		/*0F_FREQ0*/   	 0x27 ,
-		/*10_MDMCFG4*/ 	 0xAA ,		
+		/*10_MDMCFG4*/ 	 0xAA ,
 		/*11_MDMCFG3*/ 	 0x39 ,
 		/*12_MDMCFG2*/ 	 0x11 ,
 		/*13_MDMCFG1*/ 	 0x23 ,
@@ -179,7 +179,7 @@ void Frsky_init_hop(void)
 	#if defined(FRSKYX_CC2500_INO)
 		const PROGMEM uint8_t FRSKYX_cc2500_conf[]= {
 	//FRSKYX
-		/*02_IOCFG0*/  	 0x06 ,		
+		/*02_IOCFG0*/  	 0x06 ,
 		/*00_IOCFG2*/  	 0x06 ,
 		/*17_MCSM1*/   	 0x0c ,
 		/*18_MCSM0*/   	 0x18 ,
@@ -189,17 +189,17 @@ void Frsky_init_hop(void)
 		/*3E_PATABLE*/ 	 0xff ,
 		/*0B_FSCTRL1*/ 	 0x0A ,
 		/*0C_FSCTRL0*/ 	 0x00 ,
-		/*0D_FREQ2*/   	 0x5c ,	
+		/*0D_FREQ2*/   	 0x5c ,
 		/*0E_FREQ1*/   	 0x76 ,
 		/*0F_FREQ0*/   	 0x27 ,
-		/*10_MDMCFG4*/ 	 0x7B ,		
+		/*10_MDMCFG4*/ 	 0x7B ,
 		/*11_MDMCFG3*/ 	 0x61 ,
 		/*12_MDMCFG2*/ 	 0x13 ,
 		/*13_MDMCFG1*/ 	 0x23 ,
 		/*14_MDMCFG0*/ 	 0x7a ,
 		/*15_DEVIATN*/ 	 0x51  };
 		const PROGMEM uint8_t FRSKYXEU_cc2500_conf[]= {
-		/*02_IOCFG0*/  	 0x06 ,		
+		/*02_IOCFG0*/  	 0x06 ,
 		/*00_IOCFG2*/  	 0x06 ,
 		/*17_MCSM1*/   	 0x0E ,
 		/*18_MCSM0*/   	 0x18 ,
@@ -209,10 +209,10 @@ void Frsky_init_hop(void)
 		/*3E_PATABLE*/ 	 0xff ,
 		/*0B_FSCTRL1*/ 	 0x08 ,
 		/*0C_FSCTRL0*/ 	 0x00 ,
-		/*0D_FREQ2*/   	 0x5c ,	
+		/*0D_FREQ2*/   	 0x5c ,
 		/*0E_FREQ1*/   	 0x80 ,
 		/*0F_FREQ0*/   	 0x00 ,
-		/*10_MDMCFG4*/ 	 0x7B ,		
+		/*10_MDMCFG4*/ 	 0x7B ,
 		/*11_MDMCFG3*/ 	 0xF8 ,
 		/*12_MDMCFG2*/ 	 0x03 ,
 		/*13_MDMCFG1*/ 	 0x23 ,
@@ -222,7 +222,7 @@ void Frsky_init_hop(void)
 
 	const PROGMEM uint8_t FRSKY_common_end_cc2500_conf[][2]= {
 		{ CC2500_19_FOCCFG,   0x16 },
-		{ CC2500_1A_BSCFG,    0x6c },	
+		{ CC2500_1A_BSCFG,    0x6c },
 		{ CC2500_1B_AGCCTRL2, 0x43 },
 		{ CC2500_1C_AGCCTRL1, 0x40 },
 		{ CC2500_1D_AGCCTRL0, 0x91 },
