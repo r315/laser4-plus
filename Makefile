@@ -17,7 +17,7 @@ bp:
 	@"$(MAKE)" -C target/laser4_plus BUILD_DIR=$(BUILD_DIR)/bluepill
 
 l4p-program:
-	@"$(MAKE)" -C target/laser4_plus BUILD_DIR=$(BUILD_DIR)/laser4_plus
+	@"$(MAKE)" -C target/laser4_plus PROJECT_DIR=$(CURDIR) program
 
 bp-program:
 	@"$(MAKE)" -C target/laser4_plus BUILD_DIR=$(BUILD_DIR)/bluepill

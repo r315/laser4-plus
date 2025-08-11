@@ -27,9 +27,9 @@ FEATURES += AETR
 #FEATURES += ENABLE_SERIAL_FIFOS
 #FEATURES += FIFO_SIZE=1024
 FEATURES += ENABLE_VCP
-#FEATURES += ENABLE_DEBUG
+FEATURES += ENABLE_DEBUG
 FEATURES += ENABLE_CLI
-#FEATURES += CONSOLE_PRINT_MAX_LEN=256
+FEATURES += CONSOLE_WIDTH=256
 #FEATURES += ENABLE_GAME_CONTROLLER
 #FEATURES += ENABLE_DISPLAY
 #FEATURES += USE_MY_CONFIG
@@ -173,7 +173,7 @@ FLOAT-ABI = #-u_printf_float
 MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
 
 ifeq ($(RELEASE), 1)
-DEBUG = 1
+DEBUG = 0
 OPT = -Os
 else
 DEBUG = 1
@@ -246,17 +246,17 @@ program: $(BUILD_DIR)/$(TARGET).elf $(TARGET).cfg
 	openocd -f $(TARGET).cfg -c "program $(BUILD_DIR)/$(TARGET).elf verify reset exit"
 #openocd -f $(TARGET).cfg -c "program $(BUILD_DIR)/$(TARGET).bin 0x08001000 verify reset exit"
 else
-JLINK =c:/tools/jlink_v500/JLink
+JLINK =JLink
 DEVICE =STM32F103T8
-$(TARGET).jlink:
+$(BUILD_DIR)/$(TARGET).jlink:
 	@echo "Creating Jlink configuration file"
 	echo "erase" >> $@
 	echo "loadbin  $(BUILD_DIR)/$(TARGET).bin , 0x08000000" >> $@
 	echo "r" >> $@
 	echo "q" >> $@
 
-program: $(BUILD_DIR)/$(TARGET).bin $(TARGET).jlink
-	$(JLINK) -device $(DEVICE) -if SWD -speed auto -CommanderScript $(TARGET).jlink
+program: $(BUILD_DIR)/$(TARGET).bin $(BUILD_DIR)/$(TARGET).jlink
+	$(JLINK) -device $(DEVICE) -if SWD -speed auto -CommanderScript $(BUILD_DIR)/$(TARGET).jlink
 
 endif
 # DFU rules
