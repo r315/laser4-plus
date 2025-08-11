@@ -150,8 +150,9 @@ SECTIONS
      .eeprom : ALIGN(1024)
     {
        _seeprom = .;
-       BYTE(0xFF)
-       . += 1023;
+       KEEP(*(.eeprom))
+       FILL(0xFF)
+       . += 1024;
         _eeeprom = .;
     } >FLASH
 

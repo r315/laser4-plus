@@ -10,6 +10,7 @@ extern "C" {
 #include "stm32f1xx_hal.h"
 #include "uart.h"
 #include "tone.h"
+#include "nvdata.h"
 
 #ifdef ENABLE_DISPLAY
 #include "ssd1306.h"
@@ -221,6 +222,7 @@ extern "C" {
 #define EEPROM_Read             NV_Read
 #define EEPROM_Write(_A,_B,_C)  NV_Write(_A,_B,_C)
 #define EEPROM_Sync             NV_Sync
+#define EEPROM_Erase            NV_Erase
 
 uint32_t EEPROM_Init(uint8_t *eep, uint16_t size);
 

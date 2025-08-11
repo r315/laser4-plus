@@ -349,6 +349,7 @@ void flashPageErase(uint32_t address)
     if( res == HAL_OK){
         FLASH_PageErase(address);
     }
+    FLASH->CR = 0;
 
     HAL_FLASH_Lock();
 }
