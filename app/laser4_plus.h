@@ -98,7 +98,7 @@ typedef union {
   uint32_t u;
 }f2u_u;
 
-extern uint16_t eeprom_data[];
+extern uint16_t *eeprom_data;
 extern uint32_t app_flags;
 
 void appReqModeChange(uint8_t new_mode);

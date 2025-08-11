@@ -353,12 +353,13 @@ void flashPageErase(uint32_t address)
     HAL_FLASH_Lock();
 }
 
-extern uint32_t _seeprom, _eeeprom;     //declared on linker script
-
 void flashRead (uint32_t addr, uint8_t *dst, uint32_t len)
 {
     memcpy(dst, (void*)addr, len);
 }
+
+extern uint32_t _seeprom, _eeeprom;     //declared on linker script
+static uint8_t eep_buf[32];
 
 static nvdata_t laser4_plus_nvdata = {
     .sector = {
@@ -371,12 +372,25 @@ static nvdata_t laser4_plus_nvdata = {
     }
 };
 
-uint32_t EEPROM_Init(uint8_t *buf, uint16_t size)
+uint8_t* EEPROM_Init(uint16_t size)
 {
-    laser4_plus_nvdata.nvb.data = buf;
-    laser4_plus_nvdata.nvb.size = size;
+    if(!laser4_plus_nvdata.nvb.size){
+        // For this data has to be aligned to 16bit
+        if(size & 1){
+            size++;
+        }
 
-    return NV_Init(&laser4_plus_nvdata);
+        if (size > 32){
+            size = 32;
+        }
+
+        laser4_plus_nvdata.nvb.data = eep_buf;
+        laser4_plus_nvdata.nvb.size = size;
+
+        NV_Init(&laser4_plus_nvdata);
+    }
+
+    return laser4_plus_nvdata.nvb.data;
 }
 
 

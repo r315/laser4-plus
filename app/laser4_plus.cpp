@@ -134,7 +134,7 @@ void appToggleLowBatIco(void);
 /**
  * EEPROM ram copy
  * */
-uint16_t eeprom_data[EEPROM_SIZE / 2];
+uint16_t *eeprom_data;
 
 static const uint16_t eeprom_default_data[EEPROM_SIZE / 2] = {
     (uint16_t)DEFAULT_ID, (uint16_t)(DEFAULT_ID>>16),
@@ -351,13 +351,12 @@ static void eepromDefault(uint8_t *buf, const uint8_t *defaults, uint16_t size)
  * @brief
  *
  * */
-static void eepromInit(uint8_t *buf, const uint8_t *defaults, uint16_t size)
+static uint8_t* eepromInit(const uint8_t *defaults, uint16_t size)
 {
     uint8_t bind_flag;
+    uint8_t *buf;
 
-    if(!EEPROM_Init(buf, size)){
-        goto load_defaults;
-    }
+    buf = EEPROM_Init(size);
 
     if(EEPROM_Read(EEPROM_BIND_FLAG, &bind_flag, 1) != 1){
         DBG_PRINT("Error reading EEPROM\n");
@@ -369,14 +368,13 @@ static void eepromInit(uint8_t *buf, const uint8_t *defaults, uint16_t size)
             DBG_PRINT("Error reading EEPROM\n");
             goto load_defaults;
         }
-        DBG_PRINT("Data loaded from EEPROM\n");
+        return buf;
     }
-
-    return;
 
 load_defaults:
     eepromDefault(buf, defaults, size);
-    DBG_PRINT("Defaults loaded\n");
+
+    return buf;
 }
 
 /**
@@ -460,7 +458,7 @@ void setup(void)
     con.cls();
 #endif
     // Load eeprom data
-    eepromInit((uint8_t*)eeprom_data, (uint8_t*)eeprom_default_data, EEPROM_SIZE);
+    eeprom_data = (uint16_t*)eepromInit((const uint8_t*)eeprom_default_data, EEPROM_SIZE);
     // Set volume from stored value
     buzSetLevel(*((uint8_t*)eeprom_data + IDX_BUZ_VOLUME));
     // Play som random tone

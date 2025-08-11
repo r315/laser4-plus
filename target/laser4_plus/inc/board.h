@@ -225,7 +225,7 @@ extern "C" {
 #define EEPROM_Sync             NV_Sync
 #define EEPROM_Erase            NV_Erase
 
-uint32_t EEPROM_Init(uint8_t *eep, uint16_t size);
+uint8_t* EEPROM_Init(uint16_t size);
 
 typedef struct vires {
     uint32_t vbat;
