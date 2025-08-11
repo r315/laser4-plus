@@ -18,7 +18,7 @@ static tone_t chime[] = {
 };
 
 #if defined(ENABLE_CLI) && defined(ENABLE_VCP)
-Console con;
+static Console con;
 #endif
 
 #ifdef ENABLE_DISPLAY
@@ -162,11 +162,11 @@ uint8_t appGetCurrentMode(void){
  * */
 void usbConnectCB(void *ptr){
     appReqModeChange(MODE_HID);
-#if defined(ENABLE_DEBUG)
-    dbg_init(&vcom);
+#if defined(ENABLE_DEBUG) && defined(EANBLE_VCP)
+    dbg_init(&vcp);
 #endif
 
-#ifdef ENABLE_CLI
+#if defined(ENABLE_CLI) && defined(EANBLE_VCP)
     // redirect cli to vcom
     con.setOutput(&vcp);
 #endif
@@ -183,10 +183,9 @@ void usbDisconnectCB(void *ptr){
     dbg_init(&pcom);
 #endif
 
-#ifdef ENABLE_CLI
+#if defined(ENABLE_CLI) && defined(ENABLE_USART)
     // redirect cli to physical com port
-    // TODO: This is not necessary
-    //con.setOutput(&pcom);
+    con.setOutput(&pcom);
 #endif
 }
 
@@ -394,9 +393,13 @@ void setup(void)
 
     laser4Init();
 
-#if defined(ENABLE_USART) && defined(ENABLE_DEBUG)
+#if defined(ENABLE_DEBUG)
+    #if defined(ENABLE_VCP)
+    dbg_init(&vcp);
+    #else
     usart_init();
     dbg_init(&pcom);
+    #endif
 #endif
 
 #if defined(ENABLE_VCP) || defined(ENABLE_GAME_CONTROLLER)

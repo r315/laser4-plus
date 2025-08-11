@@ -6,8 +6,8 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "nvdata.h"
 #include "console.h"
+#include "debug.h"
 
 #ifdef ENABLE_VCP
 #include "usbd_cdc_if.h"
@@ -65,9 +65,11 @@ extern "C" {
 #if defined(ENABLE_DEBUG)
     #define DBG_PRINT dbg_printf
     #define DBG_DUMP_LINE dbg_HexDumpLine
+    #define DBG_DUMP_MEM dbg_HexDump
 #else
     #define DBG_PRINT(...)
     #define DBG_DUMP_LINE(...)
+    #define DBG_DUMP_MEM(...)
 #endif
 
 
@@ -106,7 +108,6 @@ void appSaveEEPROM(void);
 
 #ifdef __cplusplus
 #if defined(ENABLE_CLI) && defined(ENABLE_VCP)
-extern Console con;
 extern ConsoleCommand *laser4_commands[];
 #endif /* ENABLE_CLI */
 }

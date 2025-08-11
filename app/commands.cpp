@@ -270,7 +270,7 @@ public:
 				console->printchar('\n');
 				break;
 			case '1':
-				//TODO: dbg_HexDump((uint8_t*)eeprom_data, EEPROM_SIZE);
+                DBG_DUMP_MEM((const uint8_t*)eeprom_data, EEPROM_SIZE);
 				break;
 
 			case '2':
