@@ -31,10 +31,6 @@ typedef struct {
     volatile uint32_t status;
 }sound_t;
 
-#ifdef ENABLE_SERIAL_FIFOS
-fifo_t serial_tx_fifo;
-fifo_t serial_rx_fifo;
-#endif
 
 // Private variables
 static SPI_HandleTypeDef hspi;
@@ -60,11 +56,13 @@ static void ppmOutInit(void);
 static void buzInit(void);
 
 #if defined(ENABLE_USART)
-int serial_available(void) { return UART_Available(&uartbus); }
-int serial_read(char *buf, int len) { return UART_Read(&uartbus, buf, len); }
-int serial_write(const char *buf, int len) { return UART_Write(&uartbus, buf, len); }
+static serialbus_t uartbus;
 
-stdinout_t serial_ops = {
+int serial_available(void) { return UART_Available(&uartbus); }
+int serial_read(char *buf, int len) { return UART_Read(&uartbus, (uint8_t*)buf, len); }
+int serial_write(const char *buf, int len) { return UART_Write(&uartbus, (const uint8_t*)buf, len); }
+
+stdinout_t pcom = {
     .available = serial_available,
     .read = serial_read,
     .write = serial_write
@@ -96,9 +94,10 @@ void laser4Init(void){
 #endif
     buzInit();
     crcInit();
-#ifdef ENABLE_SERIAL_FIFOS
-    fifo_init(&serial_rx_fifo);
-    fifo_init(&serial_tx_fifo);
+#ifdef ENABLE_USART
+    uartbus.bus = UART_BUS1;
+    uartbus.speed = 115200;
+    UART_Init(&uartbus);
 #endif
 
 #ifdef ENABLE_DISPLAY

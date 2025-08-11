@@ -11,6 +11,7 @@ extern "C" {
 #include "uart.h"
 #include "tone.h"
 #include "nvdata.h"
+#include "stdinout.h"
 
 #ifdef ENABLE_DISPLAY
 #include "ssd1306.h"
@@ -169,7 +170,7 @@ extern "C" {
 #define PPM_MIN_PERIOD          1600 // 800
 #define PPM_MED_PERIOD          (PPM_MAX_PERIOD - PPM_MIN_PERIOD)
 
-#define PPM_PULSE_WIDTH         600     // 300us
+#define PPM_PULSE_WIDTH         600     /* 300us */
 #endif
 
 #if defined(ENABLE_PWM)
@@ -277,7 +278,7 @@ uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void));
 void stopTimer(uint32_t tim);
 
 #ifdef ENABLE_USART
-void usart_init(void);
+extern stdinout_t pcom;
 #endif
 
 #ifdef ENABLE_DISPLAY

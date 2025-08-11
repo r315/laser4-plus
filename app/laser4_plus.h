@@ -108,7 +108,7 @@ void appSaveEEPROM(void);
 void appDefaultEEPROM(void);
 
 #ifdef __cplusplus
-#if defined(ENABLE_CLI) && defined(ENABLE_VCP)
+#if defined(ENABLE_CLI)
 extern ConsoleCommand *laser4_commands[];
 #endif /* ENABLE_CLI */
 }

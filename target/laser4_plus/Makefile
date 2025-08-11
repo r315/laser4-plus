@@ -120,6 +120,7 @@ $(LIBEMB_PATH)/lib/src/strfunc.c \
 $(LIBEMB_PATH)/lib/src/fifo.c \
 $(LIBEMB_PATH)/lib/src/nvdata.c \
 $(LIBEMB_PATH)/lib/src/debug.c \
+$(LIBEMB_PATH)/drv/uart/uart_stm32f10x.c \
 #$(LIB_SERIAL_PATH)/usart.c \
 $(LIBEMB_PATH)/misc/nvdata.c \
 #$(LIBEMB_PATH)/drv/tft/ssd1306.c \

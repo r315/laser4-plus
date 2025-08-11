@@ -17,7 +17,7 @@ static tone_t chime[] = {
     {0,0}
 };
 
-#if defined(ENABLE_CLI) && defined(ENABLE_VCP)
+#if defined(ENABLE_CLI)
 static Console con;
 #endif
 
@@ -433,7 +433,6 @@ void setup(void)
     #if defined(ENABLE_VCP)
     dbg_init(&vcp);
     #else
-    usart_init();
     dbg_init(&pcom);
     #endif
 #endif
@@ -448,8 +447,15 @@ void setup(void)
     CONTROLLER_Init();
 #endif
 
-#if defined(ENABLE_CLI) && defined(ENABLE_VCP)
-    con.init(&vcp, "laser4+ >");
+#if defined(ENABLE_CLI)
+    #if defined(ENABLE_VCP)
+    #define CONSOLE_STDINOUT &vcp
+    #elif defined(ENABLE_USART)
+    #define CONSOLE_STDINOUT &pcom
+    #else
+    #error "No stdinout defined for console"
+    #endif
+    con.init(CONSOLE_STDINOUT, "laser4+ >");
     con.registerCommandList(laser4_commands);
     con.cls();
 #endif
@@ -526,7 +532,7 @@ void loop(void)
             break;
     }
 
-#if defined(ENABLE_CLI) && defined(ENABLE_VCP)
+#if defined(ENABLE_CLI) && (defined(ENABLE_VCP) || defined(ENABLE_USART))
     con.process();
 #endif
 
