@@ -60,7 +60,7 @@ extern "C" {
 #define SET_LCD_UPDATE          APP_FLAGS = (APP_FLAGS | (1<<4))
 #define CLR_LCD_UPDATE          APP_FLAGS = APP_FLAGS & ~(1<<4)
 
-#define EEPROM_SIZE             30
+#define EEPROM_SIZE             31
 
 #if defined(ENABLE_DEBUG)
     #define DBG_PRINT dbg_printf
@@ -103,8 +103,9 @@ extern uint32_t app_flags;
 
 void appReqModeChange(uint8_t new_mode);
 uint8_t appGetCurrentMode(void);
-void appInitEEPROM(uint8_t *buf, const uint8_t *defaults, uint16_t size);
+void appLoadEEPROM(void);
 void appSaveEEPROM(void);
+void appDefaultEEPROM(void);
 
 #ifdef __cplusplus
 #if defined(ENABLE_CLI) && defined(ENABLE_VCP)

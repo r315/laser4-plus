@@ -330,7 +330,19 @@ void appCheckProtocolFlags(void){
 }
 
 #endif /* ENABLE_DISPLAY */
-void appDefaultEEPROM(uint8_t *buf, const uint8_t *defaults, uint16_t size)
+
+static uint32_t eepromLoad(uint8_t *buf, uint16_t size)
+{
+    return EEPROM_Read(0, buf, size);
+}
+
+/**
+ * @brief
+ * @param buf
+ * @param defaults
+ * @param size
+ */
+static void eepromDefault(uint8_t *buf, const uint8_t *defaults, uint16_t size)
 {
     memcpy(buf, defaults, size);
 }
@@ -339,30 +351,44 @@ void appDefaultEEPROM(uint8_t *buf, const uint8_t *defaults, uint16_t size)
  * @brief
  *
  * */
-void appInitEEPROM(uint8_t *buf, const uint8_t *defaults, uint16_t size)
+static void eepromInit(uint8_t *buf, const uint8_t *defaults, uint16_t size)
 {
     uint8_t bind_flag;
 
     if(!EEPROM_Init(buf, size)){
-        appDefaultEEPROM(buf, defaults, size);
-        DBG_PRINT("Defaults loaded\n");
-        return;
+        goto load_defaults;
     }
 
     if(EEPROM_Read(EEPROM_BIND_FLAG, &bind_flag, 1) != 1){
         DBG_PRINT("Error reading EEPROM\n");
-        return;
+        goto load_defaults;
     }
 
     if(bind_flag == BIND_FLAG_VALUE){
         if(EEPROM_Read(0, buf, size) != size){
             DBG_PRINT("Error reading EEPROM\n");
-            return;
+            goto load_defaults;
         }
         DBG_PRINT("Data loaded from EEPROM\n");
     }
+
+    return;
+
+load_defaults:
+    eepromDefault(buf, defaults, size);
+    DBG_PRINT("Defaults loaded\n");
 }
 
+/**
+ * @brief
+ * @param
+ */
+void appLoadEEPROM(void)
+{
+    if(!eepromLoad((uint8_t*)eeprom_data, EEPROM_SIZE)){
+        DBG_PRINT("Error reading EEPROM\n");
+    }
+}
 
 /**
  * @brief Save the ram eeprom content to flash memory
@@ -381,6 +407,16 @@ void appSaveEEPROM(void){
     }else{
         DBG_PRINT("EEPROM Saved\n");
     }
+}
+
+/**
+ * @brief
+ *
+ * @param
+ */
+void appDefaultEEPROM(void)
+{
+    eepromDefault((uint8_t*)eeprom_data, (const uint8_t*)eeprom_default_data, EEPROM_SIZE);
 }
 
 /**
@@ -418,7 +454,7 @@ void setup(void)
     con.cls();
 #endif
     // Load eeprom data
-    appInitEEPROM((uint8_t*)eeprom_data, (uint8_t*)eeprom_default_data, EEPROM_SIZE);
+    eepromInit((uint8_t*)eeprom_data, (uint8_t*)eeprom_default_data, EEPROM_SIZE);
     // Set volume from stored value
     buzSetLevel(*((uint8_t*)eeprom_data + IDX_BUZ_VOLUME));
     // Play som random tone
