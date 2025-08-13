@@ -48,7 +48,10 @@ extern "C" {
 #define GPO_CLR(_IO, _PIN)      _IO->BRR = (1 << _PIN)
 #define GPO_TOGGLE(_IO, _PIN)   _IO->ODR ^= (1<<_PIN)
 
-#if 0
+/**
+ * LED's
+ * */
+#ifdef BOARD_LASER4PLUS
 #define LED_PORT                GPIOB
 #define LED_PIN                 GPIO_PIN_3
 #define LED_INIT                GPIOB->CRL = (GPIOB->CRL & ~(15<<12)) | (2<<12) // assume swd is already enabled

@@ -43,6 +43,12 @@ extern "C" {
 #define BLINK_WAIT_BIND_TIME_HIGH	1000
 #define BLINK_BIND_TIME				100
 
+//********************
+//***  Board defs  ***
+//********************
+#if defined(BOARD_BLUEPILL) || defined(BOARD_LASER4PLUS)
+#define STM32_BOARD
+#endif
 
 /* *************System flags ******************* */
 //

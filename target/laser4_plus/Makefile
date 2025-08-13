@@ -14,7 +14,7 @@
 # target
 ######################################
 TARGET =laser4_plus
-
+BOARD  =BOARD_BLUEPILL
 ######################################
 # Features
 ######################################
@@ -193,7 +193,7 @@ AS_DEFS =
 C_DEFS = \
 USE_HAL_DRIVER \
 STM32F103xB \
-STM32_BOARD \
+$(BOARD) \
 $(FEATURES)
 
 ifeq ($(XTAL), 12MHZ)
