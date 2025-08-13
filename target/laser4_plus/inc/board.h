@@ -66,6 +66,8 @@ extern "C" {
 #define LED_TOGGLE              GPO_TOGGLE(LED_PORT, LED_PIN)
 #endif
 
+#define IS_LED_on               (LED_PORT->IDR & (1<<LED_PIN))
+
 #if 0
 #define DBG_PIN                 10
 #define DBG_PORT                GPIOB
@@ -75,7 +77,14 @@ extern "C" {
 #define DBG_PIN_TOGGLE          GPO_TOGGLE(DBG_PORT, DBG_PIN)
 #endif
 
-/* CC250 Chip select PB6 */
+/**
+ * SPI2
+ * PB12 -> CS
+ * PB13 -> SCK
+ * PB14 <- MISO
+ * PB15 -> MOSI
+ *
+ * */
 #define CC25_CS_PIN             12
 #define CC25_CS_PORT            GPIOB
 #define CC25_CS_INIT            GPO_INIT(CC25_CS_PORT, CC25_CS_PIN); CC25_CS_FALSE
@@ -84,29 +93,14 @@ extern "C" {
 #define RFX240_TXEN             CC2500_00_IOCFG2
 #define RFX240_RXEN             CC2500_02_IOCFG0
 #define HW_CC2500_MODULE_RESET
-
-
-/**
- * SPI2
- *
- * PB13 (SCK)
- * PB14 (MISO)
- * PB15 (MOSI)
- *
- * */
-
 //Output AF_PP, IN no pull
 #define SPI_PINS_INIT           GPIOB->CRH = (GPIOB->CRH & ~(0xFFF << 20)) | (0xB4B << 20);
 
-//Main Clock Output, requires prior MCO bit in RCC_CFG
-#define MCO_EN                  GPIOA->CRH = (GPIOA->CRH & ~(15<<0)) | (11 << 0); \
-                                RCC->APB2ENR |= (1 << 0)
-
 /**
  * Switches
- * AUX1 -> PC14
- * AUX2 -> PC15
- * AUX3 -> PB4
+ * AUX1 <- PC14
+ * AUX2 <- PC15
+ * AUX3 <- PB4 (encoder press)
  * */
 #define HW_SW_AUX1_PIN          14
 #define HW_SW_AUX2_PIN          15
@@ -133,31 +127,41 @@ extern "C" {
 #define HW_TX_35MHZ_ON          GPO_SET(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN)
 #define HW_TX_35MHZ_OFF         GPO_CLR(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN)
 
-/* PPM input pin PB5 */
+/**
+ * PPM
+ * PB5 <- input
+ * PB7 -> output
+ */
 #define HW_PPM_INPUT_PIN        5
 #define HW_PPM_INPUT_PORT       GPIOB
-#define millis                  getTick
-#define IS_LED_on               (LED_PORT->IDR & (1<<LED_PIN))
-#define LED_off                 LED_OFF
-#define LED_toggle              LED_TOGGLE
-#define EE_ADDR                 uint16_t
-
-#define BUZ_TIM                 TIM1
-#define BUZ_DEFAULT_VOLUME      9     // 10us pulse.
-#define FREQ_TO_US(_F)          (1000000/_F)
-
-#define ENC_TIM_IRQn            TIM2_IRQn
-#define ENC_TIM                 TIM2
-#define ENC_TIM_IRQHandler      TIM2_IRQHandler
-
+#define PPM_TIM                 TIM4
 #define TIMER_BASE              TIM3          //PB5 -> TIM3_CH2
 #define TIMER_BASE_IRQn         TIM3_IRQn
 #define TIMER_BASE_IRQHandler   TIM3_IRQHandler
 
-#define PPM_TIM                 TIM4
+#define MIN_PPM_CHANNELS        4
+#define MAX_PPM_CHANNELS        6
+#define PPM_MAX_PERIOD          4400 // 2200
+#define PPM_MIN_PERIOD          1600 // 800
+#define PPM_MED_PERIOD          (PPM_MAX_PERIOD - PPM_MIN_PERIOD)
+#define PPM_PULSE_WIDTH         600     /* 300us */
 
-#define cli                     __disable_irq
-#define sei                     __enable_irq
+/**
+ * Buzzer
+ * PA8 -> BUZ
+ */
+#define BUZ_TIM                 TIM1
+#define BUZ_DEFAULT_VOLUME      9     // 10us pulse.
+#define FREQ_TO_US(_F)          (1000000/_F)
+
+/**
+ * Rotary encoder
+ * PB3  <- A
+ * PA15 <- B
+ */
+#define ENC_TIM_IRQn            TIM2_IRQn
+#define ENC_TIM                 TIM2
+#define ENC_TIM_IRQHandler      TIM2_IRQHandler
 
 #ifdef TX35_MHZ_INSTALLED
 #define HW_PROTOCOL_SWITCH      (IS_HW_SW_AUX3_PRESSED)? 14 : 10      /* 1...14 */
@@ -165,16 +169,6 @@ extern "C" {
 #define HW_PROTOCOL_SWITCH      10      /* 1...14 */
 #endif
 #define HW_BANK_SWITCH          0       /* bank_switch(); */
-
-#if defined(ENABLE_PPM)
-#define MIN_PPM_CHANNELS        4
-#define MAX_PPM_CHANNELS        6
-#define PPM_MAX_PERIOD          4400 // 2200
-#define PPM_MIN_PERIOD          1600 // 800
-#define PPM_MED_PERIOD          (PPM_MAX_PERIOD - PPM_MIN_PERIOD)
-
-#define PPM_PULSE_WIDTH         600     /* 300us */
-#endif
 
 #if defined(ENABLE_PWM)
 /**
@@ -200,16 +194,27 @@ extern "C" {
 #define HW_VREFINT_CHANNEL      17
 #define VREFINT_VALUE           1200.0f
 
-/* fast code */
-#define RAM_CODE                __attribute__((section(".ram_code")))
-
 /* General symbols */
+#define RAM_CODE                __attribute__((section(".ram_code")))
+#define millis                  getTick
+#define cli                     __disable_irq
+#define sei                     __enable_irq
+
+/**
+ * Optional Main Clock Output on PA8
+ * Requires prior MCO bit in RCC_CFG
+ */
+#define MCO_EN                  GPIOA->CRH = (GPIOA->CRH & ~(15<<0)) | (11 << 0); \
+                                RCC->APB2ENR |= (1 << 0)
+
+
 #define ADC_RDY                 (1 << 0)
 #define ADC_DIV                 (1 << 1)
 #define ADC_CAL                 (1 << 2)
 #define ADC_RES                 (1 << 3)
 #define ADC_CR2_EXTSEL_SWSTART  (15 << 17)
 #define ADC_SEQ_LEN             2
+
 
 #define ISENSE_GAIN             40
 #define BATTERY_VOLTAGE_MIN     3100U

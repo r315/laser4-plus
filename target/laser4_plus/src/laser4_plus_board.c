@@ -158,7 +158,7 @@ void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin){
 
 
 void SPI_Write(uint8_t data){
-  HAL_SPI_Transmit(&hspi, &data, 1, 10);
+    HAL_SPI_Transmit(&hspi, &data, 1, 10);
 }
 
 uint8_t SPI_Read(void){
@@ -305,14 +305,14 @@ static void timInit(void){
     NVIC_EnableIRQ(SysTick_IRQn);
 #endif
     /* Configure 0.5us time base for multiprotocol */
-    TIMER_BASE->CR1 = 0;                               // Stop counter
-    TIMER_BASE->PSC = (SystemCoreClock/2000000) - 1;	// 36-1;for 72 MHZ /0.5sec/(35+1)
-    TIMER_BASE->ARR = 0xFFFF;							// Count until 0xFFFF
-    TIMER_BASE->CCMR1 = (1<<4);	                    // Main scheduler
-	TIMER_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;			// Clear Timer/Comp2 interrupt flag
-    TIMER_BASE->DIER = 0;               				// Disable Timer/Comp2 interrupts
-    TIMER_BASE->EGR |= TIM_EGR_UG;					    // Refresh the timer's count, prescale, and overflow
-    TIMER_BASE->CR1 |= TIM_CR1_CEN;                    // Enable counter
+    TIMER_BASE->CR1 = 0;                                // Stop counter
+    TIMER_BASE->PSC = (SystemCoreClock/2000000) - 1;    // 36-1;for 72 MHZ /0.5sec/(35+1)
+    TIMER_BASE->ARR = 0xFFFF;                           // Count until 0xFFFF
+    TIMER_BASE->CCMR1 = (1<<4);                         // Main scheduler
+    TIMER_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;            // Clear Timer/Comp2 interrupt flag
+    TIMER_BASE->DIER = 0;                               // Disable Timer/Comp2 interrupts
+    TIMER_BASE->EGR |= TIM_EGR_UG;                      // Refresh the timer's count, prescale, and overflow
+    TIMER_BASE->CR1 |= TIM_CR1_CEN;                     // Enable counter
 }
 
 void delayMs(uint32_t ms)
@@ -763,7 +763,7 @@ void ppmOutInit(void){
     NVIC_EnableIRQ(DMA1_Channel7_IRQn);
 
     PPM_TIM->CR1 =  TIM_CR1_DIR | TIM_CR1_ARPE;
-    PPM_TIM->PSC = (SystemCoreClock/2000000) - 1;	// 36-1;for 72 MHZ /0.5sec/(35+1)
+    PPM_TIM->PSC = (SystemCoreClock/2000000) - 1;   // 36-1;for 72 MHZ /0.5sec/(35+1)
     PPM_TIM->CCMR1 = (7 << 12);                     // PWM mode 2
     PPM_TIM->CCER = TIM_CCER_CC2E;                  // Enable channel
     // Force high state
@@ -806,7 +806,7 @@ void buzInit(void){
     BUZ_TIM->CR1 = TIM_CR1_DIR;
     BUZ_TIM->CCMR1 = (6 << 4);                      // PWM mode 1
 #endif
-    BUZ_TIM->PSC = (SystemCoreClock/1000000) - 1;	// 72-1;for 72 MHZ (1us clock)
+    BUZ_TIM->PSC = (SystemCoreClock/1000000) - 1;   // 72-1;for 72 MHZ (1us clock)
     BUZ_TIM->CCER = TIM_CCER_CC1E;                  // Enable channel
     BUZ_TIM->BDTR |= TIM_BDTR_MOE;                  // Necessary for TIM1
     // Force idle state

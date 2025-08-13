@@ -326,11 +326,11 @@ static void update_led_status(void)
                 else
                 {
                     if(IS_BIND_DONE)
-                        LED_off;							//bind completed force led on
+                        LED_OFF;							//bind completed force led on
                     radio.blink += BLINK_BIND_TIME;					//blink fastly during binding
                 }
             }
-        LED_toggle;
+        LED_TOGGLE;
     }
 }
 
@@ -341,7 +341,7 @@ static uint16_t next_callback;
     {
         radio.remote_callback = NULL;	// No protocol
         next_callback = 0;				// Default is immediate call back
-        LED_off;						// Led off during protocol init
+        LED_OFF;						// Led off during protocol init
         modules_reset();				// Reset all modules
 
         //Set global ID and rx_tx_addr

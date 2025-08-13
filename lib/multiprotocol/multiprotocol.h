@@ -151,13 +151,10 @@ extern "C" {
 #define	CH15	14
 #define	CH16	15
 
-//Channel order
-#ifdef AETR
-	#define	AILERON  0
-	#define	ELEVATOR 1
-	#define	THROTTLE 2
-	#define	RUDDER   3
-#endif
+#define	AILERON  0
+#define	ELEVATOR 1
+#define	THROTTLE 2
+#define	RUDDER   3
 
 //Channel MIN MAX values
 #define CHANNEL_MAX_100	    1844	//	100%
