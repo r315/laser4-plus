@@ -4,7 +4,7 @@
 #include "laser4_plus.h"
 #include "iface_cc2500.h"
 #include "multiprotocol.h"
-
+#include "debug.h"
 
 #ifdef ENABLE_CLI
 
@@ -325,7 +325,7 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 
 	void help(void) {
-		console->print("usage: eeprom [dump|save|erase]");
+		console->print("usage: eeprom [dump|load|save|erase|default]");
 	}
 
 	void id(void){
@@ -367,12 +367,12 @@ public:
 		}
 
 		if(xstrcmp(argv[1],"erase") == 0){
-			console->printf("Erasing NV Data: %s\n", EEPROM_Erase() == 0? "Fail": "ok");
+			console->printf("Erasing EEPROM: %s\n", EEPROM_Erase() == 0? "Fail": "ok");
 			return CMD_OK;
 		}
 
 		if(xstrcmp(argv[1],"dump") == 0){
-			DBG_DUMP_LINE((uint8_t*)eeprom_data, EEPROM_SIZE, 0);
+			DBG_DUMP_MEM_LINE((uint8_t*)eeprom_data, EEPROM_SIZE, 0);
 			return CMD_OK;
 		}
 
@@ -381,8 +381,13 @@ public:
 			return CMD_OK;
 		}
 
-        if(xstrcmp(argv[1],"defaults") == 0){
-			// TODO
+        if(xstrcmp(argv[1],"load") == 0){
+			appLoadEEPROM();
+			return CMD_OK;
+		}
+
+        if(xstrcmp(argv[1],"default") == 0){
+            appDefaultEEPROM();
 			return CMD_OK;
 		}
 
