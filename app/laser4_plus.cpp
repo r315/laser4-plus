@@ -5,6 +5,18 @@
 #include "usbd_cdc_if.h"
 #include "mpanel.h"
 #include "tone.h"
+#include "debug.h"
+
+#ifdef ENABLE_DEBUG_APP
+#define DBG_TAG     "APP : "
+#define DBG_APP_INF(...) DBG_INF(DBG_TAG __VA_ARGS__)
+#define DBG_APP_WRN(...) DBG_WRN(DBG_TAG __VA_ARGS__)
+#define DBG_APP_ERR(...) DBG_ERR(DBG_TAG __VA_ARGS__)
+#else
+#define DBG_APP_INF(...)
+#define DBG_APP_WRN(...)
+#define DBG_APP_ERR(...)
+#endif
 
 volatile uint8_t state;
 uint32_t app_flags = 0;
@@ -232,7 +244,7 @@ static void changeMode(uint8_t new_mode){
             break;
         case MODE_HID:
 #ifdef ENABLE_GAME_CONTROLLER
-            DBG_PRINT("\n ***** Starting game controller ***** \n");
+            DBG_APP_INF("\n ***** Starting game controller *****");
             CONTROLLER_Init();
             buzPlayTone(2000,150);
 #ifdef ENABLE_DISPLAY
@@ -255,7 +267,7 @@ vires_t res;
     if(batteryReadVI(&res)){
         if(res.vbat < BATTERY_VOLTAGE_MIN && !(IS_BAT_LOW)){
             SET_BAT_LOW;
-            DBG_PRINT("!!Low battery !! (%dmV)\n", res.vbat);
+            DBG_APP_WRN(DBG_TAG"!!Low battery !! (%dmV)", res.vbat);
 #ifdef ENABLE_DISPLAY
             bat_low_tim = startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
         }else{
@@ -359,20 +371,22 @@ static uint8_t* eepromInit(const uint8_t *defaults, uint16_t size)
     buf = EEPROM_Init(size);
 
     if(EEPROM_Read(EEPROM_BIND_FLAG, &bind_flag, 1) != 1){
-        DBG_PRINT("Error reading EEPROM\n");
+        DBG_APP_ERR("Error reading EEPROM");
         goto load_defaults;
     }
 
     if(bind_flag == BIND_FLAG_VALUE){
         if(EEPROM_Read(0, buf, size) != size){
-            DBG_PRINT("Error reading EEPROM\n");
+            DBG_APP_ERR("Error reading EEPROM");
             goto load_defaults;
         }
+        DBG_APP_INF("Data loaded from EEPROM");
         return buf;
     }
 
 load_defaults:
     eepromDefault(buf, defaults, size);
+    DBG_APP_INF("EEPROM defaults loaded");
 
     return buf;
 }
@@ -384,7 +398,7 @@ load_defaults:
 void appLoadEEPROM(void)
 {
     if(!eepromLoad((uint8_t*)eeprom_data, EEPROM_SIZE)){
-        DBG_PRINT("Error reading EEPROM\n");
+        DBG_APP_ERR("Error reading EEPROM");
     }
 }
 
@@ -401,9 +415,9 @@ void appSaveEEPROM(void){
     EEPROM_Write(EEPROM_ID_OFFSET, (uint8_t*)eeprom_data, EEPROM_SIZE);
 
     if(!EEPROM_Sync()){
-        DBG_PRINT("!! Fail to sync EEPROM !!\n");
+        DBG_APP_ERR("!! Fail to sync EEPROM !!");
     }else{
-        DBG_PRINT("EEPROM Saved\n");
+        DBG_APP_INF("EEPROM Saved");
     }
 }
 
@@ -471,7 +485,7 @@ void setup(void)
     adcSetSenseResistor(tmp.f);
 
     /* Get battery voltage */
-    DBG_PRINT("Battery voltage: %dmV\n", batteryGetVoltage());
+    DBG_APP_INF("Battery voltage: %dmV", batteryGetVoltage());
 
 #ifdef ENABLE_DISPLAY
 

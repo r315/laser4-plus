@@ -25,6 +25,7 @@
 #include "multiprotocol.h"
 #include "FrSkyDVX_Common.h"
 #include "board.h"
+#include "debug.h"
 
 //TOOD: Fix this dependency
 #include "laser4_plus.h"
@@ -32,6 +33,17 @@
 //Personal config file
 #if defined(USE_MY_CONFIG)
 #include "_MyConfig.h"
+#endif
+
+#ifdef ENABLE_DEBUG_MULTI
+#define DBG_TAG             "MULTI : "
+#define DBG_MULTI_INF(...)  DBG_INF(DBG_TAG __VA_ARGS__)
+#define DBG_MULTI_WRN(...)  DBG_WRN(DBG_TAG __VA_ARGS__)
+#define DBG_MULTI_ERR(...)  DBG_ERR(DBG_TAG __VA_ARGS__)
+#else
+#define DBG_MULTI_INF(...)
+#define DBG_MULTI_WRN(...)
+#define DBG_MULTI_ERR(...)
 #endif
 
 radio_t radio;
@@ -56,7 +68,7 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
  * @brief
  * */
 void multiprotocol_setup(void){
-    MULTIPROTO_DBG_INF("Laser4+ version: %d.%d.%d\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+    DBG_MULTI_INF("Laser4+ version: %d.%d.%d", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
     /* Configure PPM input pin PB5*/
     gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);
 
@@ -65,14 +77,14 @@ void multiprotocol_setup(void){
     {
         BIND_BUTTON_FLAG_on;	// If bind button pressed save the status
         BIND_IN_PROGRESS;		// Request bind
-        MULTIPROTO_DBG_INF("Bind button pressed\n");
+        DBG_MULTI_INF("Bind button pressed");
     }
     else
         BIND_DONE;
 
     radio.mode_select = HW_PROTOCOL_SWITCH;
 
-    MULTIPROTO_DBG_INF("Protocol selection switch reads as %d\n", radio.mode_select);
+    DBG_MULTI_INF("Protocol selection switch reads as %d", radio.mode_select);
 
     uint16_t channel_default = (eeprom_data[IDX_CHANNEL_MAX_100] - eeprom_data[IDX_CHANNEL_MIN_100]) >> 1;
 
@@ -87,7 +99,7 @@ void multiprotocol_setup(void){
     modules_reset();
 
     radio.protocol_id_master = random_id(0);
-    MULTIPROTO_DBG_INF("Module Id: %lx\n", radio.protocol_id_master);
+    DBG_MULTI_INF("Module Id: %lx", radio.protocol_id_master);
 
 #ifdef ENABLE_PPM
     // Setup callback for ppm frame ready
@@ -162,7 +174,7 @@ uint8_t count=0;
     sei();										    // Enable global int
     if((diff&0x8000) && !(next_callback&0x8000))
     { // Negative result=callback should already have been called...
-        MULTIPROTO_DBG_WRN("Short CB:%d\n", next_callback);
+        DBG_MULTI_WRN("Short CB:%d", next_callback);
     }
     else
     {
@@ -171,7 +183,7 @@ uint8_t count=0;
             if(++count>10)
             { //The protocol does not leave enough time for an update so forcing it
                 count=0;
-                MULTIPROTO_DBG_WRN("Force update\n");
+                DBG_MULTI_WRN("Force update");
                 Update_All();
             }
         }
@@ -185,14 +197,14 @@ uint8_t count=0;
             {	//If at least 1ms is available update values
                 if((diff&0x8000) && !(next_callback&0x8000))
                 {//Should never get here...
-                    MULTIPROTO_DBG_WRN("!!!BUG!!!\n");
+                    DBG_MULTI_WRN("!!!BUG!!!");
                     break;
                 }
                 count=0;
                 Update_All();
                 #ifdef ENABLE_DEBUG
                 if(TIMER_BASE->SR & TIM_SR_CC1IF )
-                    MULTIPROTO_DBG_WRN("Long update\n");
+                    DBG_MULTI_WRN("Long update");
                 #endif
                 if(radio.remote_callback == NULL)
                     break;
@@ -283,7 +295,7 @@ static void update_led_status(void)
         if(millis() - radio.last_signal > 70)
         {
             INPUT_SIGNAL_off;							//no valid signal (PPM or Serial) received for 70ms
-            MULTIPROTO_DBG_WRN("Lost input signal\n");
+            DBG_MULTI_WRN("Lost input signal");
         }
     if(radio.blink < millis())
     {
@@ -359,13 +371,13 @@ static uint16_t next_callback;
                         next_callback = 10000;
                         radio.remote_callback = ppm_tx;
                         HW_TX_35MHZ_ON;
-                        MULTIPROTO_DBG_INF("TX 35MHz enabled\n");
+                        DBG_MULTI_INF("TX 35MHz enabled");
                         break;
             #endif
         }
-        MULTIPROTO_DBG_INF("Protocol selected: %d, sub proto %d, rxnum %d, option %d\n", radio.protocol, radio.sub_protocol, radio.rx_num, radio.option);
+        DBG_MULTI_INF("Protocol selected: %d, sub proto %d, rxnum %d, option %d", radio.protocol, radio.sub_protocol, radio.rx_num, radio.option);
         if(IS_BIND_IN_PROGRESS){
-            MULTIPROTO_DBG_INF("Bind started\n");
+            DBG_MULTI_INF("Bind started");
         }
     }
 
@@ -485,7 +497,7 @@ static uint32_t random_id(uint8_t create_new)
     if(!create_new){
         if(id != DEFAULT_ID)	//ID with seed=0
         {
-            DBG_PRINT("Using ID from EEPROM\n");
+            DBG_MULTI_INF("Using ID 0x%x from EEPROM", id);
             return id;
         }
 
@@ -493,7 +505,7 @@ static uint32_t random_id(uint8_t create_new)
 #if defined STM32_BOARD
         #define STM32_UUID ((uint32_t *)0x1FFFF7E8)
         id = STM32_UUID[0] ^ STM32_UUID[1] ^ STM32_UUID[2];
-        DBG_PRINT("Generated ID from STM32 UUID\n");
+        DBG_MULTI_INF("Using Chip UUID 0x%x", id);
 #endif
     }else{
         id = xrand();

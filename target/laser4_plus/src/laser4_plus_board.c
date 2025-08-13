@@ -3,6 +3,19 @@
 #include "nvdata.h"
 #include "stm32f1xx_hal.h"
 #include "usbd_conf.h"
+#include "debug.h"
+
+#ifdef ENABLE_DEBUG_BOARD
+#define DBG_TAG     "[BOARD]: "
+#define DBG_BOARD_INF DBG_INF
+#define DBG_BOARD_WRN DBG_WRN
+#define DBG_BOARD_ERR DBG_ERR
+#else
+#define DBG_TAG     ""
+#define DBG_BOARD_INF(...)
+#define DBG_BOARD_WRN(...)
+#define DBG_BOARD_ERR(...)
+#endif
 
 typedef struct {
     volatile uint16_t status;
@@ -302,10 +315,10 @@ static void timInit(void){
     TIMER_BASE->CR1 |= TIM_CR1_CEN;                    // Enable counter
 }
 
-void delayMs(uint32_t ms){
-uint32_t timeout = ticks + ms;
-    while(ticks < timeout){
-    }
+void delayMs(uint32_t ms)
+{
+    uint32_t timeout = ticks + ms;
+    while(ticks < timeout){ }
 }
 
 uint32_t getTick(void){ return ticks; }
@@ -382,6 +395,7 @@ uint8_t* EEPROM_Init(uint16_t size)
 
         if (size > 32){
             size = 32;
+            DBG_BOARD_WRN("eep_buf should be bigger");
         }
 
         laser4_plus_nvdata.nvb.data = eep_buf;

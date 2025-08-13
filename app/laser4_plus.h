@@ -7,7 +7,6 @@ extern "C" {
 
 #include <stdint.h>
 #include "console.h"
-#include "debug.h"
 
 #ifdef ENABLE_VCP
 #include "usbd_cdc_if.h"
@@ -61,17 +60,6 @@ extern "C" {
 #define CLR_LCD_UPDATE          APP_FLAGS = APP_FLAGS & ~(1<<4)
 
 #define EEPROM_SIZE             31
-
-#if defined(ENABLE_DEBUG)
-    #define DBG_PRINT dbg_printf
-    #define DBG_DUMP_LINE dbg_HexDumpLine
-    #define DBG_DUMP_MEM dbg_HexDump
-#else
-    #define DBG_PRINT(...)
-    #define DBG_DUMP_LINE(...)
-    #define DBG_DUMP_MEM(...)
-#endif
-
 
 #define STATE_BITS          4
 #define STATE_MASK          ((1<<STATE_BITS) - 1)

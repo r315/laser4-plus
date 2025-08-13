@@ -23,11 +23,14 @@ FEATURES = CC2500_INSTALLED
 FEATURES += FRSKYD_CC2500_INO
 FEATURES += AETR
 #FEATURES += ENABLE_PPM
-#FEATURES += ENABLE_USART
+FEATURES += ENABLE_USART
 #FEATURES += ENABLE_SERIAL_FIFOS
 #FEATURES += FIFO_SIZE=1024
-FEATURES += ENABLE_VCP
+#FEATURES += ENABLE_VCP
 FEATURES += ENABLE_DEBUG
+FEATURES += ENABLE_DEBUG_APP
+FEATURES += ENABLE_DEBUG_NVDATA
+FEATURES += ENABLE_DEBUG_MULTI
 FEATURES += ENABLE_CLI
 FEATURES += CONSOLE_WIDTH=256
 #FEATURES += ENABLE_GAME_CONTROLLER
@@ -150,6 +153,7 @@ CPP = $(BINPATH)$(PREFIX)g++
 AS = $(BINPATH)$(PREFIX)gcc -x assembler-with-cpp
 CP = $(BINPATH)$(PREFIX)objcopy
 AR = $(BINPATH)$(PREFIX)ar
+LD = $(BINPATH)$(PREFIX)gcc
 SZ = $(BINPATH)$(PREFIX)size
 HEX = $(CP) -O ihex
 BIN = $(CP) -O binary -S
@@ -161,17 +165,17 @@ endif
 #######################################
 # CFLAGS
 #######################################
-# cpu
-CPU = -mcpu=cortex-m3
+# Core
+CORE =cortex-m3
 
 # fpu
 # NONE for Cortex-M0/M0+/M3
 
 # float-abi
-FLOAT-ABI = #-u_printf_float
+#FLOAT-ABI = #-u_printf_float
 
 # mcu
-MCU = $(CPU) -mthumb $(FPU) $(FLOAT-ABI)
+MCU = -mcpu=$(CORE) -mthumb
 
 ifeq ($(RELEASE), 1)
 DEBUG = 0
@@ -214,19 +218,19 @@ CPPFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OP
 #CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst))
 
 #######################################
-# LDFLAGS
+# Linker flags and libraries
 #######################################
 # link script
-LDSCRIPT := startup/STM32F103C8Tx_FLASH.ld
-#LDSCRIPT =startup/f103c8tx_dfu.ld
+LDSCRIPT :=startup/STM32F103C8Tx_FLASH.ld
 
-SPECS =-specs=nano.specs
+SPECS =--specs=nano.specs #--specs=nosys.specs
+
 # libraries
-#LIBS =-nostartfiles -nostdlib
-LIBS =-lstdc++#-lnosys -lm
+#-nostartfiles -nostdlib -lnosys -lm
+  #-lrdimon
+LIBS =-lstdc++
 LIBDIR =
-LDFLAGS = $(MCU) $(SPECS) -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
-
+LDFLAGS = $(MCU) $(SPECS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref,--gc-sections
 
 #######################################
 # Rules
@@ -306,8 +310,7 @@ $(BUILD_DIR)/%.o: %.s Makefile | $(BUILD_DIR)
 
 $(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) #Makefile
 	@echo "--- Linking ---"
-	@$(CC) $(OBJECTS) $(LDFLAGS) -o $@
-
+	@$(LD) $(LIBDIR) -T$(LDSCRIPT) $(LDFLAGS) $(OBJECTS) $(LIBS) -o $@
 
 $(BUILD_DIR)/%.hex: $(BUILD_DIR)/%.elf | $(BUILD_DIR)
 	$(HEX) $< $@
