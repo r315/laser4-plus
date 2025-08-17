@@ -48,7 +48,6 @@ typedef struct {
 // Private variables
 static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
-static sound_t hbuz;
 static adc_t hadc;
 static void (*pinIntCB)(void);
 
@@ -66,9 +65,13 @@ static void crcInit(void);
 #ifdef ENABLE_PPM
 static void ppmOutInit(void);
 #endif
-static void buzInit(void);
 
-#if defined(ENABLE_USART)
+#ifdef ENABLE_BUZZER
+static sound_t hbuz;
+static void buzInit(void);
+#endif
+
+#ifdef ENABLE_USART
 static serialbus_t uartbus;
 
 int serial_available(void) { return UART_Available(&uartbus); }
@@ -105,10 +108,13 @@ void laser4Init(void){
 #ifdef ENABLE_PPM
     ppmOutInit();
 #endif
+
+#ifdef ENABLE_BUZZER
     buzInit();
+#endif
     crcInit();
 #ifdef ENABLE_USART
-    uartbus.bus = UART_BUS1;
+    uartbus.bus = UART_BUS0;
     uartbus.speed = 115200;
     UART_Init(&uartbus);
 #endif
@@ -774,6 +780,8 @@ void ppmOutInit(void){
     PPM_TIM->DIER |= TIM_DIER_UDE;
 }
 #endif
+
+#ifdef ENABLE_BUZZER
 /**
  * @brief Basic tone generation on pin PA8 using TIM1_CH1
  * and DMA
@@ -891,10 +899,14 @@ uint16_t buzSetLevel(uint16_t level){
  * @brief Waits for the end of tone(s)
  * Blocking call duh..
  * */
-void buzWaitEnd(void){
-    while(hbuz.status & BUZ_PLAYING);
+void buzWaitEnd(void)
+{
+    uint32_t timeout = 0x8000;
+    do{
+        timeout--;
+    }while(hbuz.status & BUZ_PLAYING && timeout);
 }
-
+#endif
 
 /**
  * @brief Enable CRC unit

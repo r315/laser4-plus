@@ -475,7 +475,7 @@ public:
 	}
 }cmdadc;
 
-
+#ifdef ENABLE_BUZZER
 class CmdBuz : public ConsoleCommand {
 	Console *console;
 public:
@@ -521,7 +521,7 @@ public:
 		return CMD_BAD_PARAM;
 	}
 }cmdbuz;
-
+#endif
 
 #ifdef ENABLE_DFU
 #include "dfu_boot.h"
@@ -557,7 +557,9 @@ ConsoleCommand *laser4_commands[]{
 	&cmdmode,
 	&cmdeeprom,
 	&cmdadc,
+#ifdef ENABLE_BUZZER
 	&cmdbuz,
+#endif
 #ifdef ENABLE_DFU
 	&cmddfu,
 #endif

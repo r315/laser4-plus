@@ -21,6 +21,7 @@
 volatile uint8_t state;
 uint32_t app_flags = 0;
 
+#ifdef ENABLE_BUZZER
 static tone_t chime[] = {
     {493,200},
     {932,200},
@@ -28,6 +29,7 @@ static tone_t chime[] = {
     {1864,200},
     {0,0}
 };
+#endif
 
 #if defined(ENABLE_CLI)
 static Console con;
@@ -233,7 +235,9 @@ static void changeMode(uint8_t new_mode){
         case MODE_MULTIPROTOCOL:
             DBG_PRINT("\n ***** Starting Multiprotocol *****\n");
             multiprotocol_setup();
+#ifdef ENABLE_BUZZER
             buzPlayTone(400,150);
+#endif
 #ifdef ENABLE_DISPLAY
             if(radio.mode_select == 14){
                 APP_DRAW_ICON(ico_35mhz);
@@ -473,10 +477,12 @@ void setup(void)
 #endif
     // Load eeprom data
     eeprom_data = (uint16_t*)eepromInit((const uint8_t*)eeprom_default_data, EEPROM_SIZE);
+#ifdef ENABLE_BUZZER
     // Set volume from stored value
     buzSetLevel(*((uint8_t*)eeprom_data + IDX_BUZ_VOLUME));
     // Play som random tone
     buzPlay(chime);
+#endif
     // Configure adc calibration values
     f2u_u tmp;
     tmp.u = (uint32_t)(eeprom_data[IDX_BAT_VOLTAGE_DIV] | (eeprom_data[IDX_BAT_VOLTAGE_DIV + 1] << 16));
@@ -506,8 +512,11 @@ void setup(void)
     startTimer(TIMER_PPM_TIME, SWTIM_AUTO_RELOAD, appCheckProtocolFlags);
     SET_LCD_UPDATE;
 #endif
+
+#ifdef ENABLE_BUZZER
     // wait for melody to finish
     buzWaitEnd();
+#endif
     // Configure watchdog
     enableWatchDog(WATCHDOG_TIME);
 }
