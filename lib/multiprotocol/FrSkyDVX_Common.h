@@ -33,14 +33,14 @@ enum {
 
 extern const PROGMEM uint8_t FRSKYD_cc2500_conf[];
 
-void Frsky_init_hop(void);
-void FRSKY_init_cc2500(const uint8_t *ptr);
-void Frsky_SetPower(void);
-uint16_t convert_channel_frsky(uint8_t num);
+void Frsky_init_hop(radio_t *radio);
+void FRSKY_init_cc2500(radio_t *radio, const uint8_t *ptr);
+void Frsky_SetPower(radio_t *radio);
+uint16_t convert_channel_frsky(radio_t *radio, uint8_t num);
 
 //FrSkyD
-uint16_t initFrSky_2way(void);
-uint16_t ReadFrSky_2way(void);
+uint16_t initFrSky_2way(radio_t *radio);
+uint16_t ReadFrSky_2way(radio_t *radio);
 
 
 #ifdef __cplusplus

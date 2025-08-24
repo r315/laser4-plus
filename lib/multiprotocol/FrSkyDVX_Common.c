@@ -44,7 +44,7 @@ uint16_t FrSkyX_crc(uint8_t *data, uint8_t len)
 }
 #endif
 
-void Frsky_SetPower(void){
+void Frsky_SetPower(radio_t *radio){
 	uint8_t power = CC2500_BIND_POWER;
 
 	if(IS_BIND_DONE){
@@ -59,26 +59,26 @@ void Frsky_SetPower(void){
 		power = CC2500_RANGE_POWER;
 	}
 
-	if(radio.prev_power != power){
+	if(radio->prev_power != power){
 		CC2500_SetPower(power);
-		radio.prev_power = power;
+		radio->prev_power = power;
 	}
 }
 
 // Channel value for FrSky (PPM is multiplied by 1.5)
-uint16_t convert_channel_frsky(uint8_t num)
+uint16_t convert_channel_frsky(radio_t *radio, uint8_t num)
 {
-	uint16_t val = radio.channel_data[num];
+	uint16_t val = radio->channel_data[num];
 	return ((val*15) >> 4) + 1290;
 }
 
 #if defined(FRSKYD_CC2500_INO) || defined(FRSKYX_CC2500_INO)
 
-void Frsky_init_hop(void)
+void Frsky_init_hop(radio_t *radio)
 {
 	uint8_t val;
-	uint8_t channel = radio.rx_tx_addr[0] & 0x07;
-	uint8_t channel_spacing = radio.rx_tx_addr[1];
+	uint8_t channel = radio->rx_tx_addr[0] & 0x07;
+	uint8_t channel_spacing = radio->rx_tx_addr[1];
 
 	FRSKYDVX_DBG_INF("Channel: %x\n", channel);
 	FRSKYDVX_DBG_INF("Channel spacing: %x\n", channel_spacing);
@@ -88,7 +88,7 @@ void Frsky_init_hop(void)
 	if(channel_spacing > 0xE9) channel_spacing -= 0xE7;
 	if((channel_spacing % 0x2F) == 0) channel_spacing++;
 
-	radio.hopping_frequency[0] = channel;
+	radio->hopping_frequency[0] = channel;
 
 	for(uint8_t i = 1; i < 50; i++){
 		channel = (channel+channel_spacing) % 0xEB;
@@ -96,11 +96,11 @@ void Frsky_init_hop(void)
 		if((val==0x00) || (val==0x5A) || (val==0xDC)){
 			val++;
 		}
-		radio.hopping_frequency[i] = (i > 46) ? 0 : val;
+		radio->hopping_frequency[i] = (i > 46) ? 0 : val;
 	}
 
 	FRSKYDVX_DBG_INF("Hopping frequency: \r\n[");
-	FRSKYDVX_DBG(radio.hopping_frequency, 50, 0);
+	FRSKYDVX_DBG(radio->hopping_frequency, 50, 0);
 	FRSKYDVX_DBG_INF("]\r\n");
 
 }
@@ -239,17 +239,17 @@ void Frsky_init_hop(void)
 		{ CC2500_03_FIFOTHR,  0x07 },
 		{ CC2500_09_ADDR,     0x00 } };
 
-	void FRSKY_init_cc2500(const uint8_t *ptr)
+	void FRSKY_init_cc2500(radio_t *radio, const uint8_t *ptr)
 	{
 		for(uint8_t i=0;i<19;i++)
 		{
 			uint8_t reg=pgm_read_byte_near(&FRSKY_common_startreg_cc2500_conf[i]);
 			uint8_t val=pgm_read_byte_near(&ptr[i]);
 			if(reg==CC2500_0C_FSCTRL0)
-				val = radio.option;
+				val = radio->option;
 			CC2500_WriteReg(reg,val);
 		}
-		radio.prev_option = radio.option ;		// Save option to monitor FSCTRL0 change
+		radio->prev_option = radio->option ;		// Save option to monitor FSCTRL0 change
 		for(uint8_t i=0;i<17;i++)
 		{
 			uint8_t reg=pgm_read_byte_near(&FRSKY_common_end_cc2500_conf[i][0]);
@@ -257,7 +257,7 @@ void Frsky_init_hop(void)
 			CC2500_WriteReg(reg,val);
 		}
 		CC2500_SetTxRxMode(TX_EN);
-		Frsky_SetPower();
+		Frsky_SetPower(radio);
 		CC2500_Strobe(CC2500_SIDLE);    // Go to idle...
 	}
 #endif /* FRSKYX_CC2500_INO */
