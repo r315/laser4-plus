@@ -2,10 +2,14 @@
 #include "board.h"
 #include "nvdata.h"
 #include "stm32f1xx_hal.h"
+#include "dma_stm32f1xx.h"
+#include "tone_stm32f1xx.h"
+#include "gpio_stm32f1xx.h"
 #include "usbd_conf.h"
 #include "debug.h"
 #include "dma.h"
-#include "dma_stm32f1xx.h"
+#include "tone.h"
+#include "serial.h"
 
 #ifdef ENABLE_DEBUG_BOARD
 #define DBG_TAG     "[BOARD]: "
@@ -39,13 +43,6 @@ typedef struct {
 
 swtimer_t timers[SWTIM_NUM];
 
-typedef struct {
-    tone_t *ptone;
-    tone_t tone;
-    volatile uint32_t status;
-}sound_t;
-
-
 // Private variables
 static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
@@ -71,10 +68,6 @@ static void crcInit(void);
 static void ppmOutInit(void);
 #endif
 
-#ifdef ENABLE_BUZZER
-static sound_t hbuz;
-static void buzInit(void);
-#endif
 
 #ifdef ENABLE_USART
 static serialbus_t uartbus;
@@ -123,7 +116,14 @@ static void laser4Init(void)
 #endif
 
 #ifdef ENABLE_BUZZER
-    buzInit();
+    tone_pwm_init_t tone_init;
+    tone_init.ch = BUZ_TIM_CH;
+    tone_init.pin = BUZ_PIN;
+    tone_init.pin_idle = BUZ_PIN_IDLE;
+    tone_init.tim = BUZ_TIM;
+    tone_init.volume = BUZ_DEFAULT_VOLUME;
+
+    TONE_PwmInit(&tone_init);
 #endif
     crcInit();
 #ifdef ENABLE_USART
@@ -199,7 +199,8 @@ void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin)
 }
 
 
-void SPI_Write(uint8_t data){
+void SPI_Write(uint8_t data)
+{
     HAL_SPI_Transmit(&hspi, &data, 1, 10);
 }
 
@@ -830,129 +831,24 @@ void ppmOutInit(void){
 #endif
 
 #ifdef ENABLE_BUZZER
-/**
- * @brief Basic tone generation on pin PA8 using TIM1_CH1
- * and DMA
- *
- * Buzzer timer is configured as PWM mode1 in downcount mode.
- * The counter starts from ARR register (top) that defines the frequency perioud in us,
- * and counts down, when matches CCR1 the output is set to high.
- * When the counter reaches zero, set the output to low and request a DMA transfer to ARR register.
- * On the last DMA transfer an interrupt is issued, that will configure the next tone periout to be
- * loaded to ARR or stop the melody.
- *
- * */
-void buzInit(void){
-    gpioInit(GPIOA, 8, GPO_AF | GPO_2MHZ);
-    // Configure DMA
-    RCC->AHBENR |= RCC_AHBENR_DMA1EN;               // Enable DMA1
-    DMA1_Channel5->CPAR = (uint32_t)&BUZ_TIM->ARR;  // Destination peripheral
-    DMA1_Channel5->CCR =
-            DMA_CCR_MSIZE_0 |                       // 16bit Dst size
-            DMA_CCR_PSIZE_0 |                       // 16bit src size
-            DMA_CCR_DIR |                           // Read from memory
-            DMA_CCR_TCIE;                           // Enable end of transfer interrupt
-    NVIC_EnableIRQ(DMA1_Channel5_IRQn);
-
-    // Configure timer
-#ifdef BUZ_IDLE_HIGH
-    BUZ_TIM->CR1 = 0;
-    BUZ_TIM->CCMR1 = (7 << 4);                      // PWM mode 2
-#else
-    BUZ_TIM->CR1 = TIM_CR1_DIR;
-    BUZ_TIM->CCMR1 = (6 << 4);                      // PWM mode 1
-#endif
-    BUZ_TIM->PSC = (SystemCoreClock/1000000) - 1;   // 72-1;for 72 MHZ (1us clock)
-    BUZ_TIM->CCER = TIM_CCER_CC1E;                  // Enable channel
-    BUZ_TIM->BDTR |= TIM_BDTR_MOE;                  // Necessary for TIM1
-    // Force idle state
-    BUZ_TIM->CCR1 = BUZ_DEFAULT_VOLUME;             // Low volume level
-    BUZ_TIM->ARR = 0xFFF;
-    BUZ_TIM->EGR |= TIM_EGR_UG;
-    // Enable DMA Request
-    BUZ_TIM->DIER |= TIM_DIER_UDE;
+void buzPlayTone(uint16_t freq, uint16_t duration)
+{
+    TONE_Start(freq, duration);
 }
 
-/**
- * @brief Private helper to initiate tone generation
- *
- * @param tone : pointer to first tone to be played
- * */
-static void buzStartTone(tone_t *tone){
-    DMA1_Channel5->CMAR = (uint32_t)(&tone->f);
-    DMA1_Channel5->CNDTR = tone->d;
-    DMA1_Channel5->CCR |= DMA_CCR_EN;
-    BUZ_TIM->EGR = TIM_EGR_UG;
-    BUZ_TIM->CR1 |=  TIM_CR1_CEN;
-    hbuz.status |= BUZ_PLAYING;
+void buzPlay(tone_t *tones)
+{
+    TONE_Play(tones);
 }
 
-/**
- * @brief Plays a single tone for a given time
- *
- * @param freq     : Tone fundamental frequency
- * @param duration : duration of tone in ms
- * */
-void buzPlayTone(uint16_t freq, uint16_t duration){
-uint32_t d = duration * 1000UL;    // Convert to us
-    hbuz.tone.f = FREQ_TO_US(freq) - BUZ_TIM->CCR1; // Subtract volume pulse
-    hbuz.tone.d = d / hbuz.tone.f;
-    hbuz.ptone = &hbuz.tone;
-    buzStartTone(hbuz.ptone);
-    hbuz.ptone->d = 0;       //force tone ending
+uint16_t buzSetLevel(uint16_t level)
+{
+    return TONE_Volume(level);
 }
 
-/**
- * @brief Plays a melody composed of multiple tones.
- * The last tone on melody must have duration of zero
- *
- * @param tones : pointer to tones array.
- * */
-void buzPlay(tone_t *tones){
-tone_t *pt = tones;
-
-    // Convert each tone frequency to time in us
-    while(pt->d > 0){
-        uint32_t d = pt->d * 1000UL;
-        pt->f = FREQ_TO_US(pt->f) - BUZ_TIM->CCR1;
-        pt->d = d / pt->f;
-        pt++;
-    }
-
-    // Set next tone
-    hbuz.ptone = tones + 1;
-    // Play first tone
-    buzStartTone(tones);
-}
-
-/**
- * @brief Change tone volume by changing
- * duty cycle
- *
- * @param level : Tone volume 0 to tone frequency period
- *
- * @return : Current tone volume
- *
- * */
-uint16_t buzSetLevel(uint16_t level){
-    level -= 1;
-    if(level < BUZ_TIM->ARR){
-        BUZ_TIM->CCR1 = level;
-    }
-
-    return BUZ_TIM->CCR1 + 1;
-}
-
-/**
- * @brief Waits for the end of tone(s)
- * Blocking call duh..
- * */
 void buzWaitEnd(void)
 {
-    uint32_t timeout = 0x8000;
-    do{
-        timeout--;
-    }while(hbuz.status & BUZ_PLAYING && timeout);
+    while(TONE_Status() == TONE_PLAYNG){}
 }
 #endif
 
@@ -1062,26 +958,6 @@ void SysTick_Handler(void){
 }
 #endif
 
-// TIM1 DMA request
-void DMA1_Channel5_IRQHandler(void){
-    if(DMA1->ISR & DMA_ISR_TCIF5){
-        DMA1_Channel5->CCR &= ~DMA_CCR_EN;
-        if(hbuz.ptone->d != 0){
-            // Load next tone
-            DMA1_Channel5->CMAR = (uint32_t)(&hbuz.ptone->f);
-            DMA1_Channel5->CNDTR = hbuz.ptone->d;
-            DMA1_Channel5->CCR |= DMA_CCR_EN;
-            hbuz.ptone++;
-        }else{
-            // Tone ended, stop tone generation
-            BUZ_TIM->CR1 &= ~TIM_CR1_CEN;
-            BUZ_TIM->ARR = 0xFFF;
-            BUZ_TIM->EGR = TIM_EGR_UG;
-            hbuz.status &= ~BUZ_PLAYING;
-        }
-    }
-    DMA1->IFCR |= DMA_IFCR_CGIF5;
-}
 // TIM4 DMA request
 void DMA1_Channel7_IRQHandler(void){
     if(DMA1->ISR & DMA_ISR_TCIF7){
