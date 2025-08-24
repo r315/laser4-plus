@@ -98,7 +98,7 @@ uint16_t initFrSky_2way(radio_t *radio)
 {
 	Frsky_init_hop(radio);
 	radio->packet_count = 0;
-	if(IS_BIND_IN_PROGRESS)
+	if((radio->flags & FLAG_BIND) == 0)
 	{
 		frsky2way_init(radio, 1);
 		radio->state = FRSKY_BIND;
@@ -120,7 +120,7 @@ uint16_t ReadFrSky_2way(radio_t *radio)
 		CC2500_WriteReg(CC2500_23_FSCAL3, 0x89);
 		CC2500_Strobe(CC2500_SFRX);//0x3A
 		CC2500_WriteData(radio->packet, radio->packet[0]+1);
-		if(IS_BIND_DONE)
+		if(radio->flags & FLAG_BIND)
 			radio->state = FRSKY_BIND_DONE;
 		else
 			radio->state++;
@@ -132,7 +132,7 @@ uint16_t ReadFrSky_2way(radio_t *radio)
 		radio->state = FRSKY_DATA2;
 		frsky2way_init(radio, 0);
 		radio->counter = 0;
-		BIND_DONE;
+		radio->flags |= FLAG_BIND;
 	}
 	else
 	{

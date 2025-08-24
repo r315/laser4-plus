@@ -28,7 +28,7 @@ extern "C" {
 #define VERSION_PATCH               1
 
 #define BAUD                        100000
-#define RXBUFFER_SIZE               36	// 26 + 1 + 9
+#define RXBUFFER_SIZE               36    // 26 + 1 + 9
 #define MAX_CHN_NUM                 16
 #define TELEMETRY_BUFFER_SIZE       30
 
@@ -39,9 +39,9 @@ extern "C" {
 #define BLINK_PPM_TIME              1000
 #define BLINK_BAD_PROTO_TIME_LOW    1000
 #define BLINK_BAD_PROTO_TIME_HIGH   50
-#define BLINK_WAIT_BIND_TIME_LOW	100
-#define BLINK_WAIT_BIND_TIME_HIGH	1000
-#define BLINK_BIND_TIME				100
+#define BLINK_WAIT_BIND_TIME_LOW    100
+#define BLINK_WAIT_BIND_TIME_HIGH   1000
+#define BLINK_BIND_TIME             100
 
 //********************
 //***  Board defs  ***
@@ -51,46 +51,55 @@ extern "C" {
 #endif
 
 /* *************System flags ******************* */
+#define _FLAGS_                     radio.flags
+#define FLAG_RX                     (1 << 0)
+#define FLAG_CHANGE_PROTOCOL        (1 << 1)
+#define FLAG_POWER                  (1 << 2)
+#define FLAG_RANGE                  (1 << 3)
+#define FLAG_AUTOBIND               (1 << 4)
+#define FLAG_BIND_BUTTON            (1 << 5)
+#define FLAG_PPM                    (1 << 6)
+#define FLAG_BIND                   (1 << 7)
 //
-#define RX_FLAG_off                  _FLAGS_ &= ~(1<<0)
-#define RX_FLAG_on                   _FLAGS_ |= (1<<0)
-#define IS_RX_FLAG_on		        ((_FLAGS_ & (1<<0)) != 0)
+#define RX_FLAG_off                  _FLAGS_ &= ~FLAG_RX
+#define RX_FLAG_on                   _FLAGS_ |= FLAG_RX
+#define IS_RX_FLAG_on                ((_FLAGS_ & FLAG_RX) != 0)
 //
-#define CHANGE_PROTOCOL_FLAG_off     _FLAGS_ &= ~(1<<1)
-#define CHANGE_PROTOCOL_FLAG_on      _FLAGS_ |= (1<<1)
-#define IS_CHANGE_PROTOCOL_FLAG_on   ((_FLAGS_ & (1<<1)) != 0)
+#define CHANGE_PROTOCOL_FLAG_off     _FLAGS_ &= ~FLAG_CHANGE_PROTOCOL
+#define CHANGE_PROTOCOL_FLAG_on      _FLAGS_ |= FLAG_CHANGE_PROTOCOL
+#define IS_CHANGE_PROTOCOL_FLAG_on   ((_FLAGS_ & FLAG_CHANGE_PROTOCOL) != 0)
 //
-#define POWER_FLAG_off               _FLAGS_ &= ~(1<<2)
-#define POWER_FLAG_on                _FLAGS_ |= (1<<2)
-#define IS_POWER_FLAG_on             ((_FLAGS_ & (1<<2)) != 0)
+#define POWER_FLAG_off               _FLAGS_ &= ~FLAG_POWER
+#define POWER_FLAG_on                _FLAGS_ |= FLAG_POWER
+#define IS_POWER_FLAG_on             ((_FLAGS_ & FLAG_POWER) != 0)
 //
-#define RANGE_FLAG_off               _FLAGS_ &= ~(1<<3)
-#define RANGE_FLAG_on                _FLAGS_ |= (1<<3)
-#define IS_RANGE_FLAG_on             ((_FLAGS_ & (1<<3)) != 0)
+#define RANGE_FLAG_off               _FLAGS_ &= ~FLAG_RANGE
+#define RANGE_FLAG_on                _FLAGS_ |= FLAG_RANGE
+#define IS_RANGE_FLAG_on             ((_FLAGS_ & FLAG_RANGE) != 0)
 //
-#define AUTOBIND_FLAG_off	        _FLAGS_ &= ~(1<<4)
-#define AUTOBIND_FLAG_on	            _FLAGS_ |= (1<<4)
-#define IS_AUTOBIND_FLAG_on	        ((_FLAGS_ & (1<<4) ) != 0)
+#define AUTOBIND_FLAG_off            _FLAGS_ &= ~FLAG_AUTOBIND
+#define AUTOBIND_FLAG_on             _FLAGS_ |= FLAG_AUTOBIND
+#define IS_AUTOBIND_FLAG_on          ((_FLAGS_ & FLAG_AUTOBIND) != 0)
 //
-#define BIND_BUTTON_FLAG_off	        _FLAGS_ &= ~(1<<5)
-#define BIND_BUTTON_FLAG_on	        _FLAGS_ |= (1<<5)
-#define IS_BIND_BUTTON_FLAG_on	    ((_FLAGS_ & (1<<5)) != 0)
+#define BIND_BUTTON_FLAG_off         _FLAGS_ &= ~FLAG_BIND_BUTTON
+#define BIND_BUTTON_FLAG_on          _FLAGS_ |= FLAG_BIND_BUTTON
+#define IS_BIND_BUTTON_FLAG_on       ((_FLAGS_ &FLAG_BIND_BUTTON) != 0)
 //PPM RX OK
-#define PPM_FLAG_off                 _FLAGS_ &= ~(1<<6)
-#define PPM_FLAG_on                  _FLAGS_ |= (1<<6)
-#define IS_PPM_FLAG_on		        ((_FLAGS_ & (1<<6)) != 0)
+#define PPM_FLAG_off                 _FLAGS_ &= ~FLAG_PPM
+#define PPM_FLAG_on                  _FLAGS_ |= FLAG_PPM
+#define IS_PPM_FLAG_on               ((_FLAGS_ & FLAG_PPM) != 0)
 
 //Bind flag
-#define BIND_IN_PROGRESS	            _FLAGS_ &= ~(1<<7)
-#define BIND_DONE                    _FLAGS_ |= (1<<7)
-#define IS_BIND_DONE		            ((_FLAGS_ & (1<<7)) != 0)
-#define IS_BIND_IN_PROGRESS          ((_FLAGS_ & (1<<7)) == 0)
+#define BIND_IN_PROGRESS             _FLAGS_ &= ~FLAG_BIND
+#define BIND_DONE                    _FLAGS_ |= FLAG_BIND
+#define IS_BIND_DONE                 ((_FLAGS_ & FLAG_BIND) != 0)
+#define IS_BIND_IN_PROGRESS          ((_FLAGS_ & FLAG_BIND) == 0)
 /* ****** flags2 ***** */
 // _BV(0)
 // _BV(1)
 #define RX_DONOTUPDATE_off           _FLAGS_ &= ~(1<<1)
 #define RX_DONOTUPDATE_on            _FLAGS_ |= (1<<1)
-#define IS_RX_DONOTUPDATE_on	        ((_FLAGS_ & (1<<1) ) != 0)
+#define IS_RX_DONOTUPDATE_on         ((_FLAGS_ & (1<<1) ) != 0)
 // _BV(2)
 #define RX_MISSED_BUFF_off           _FLAGS_ &= ~(1<<2)
 #define RX_MISSED_BUFF_on            _FLAGS_ |= (1<<2)
@@ -98,12 +107,12 @@ extern "C" {
 // _BV(3)
 #define TX_MAIN_PAUSE_off            _FLAGS_ &= ~(1<<11)
 #define TX_MAIN_PAUSE_on             _FLAGS_ |= (1<<11)
-#define IS_TX_MAIN_PAUSE_on	        ((_FLAGS_ & (1<<11) ) != 0)
+#define IS_TX_MAIN_PAUSE_on          ((_FLAGS_ & (1<<11) ) != 0)
 // _BV(4)
 
 // _BV(5) Signal ok
-#define INPUT_SIGNAL_off	            _FLAGS_ &= ~(1<<13)
-#define INPUT_SIGNAL_on		        _FLAGS_ |= (1<<13)
+#define INPUT_SIGNAL_off             _FLAGS_ &= ~(1<<13)
+#define INPUT_SIGNAL_on              _FLAGS_ |= (1<<13)
 #define IS_INPUT_SIGNAL_on           ((_FLAGS_ & (1<<13)) != 0)
 #define IS_INPUT_SIGNAL_off          ((_FLAGS_ & (1<<13)) == 0)
 // _BV(6)
@@ -115,7 +124,7 @@ extern "C" {
 #define IS_WAIT_BIND_off             ((_FLAGS_ & (1<<15)) == 0)
 /* ****** flags3 ***** */
 // _BV(0)
-#define DATA_BUFFER_LOW_off	        _FLAGS_ &= ~(1<<16)
+#define DATA_BUFFER_LOW_off            _FLAGS_ &= ~(1<<16)
 // _BV(1)
 // _BV(2)
 #define DISABLE_CH_MAP_off           _FLAGS_ &= ~(1<<2)
@@ -134,114 +143,114 @@ extern "C" {
 
 
 //Channel definitions
-#define	CH1		0
-#define	CH2		1
-#define	CH3		2
-#define	CH4		3
-#define	CH5		4
-#define	CH6		5
-#define	CH7		6
-#define	CH8		7
-#define	CH9		8
-#define	CH10	9
-#define	CH11	10
-#define	CH12	11
-#define	CH13	12
-#define	CH14	13
-#define	CH15	14
-#define	CH16	15
+#define    CH1        0
+#define    CH2        1
+#define    CH3        2
+#define    CH4        3
+#define    CH5        4
+#define    CH6        5
+#define    CH7        6
+#define    CH8        7
+#define    CH9        8
+#define    CH10       9
+#define    CH11       10
+#define    CH12       11
+#define    CH13       12
+#define    CH14       13
+#define    CH15       14
+#define    CH16       15
 
-#define	AILERON  0
-#define	ELEVATOR 1
-#define	THROTTLE 2
-#define	RUDDER   3
+#define    AILERON    0
+#define    ELEVATOR   1
+#define    THROTTLE   2
+#define    RUDDER     3
 
 //Channel MIN MAX values
-#define CHANNEL_MAX_100	    1844	//	100%
-#define CHANNEL_MIN_100	    204		//	100%
-#define CHANNEL_MAX_125	    2047	//	125%
-#define CHANNEL_MIN_125	    0       //  125%
-#define CHANNEL_SWITCH      1104    //  1550us
+#define CHANNEL_MAX_100        1844    //    100%
+#define CHANNEL_MIN_100        204     //    100%
+#define CHANNEL_MAX_125        2047    //    125%
+#define CHANNEL_MIN_125        0       //  125%
+#define CHANNEL_SWITCH         1104    //  1550us
 
-#define PPM_MAX_100         2012	//	100%
-#define PPM_MIN_100         988		//	100%
+#define PPM_MAX_100            2012    //    100%
+#define PPM_MIN_100            988     //    100%
 
 #define PPM_DEFAULT_VALUE   0
 #define MAX_AUX_CHANNELS    4
-#define _FLAGS_             radio.flags
 #define BIND_FLAG_VALUE     0xF0
+
 
 enum protocols_e{
     MODE_SERIAL     = 0,
-    PROTO_FLYSKY 	= 1,	// =>A7105
-    PROTO_KN		= 9,	// =>NRF24L01
+    PROTO_FLYSKY     = 1,    // =>A7105
+    PROTO_KN        = 9,    // =>NRF24L01
     PROTO_FRSKYD    = 3,
-    PROTO_DEVO		= 7,	// =>CYRF6936
+    PROTO_DEVO        = 7,    // =>CYRF6936
     PROTO_FRSKYX    = 15,
-    PROTO_SFHSS		= 21,	// =>CC2500
+    PROTO_SFHSS        = 21,    // =>CC2500
     PROTO_FRSKYV    = 25,
     PROTO_AFHDS2A   = 28,
-    PROTO_WK2x01	= 30,	// =>CYRF6936
+    PROTO_WK2x01    = 30,    // =>CYRF6936
 };
 
 enum KN {
-	WLTOYS	= 0,
-	FEILUN	= 1,
+        WLTOYS    = 0,
+        FEILUN    = 1,
 };
 
 enum Flysky {
-	Flysky	= 0,
-	V9X9	= 1,
-	V6X6	= 2,
-	V912	= 3,
-	CX20	= 4,
+        Flysky    = 0,
+        V9X9    = 1,
+        V6X6    = 2,
+        V912    = 3,
+        CX20    = 4,
 };
 
 enum AFHDS2A {
-	PWM_IBUS = 0,
-	PPM_IBUS = 1,
-	PWM_SBUS = 2,
-	PPM_SBUS = 3,
+        PWM_IBUS = 0,
+        PPM_IBUS = 1,
+        PWM_SBUS = 2,
+        PPM_SBUS = 3,
 };
 
 enum Hubsan {
-	H107	= 0,
-	H301	= 1,
-	H501	= 2,
+        H107    = 0,
+        H301    = 1,
+        H501    = 2,
 };
 
 enum FRSKYX {
-	CH_16	= 0,
-	CH_8	= 1,
-	EU_16	= 2,
-	EU_8	= 3,
+        CH_16    = 0,
+        CH_8    = 1,
+        EU_16    = 2,
+        EU_8    = 3,
 };
 
 enum WK2x01 {
-	WK2801	= 0,
-	WK2401	= 1,
-	W6_5_1	= 2,
-	W6_6_1	= 3,
-	W6_HEL	= 4,
-	W6_HEL_I= 5,
+        WK2801    = 0,
+        WK2401    = 1,
+        W6_5_1    = 2,
+        W6_6_1    = 3,
+        W6_HEL    = 4,
+        W6_HEL_I= 5,
 };
 
 
-#define NONE 		0
-#define P_HIGH		1
-#define P_LOW		0
-#define AUTOBIND	1
-#define NO_AUTOBIND	0
+#define NONE         0
+#define P_HIGH        1
+#define P_LOW        0
+#define AUTOBIND    1
+#define NO_AUTOBIND    0
 
 struct PPM_Parameters
 {
-	uint8_t protocol;
-	uint8_t sub_proto	: 3;
-	uint8_t rx_num		: 6;
-	uint8_t power		: 1;
-	uint8_t autobind	: 1;
-	int8_t option;
-	uint32_t chan_order;
+        uint8_t protocol;
+        uint8_t sub_proto    : 3;
+        uint8_t rx_num        : 6;
+        uint8_t power        : 1;
+        uint8_t autobind    : 1;
+        int8_t option;
+        uint32_t chan_order;
 };
 
 #pragma pack (1)
@@ -255,15 +264,15 @@ typedef struct radio{
     // Encoder count
     uint16_t enc_count;
 #ifdef FAILSAFE_ENABLE
-	uint16_t Failsafe_data[NUM_CHN];
+        uint16_t Failsafe_data[NUM_CHN];
 #endif
 
     // Protocol variables
     uint8_t  rx_tx_addr[5];
 #ifdef HOTT_CC2500_INO
-	uint8_t  hopping_frequency[75];
+        uint8_t  hopping_frequency[75];
 #else
-	uint8_t  hopping_frequency[50];
+        uint8_t  hopping_frequency[50];
 #endif
     uint16_t state;
     uint8_t  len;
