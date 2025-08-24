@@ -37,14 +37,14 @@ static void CC2500_ReadRegisterMulti(uint8_t address, uint8_t data[], uint8_t le
 
 //--------------------------------------------
 uint8_t CC2500_ReadReg(uint8_t address)
-{ 
+{
 	uint8_t result;
 	CC25_CS_TRUE;
 	SPI_Write(CC2500_READ_SINGLE | address);
-	result = SPI_Read();  
+	result = SPI_Read();
 	CC25_CS_FALSE;
-	return(result); 
-} 
+	return(result);
+}
 
 //------------------------
 static void CC2500_WriteRegisterMulti(uint8_t address, const uint8_t data[], uint8_t length)
@@ -82,7 +82,7 @@ void CC2500_WriteData(uint8_t *dpbuffer, uint8_t len)
 void CC2500_WriteReg(uint8_t address, uint8_t data)
 {
 	CC25_CS_TRUE;
-	SPI_Write(address); 
+	SPI_Write(address);
 	NOP();
 	SPI_Write(data);
 	CC25_CS_FALSE;
@@ -126,7 +126,7 @@ void CC2500_SetTxRxMode(uint8_t mode)
 uint8_t CC2500_Reset(void)
 {
 	CC2500_Strobe(CC2500_SRES);
-	delayMs(1);
+	DelayMs(1);
 	CC2500_SetTxRxMode(TXRX_OFF);
 	return CC2500_ReadReg(CC2500_0E_FREQ1) == 0xC4;//check if reset
 }
@@ -158,7 +158,7 @@ uint8_t CC2500_ReadStatus(uint8_t sreg){
 uint8_t data;
 	CC25_CS_TRUE;
 	SPI_Write(CC2500_READ_BURST | sreg);
-	data = SPI_Read();  
+	data = SPI_Read();
 	CC25_CS_FALSE;
 	return data;
 }

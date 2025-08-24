@@ -337,14 +337,14 @@ static void timInit(void){
     TIMER_BASE->CR1 |= TIM_CR1_CEN;                     // Enable counter
 }
 
-void delayMs(uint32_t ms)
+void DelayMs(uint32_t ms)
 {
     uint32_t timeout = ticks + ms;
     while(ticks < timeout){ }
 }
 
-uint32_t getTick(void){ return ticks; }
-uint32_t HAL_GetTick(void){ return getTick(); }
+uint32_t GetTick(void){ return ticks; }
+uint32_t HAL_GetTick(void){ return GetTick(); }
 
 /**
  * @brief Flash write functions for EEPROM emulation
@@ -519,7 +519,7 @@ uint32_t bsqr3;
     ADC1->SQR3 = (HW_VREFINT_CHANNEL << 0);
     // wake up Vrefint
     ADC1->CR2 |= ADC_CR2_TSVREFE;
-    delayMs(5);
+    DelayMs(5);
     // Start conversion
     ADC1->CR2 |= ADC_CR2_SWSTART;
     while(!(ADC1->SR & ADC_SR_EOC)){
@@ -588,7 +588,7 @@ static void adcInit(void){
 
     ADC1->CR2 = ADC_CR2_EXTSEL_SWSTART |        // Select software trigger,
                 ADC_CR2_ADON;                   // Enable ADC
-    delayMs(20);
+    DelayMs(20);
     // Configure Sample time for the used channles
     adcSampleTime(HW_VBAT_CHANNEL, 6);          // Sample time, 6 => 71.5 cycles.
     adcSampleTime(HW_ISENSE_CHANNEL, 6);        // Sample time, 6 => 71.5 cycles.

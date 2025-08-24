@@ -397,7 +397,7 @@ static uint16_t next_callback;
     if(next_callback > 32000)
     { // next_callback should not be more than 32767 so we will wait here...
         uint16_t temp = (next_callback >> 10) - 2;
-        delayMs(temp);
+        DelayMs(temp);
         next_callback -= temp << 10;                        // between 2-3ms left at this stage
     }
     cli();											        // disable global int

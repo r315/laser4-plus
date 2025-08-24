@@ -43,7 +43,7 @@ RAM_CODE void CONTROLLER_Process(void){
 #if !defined(TEST_CONTROLLER)
         uint8_t i;
         uint8_t *data = (uint8_t*)&laser4.pitch;
-        lastppm = getTick();
+        lastppm = GetTick();
 
         for(i = 0; i < MIN_PPM_CHANNELS; i++){
             //PAUSE_CAPTURE;
@@ -87,7 +87,7 @@ RAM_CODE void CONTROLLER_Process(void){
         USB_DEVICE_SendReport((uint8_t*)&laser4, REPORT_SIZE);
     }
 
-    if(getTick() - lastppm > 70){
+    if(GetTick() - lastppm > 70){
         INPUT_SIGNAL_off;
     }else{
         INPUT_SIGNAL_on;

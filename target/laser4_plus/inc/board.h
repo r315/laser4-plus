@@ -196,7 +196,7 @@ extern "C" {
 
 /* General symbols */
 #define RAM_CODE                __attribute__((section(".ram_code")))
-#define millis                  getTick
+#define millis                  GetTick
 #define cli                     __disable_irq
 #define sei                     __enable_irq
 
@@ -245,8 +245,8 @@ typedef struct vires {
 extern uint32_t SystemCoreClock;
 
 /* Function prototyes */
-void delayMs(uint32_t ms);
-uint32_t getTick(void);
+void DelayMs(uint32_t ms);
+uint32_t GetTick(void);
 void SPI_Write(uint8_t data);
 uint8_t SPI_Read(void);
 void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode);
