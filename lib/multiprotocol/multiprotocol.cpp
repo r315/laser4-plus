@@ -462,6 +462,9 @@ void setPpmFlag(volatile uint16_t *buf, uint8_t chan){
     // Saving the number of channels received
     //if(chan > radio.channel_aux)
         radio.channel_aux = chan;
+#else
+    (void)buf;
+    (void)chan;
 #endif
 }
 

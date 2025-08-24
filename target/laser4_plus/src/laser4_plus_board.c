@@ -97,6 +97,8 @@ extern void loop(void);
 // Functions implemenation
 void Error_Handler(char * file, int line)
 {
+    (void)file;
+    (void)line;
     while(1){
     }
 }
@@ -171,10 +173,16 @@ void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode) {
     }
 }
 
-void gpioAttachInterrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*cb)(void)){
+void gpioAttachInterrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*cb)(void))
+{
+    (void)pin;
+    (void)port;
+    (void)edge;
+
     if(cb == NULL){
         return;
     }
+
     pinIntCB = cb;
     AFIO->EXTICR[1] = ( 1 << 4);        // PB5 -> EXTI5
     EXTI->IMR  = ( 1 << 5);             // MR5
@@ -182,7 +190,11 @@ void gpioAttachInterrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*cb
     NVIC_EnableIRQ(EXTI9_5_IRQn);
 }
 
-void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin){
+void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin)
+{
+    (void)pin;
+    (void)port;
+
     NVIC_DisableIRQ(EXTI9_5_IRQn);
 }
 

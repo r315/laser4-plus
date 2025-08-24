@@ -178,7 +178,9 @@ uint8_t appGetCurrentMode(void){
  *
  * @param ptr : pointer passed when the callback is registered
  * */
-void usbConnectCB(void *ptr){
+void usbConnectCB(void *ptr)
+{
+    (void)ptr;
     appReqModeChange(MODE_HID);
 #if defined(ENABLE_DEBUG) && defined(EANBLE_VCP)
     dbg_init(&vcp);
@@ -195,7 +197,9 @@ void usbConnectCB(void *ptr){
  *
  * @param ptr : pointer passed when the callback is registered
  * */
-void usbDisconnectCB(void *ptr){
+void usbDisconnectCB(void *ptr)
+{
+    (void)ptr;
     appReqModeChange(MODE_MULTIPROTOCOL);
 #if defined(ENABLE_DEBUG) && defined(ENABLE_USART)
     dbg_init(&pcom);

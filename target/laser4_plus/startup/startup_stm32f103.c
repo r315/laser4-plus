@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "board.h"
+#include "stm32f1xx_hal.h"
 
 #define WEAK __attribute__((weak))
 #define NAKED __attribute__((naked, aligned(8)))
@@ -176,7 +176,9 @@ void defaultHandler(void){
     }
 }
 
-void dumpHandler(uint32_t *regs){
+void dumpHandler(uint32_t *regs)
+{
+    (void)regs;
 /*volatile uint32_t r0 = regs[ 0 ];
 volatile uint32_t r1 = regs[ 1 ];
 volatile uint32_t r2 = regs[ 2 ];

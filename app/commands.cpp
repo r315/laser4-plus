@@ -35,6 +35,9 @@ public:
 	}
 
 	char execute(int argc, char **argv) {
+        (void) argc;
+        (void) argv;
+
 		help();
 		return CMD_OK;
 	}
@@ -181,6 +184,9 @@ public:
 #endif
 
 	char execute(int argc, char **argv) {
+        (void) argc;
+        (void) argv;
+
         console->println("\n========================================");
         console->println("            System Status");
 		console->println("========================================");
@@ -216,6 +222,8 @@ public:
 	void help(void) {}
 
 	char execute(int argc, char **argv) {
+        (void) argc;
+        (void) argv;
         console->printf("Current ID: %x\n", multiprotocol_protocol_id_get());
 		return CMD_OK;
 	}
@@ -227,7 +235,11 @@ public:
     CmdReset() : ConsoleCommand("reset") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
-	char execute(int argc, char **argv) {NVIC_SystemReset();}
+	char execute(int argc, char **argv) {
+        (void) argc;
+        (void) argv;
+        NVIC_SystemReset();
+    }
 }cmdreset;
 
 class CmdBind : public ConsoleCommand {
@@ -237,6 +249,9 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(int argc, char **argv) {
+        (void) argc;
+        (void) argv;
+
         uint32_t flags = multiprotocol_flags_get();
 
 		if((flags & FLAG_BIND) == 0){
@@ -267,6 +282,9 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); tim = -1;}
 	void help(void) {}
 	char execute(int argc, char **argv) {
+        (void) argc;
+        (void) argv;
+
 		switch(argv[2][0]){
 			case '0': {
                 uint16_t *channel_data = multiprotocol_channel_data_get();
