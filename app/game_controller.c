@@ -1,11 +1,11 @@
 #include "board.h"
-#include "usb_device.h"
 #include "game_controller.h"
 #include "multiprotocol.h"
 #include "math.h"
 
 
 #ifdef ENABLE_GAME_CONTROLLER
+#include "usb_device.h"
 //#define TEST_CONTROLLER
 
 static controller_t laser4;
