@@ -16,11 +16,18 @@ l4p:
 bp:
 	@"$(MAKE)" -C target/laser4_plus BUILD_DIR=$(BUILD_DIR)/bluepill
 
+dk:
+	@"$(MAKE)" -C target/415dk PROJECT_DIR=$(CURDIR)
+
+
 l4p-program:
 	@"$(MAKE)" -C target/laser4_plus PROJECT_DIR=$(CURDIR) program
 
 bp-program:
 	@"$(MAKE)" -C target/laser4_plus BUILD_DIR=$(BUILD_DIR)/bluepill
+
+dk-program:
+	@"$(MAKE)" -C target/415dk PROJECT_DIR=$(CURDIR) program
 
 
 .PHONY:
