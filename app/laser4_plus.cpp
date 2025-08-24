@@ -5,6 +5,7 @@
 #include "mpanel.h"
 #include "tone.h"
 #include "debug.h"
+#include "dma_stm32f1xx.h"
 
 #if defined(ENABLE_VCP) || defined(ENABLE_GAME_CONTROLLER)
 #include "usb_device.h"

@@ -147,23 +147,16 @@ public:
     CmdStatus() : ConsoleCommand("status") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
-#ifdef ENABLE_BATTERY_MONITOR
-	void batteryVoltage(void){
-		console->printf(
-			"Battery voltage: %umV\n",
-			batteryGetVoltage()
-		);
-	}
-#endif
+
 	void systemFlags(void){
         uint32_t flags = multiprotocol_flags_get();
 
 		console->printf(
-			"RX              [%d]\n"
-			"Change protocol [%d]\n"
-			"Range           [%d]\n"
-			"PPM             [%d]\n"
-			"Bind done       [%d]\n",
+			"RX               : %d\n"
+			"Change protocol  : %d\n"
+			"Range            : %d\n"
+			"PPM              : %d\n"
+			"Bind done        : %d\n",
 			!!(flags & FLAG_RX),
             !!(flags & FLAG_CHANGE_PROTOCOL),
             !!(flags & FLAG_RANGE),
@@ -171,9 +164,9 @@ public:
             !!(flags & FLAG_BIND)
 		);
 		console->printf(
-			"Wait bind       [%d]\n"
-			"Tx pause        [%d]\n"
-			"Input signal    [%d]\n",
+			"Wait bind        : %d\n"
+			"Tx pause         : %d\n"
+			"Input signal     : %d\n",
             !!(flags & FLAG_WAIT_BIND),
 			!!(flags & FLAG_TX_PAUSE),
             !!(flags & FLAG_INPUT_SIGNAL)
@@ -186,26 +179,31 @@ public:
     	}
 	}
 #endif
-	void mode(void){
-		uint8_t aux = appGetCurrentMode();
-		console->printf("Mode: %s\n", aux == MODE_MULTIPROTOCOL ? "Multiprotocol" : "Game Controller");
-	}
 
 	char execute(int argc, char **argv) {
-        console->println("General status");
-		console->println("\n----------------------------------------");
-#ifdef ENABLE_BATTERY_MONITOR
-        batteryVoltage();
-		console->println("----------------------------------------");
-#endif
+        console->println("\n========================================");
+        console->println("            System Status");
+		console->println("========================================");
+
+        console->println("\n  System Flags");
+        console->println("----------------------------------------");
         systemFlags();
-		console->print("----------------------------------------");
-#ifdef ENABLE_PPM
-		channelValues();
-		console->println("----------------------------------------");
+
+#ifdef ENABLE_BATTERY_MONITOR
+        console->println("\n  Battery");
+        console->println("----------------------------------------");
+        console->printf("Voltage          : %umV\n", batteryGetVoltage());
 #endif
-		mode();
-		console->println("----------------------------------------");
+#ifdef ENABLE_PPM
+        console->println("\n  Channel data");
+        console->println("----------------------------------------");
+		channelValues();
+#endif
+        uint8_t aux = appGetCurrentMode();
+		console->println("\n  Operating Mode");
+        console->println("----------------------------------------");
+        console->printf("Mode             : %s\n\n",
+            aux == MODE_MULTIPROTOCOL ? "Multiprotocol" : "Game Controller");
         return CMD_OK;
 	}
 }cmdstatus;

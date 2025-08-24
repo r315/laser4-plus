@@ -5,6 +5,7 @@
 #include "usbd_conf.h"
 #include "debug.h"
 #include "dma.h"
+#include "dma_stm32f1xx.h"
 
 #ifdef ENABLE_DEBUG_BOARD
 #define DBG_TAG     "[BOARD]: "
@@ -53,6 +54,7 @@ static void (*pinIntCB)(void);
 #ifdef ENABLE_BATTERY_MONITOR
 static adc_t hadc;
 static dmatype_t adcdma;
+static void adcInit(void);
 #endif
 
 #ifdef ENABLE_DISPLAY
@@ -583,14 +585,12 @@ float adcGetSenseResistor(void){
 
 static void adcEocHandler(void)
 {
-    //if(DMA1->ISR & DMA_ISR_TCIF1){
-        DMA1_Channel1->CCR &= ~DMA_CCR_EN;
-        hadc.battery_voltage = (float)(hadc.result[0] * hadc.resolution) / hadc.vdiv_racio;
-        hadc.battery_current = (hadc.result[1] * hadc.resolution)/hadc.sense_resistor;
-        hadc.status |= ADC_RDY;
-    //}
-    DMA1->IFCR |= DMA_IFCR_CGIF1;
+    DMA_Cancel(&adcdma);
+    hadc.battery_voltage = (float)(hadc.result[0] * hadc.resolution) / hadc.vdiv_racio;
+    hadc.battery_current = (hadc.result[1] * hadc.resolution)/hadc.sense_resistor;
+    hadc.status |= ADC_RDY;
 }
+
 /**
  * @brief Configure ADC for a HW_VBAT_CHANNEL channel in interrupt mode and initiates a convertion.
  *  After convertion the result is stored locally through the interrupt
@@ -622,16 +622,13 @@ static void adcInit(void)
     adcdma.dir = DMA_DIR_P2M;
     adcdma.ssize = DMA_CCR_PSIZE_16;
     adcdma.dsize = DMA_CCR_MSIZE_16;
-    adcdma.src = (void*))&ADC1->DR;
+    adcdma.src = (void*)&ADC1->DR;
+    adcdma.dst = (void*)&hadc.result[0];
+    adcdma.eot = adcEocHandler;
+    adcdma.len = ADC_SEQ_LEN;
 
+    DMA_Config(&adcdma, DMA1_REQ_ADC1);
 
-
-    DMA1_Channel1->CCR =
-            DMA_CCR_MSIZE_0 |                       // 16bit Dst size
-            DMA_CCR_PSIZE_0 |                       // 16bit src size
-            //DMA_CCR_DIR |                           // Read from memory
-            DMA_CCR_MINC |                          // Memory increment
-            DMA_CCR_TCIE;                           // Enable end of transfer interrupt
     ADC1->CR2 |= ADC_CR2_DMA;
 
     NVIC_EnableIRQ(DMA1_Channel1_IRQn);
@@ -643,13 +640,8 @@ static void adcInit(void)
  * @brief
  * */
 static void adcStartConversion(void){
+    DMA_Start(&adcdma);
     hadc.status &= ~ADC_RDY;
-    // Destination memory
-    DMA1_Channel1->CMAR = (uint32_t)&hadc.result[0];
-    // ADC sequence length
-    DMA1_Channel1->CNDTR = ADC_SEQ_LEN;
-    DMA1_Channel1->CCR |= DMA_CCR_EN;
-    // Start
     ADC1->CR2 |= ADC_CR2_SWSTART;
 }
 
