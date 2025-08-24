@@ -255,22 +255,21 @@ void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin);
 void enableWatchDog(uint32_t interval);
 void reloadWatchDog(void);
 
-void laser4Init(void);
-
 uint32_t readSwitches(void);
 
+#ifdef ENABLE_BATTERY_MONITOR
 float adcGetResolution(void);
 void adcSetVdivRacio(float r);
 float adcGetVdivRacio(void);
 void adcSetSenseResistor(float rs);
 float adcGetSenseResistor(void);
 uint32_t adcCalibrate(void);
-float getInstantCurrent(void);
 uint32_t batteryGetVoltage(void);
-uint32_t batteryReadVoltage(uint32_t *dst);
+// uint32_t batteryReadVoltage(uint32_t *dst); remove when confirmed not necessary
 uint32_t batteryGetCurrent(void);
-uint32_t batteryReadCurrent(uint32_t *dst);
+// uint32_t batteryReadCurrent(uint32_t *dst);
 uint32_t batteryReadVI(vires_t *dst);
+#endif
 
 void ppmOut(uint16_t *data);
 

@@ -147,14 +147,14 @@ public:
     CmdStatus() : ConsoleCommand("status") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
-
+#ifdef ENABLE_BATTERY_MONITOR
 	void batteryVoltage(void){
 		console->printf(
 			"Battery voltage: %umV\n",
 			batteryGetVoltage()
 		);
 	}
-
+#endif
 	void systemFlags(void){
         uint32_t flags = multiprotocol_flags_get();
 
@@ -194,14 +194,16 @@ public:
 	char execute(int argc, char **argv) {
         console->println("General status");
 		console->println("\n----------------------------------------");
+#ifdef ENABLE_BATTERY_MONITOR
         batteryVoltage();
 		console->println("----------------------------------------");
-        systemFlags();
-#ifdef ENABLE_PPM
-		console->print("----------------------------------------");
-		channelValues();
 #endif
+        systemFlags();
+		console->print("----------------------------------------");
+#ifdef ENABLE_PPM
+		channelValues();
 		console->println("----------------------------------------");
+#endif
 		mode();
 		console->println("----------------------------------------");
         return CMD_OK;
@@ -402,6 +404,7 @@ public:
 	}
 }cmdeeprom;
 
+#ifdef ENABLE_BATTERY_MONITOR
 class CmdAdc : public ConsoleCommand {
 	Console *console;
 public:
@@ -481,6 +484,7 @@ public:
 		return CMD_BAD_PARAM;
 	}
 }cmdadc;
+#endif
 
 #ifdef ENABLE_BUZZER
 class CmdBuz : public ConsoleCommand {
@@ -563,7 +567,9 @@ ConsoleCommand *laser4_commands[]{
 	&cmdtest,
 	&cmdmode,
 	&cmdeeprom,
+#ifdef ENABLE_BATTERY_MONITOR
 	&cmdadc,
+#endif
 #ifdef ENABLE_BUZZER
 	&cmdbuz,
 #endif

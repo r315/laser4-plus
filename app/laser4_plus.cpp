@@ -265,6 +265,7 @@ static void changeMode(uint8_t new_mode){
     }
 }
 
+#ifdef ENABLE_BATTERY_MONITOR
 /**
  * @brief Periodic called function to display battery voltage
  *
@@ -297,6 +298,7 @@ vires_t res;
 #endif /* ENABLE_DISPLAY */
     }
 }
+#endif
 
 #ifdef ENABLE_DISPLAY
 /**
@@ -484,6 +486,8 @@ extern "C" void setup(void)
     // Play som random tone
     buzPlay(chime);
 #endif
+
+#ifdef ENABLE_BATTERY_MONITOR
     // Configure adc calibration values
     f2u_u tmp;
     tmp.u = (uint32_t)(eeprom_data[IDX_BAT_VOLTAGE_DIV] | (eeprom_data[IDX_BAT_VOLTAGE_DIV + 1] << 16));
@@ -493,6 +497,7 @@ extern "C" void setup(void)
 
     /* Get battery voltage */
     DBG_APP_INF("Battery voltage: %dmV", batteryGetVoltage());
+#endif
 
 #ifdef ENABLE_DISPLAY
 

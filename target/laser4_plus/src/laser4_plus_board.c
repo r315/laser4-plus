@@ -4,6 +4,7 @@
 #include "stm32f1xx_hal.h"
 #include "usbd_conf.h"
 #include "debug.h"
+#include "dma.h"
 
 #ifdef ENABLE_DEBUG_BOARD
 #define DBG_TAG     "[BOARD]: "
@@ -28,7 +29,6 @@ typedef struct {
     uint32_t battery_current;
 }adc_t;
 
-
 typedef struct {
         uint32_t time;
         uint32_t count;
@@ -48,8 +48,12 @@ typedef struct {
 // Private variables
 static SPI_HandleTypeDef hspi;
 static volatile uint32_t ticks;
-static adc_t hadc;
 static void (*pinIntCB)(void);
+
+#ifdef ENABLE_BATTERY_MONITOR
+static adc_t hadc;
+static dmatype_t adcdma;
+#endif
 
 #ifdef ENABLE_DISPLAY
 I2C_HandleTypeDef hi2c2;
@@ -59,7 +63,6 @@ static void i2cInit(void);
 // Private functions
 static void spiInit(void);
 static void timInit(void);
-static void adcInit(void);
 static void encInit(void);
 static void crcInit(void);
 #ifdef ENABLE_PPM
@@ -89,19 +92,6 @@ stdinout_t pcom = {
 extern void setup(void);
 extern void loop(void);
 
-int main(void)
-{
-    laser4Init();
-
-    setup();
-
-    while(1){
-        loop();
-    }
-
-    return 0;
-}
-
 // Functions implemenation
 void Error_Handler(char * file, int line)
 {
@@ -109,7 +99,8 @@ void Error_Handler(char * file, int line)
     }
 }
 
-void laser4Init(void){
+static void laser4Init(void)
+{
     GPIO_ENABLE;
     AFIO->MAPR = (2 << 24); // SW-DP Enabled
     CC25_CS_INIT;
@@ -119,7 +110,9 @@ void laser4Init(void){
 
     spiInit();
     timInit();
+#ifdef ENABLE_BATTERY_MONITOR
     adcInit();
+#endif
     encInit();
 #ifdef ENABLE_PPM
     ppmOutInit();
@@ -141,6 +134,19 @@ void laser4Init(void){
     //LCD_Fill(0, 0, 128, 32, BLACK);
     //LCD_Update();
 #endif
+}
+
+int main(void)
+{
+    laser4Init();
+
+    setup();
+
+    while(1){
+        loop();
+    }
+
+    return 0;
 }
 
 void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode) {
@@ -483,6 +489,9 @@ uint16_t state = 0;
 
     return state;
 }
+
+
+#ifdef ENABLE_BATTERY_MONITOR
 /**
  * @brief Configure sample time for one adc channel
  *
@@ -572,14 +581,24 @@ float adcGetSenseResistor(void){
     return hadc.sense_resistor / ISENSE_GAIN;
 }
 
-
+static void adcEocHandler(void)
+{
+    //if(DMA1->ISR & DMA_ISR_TCIF1){
+        DMA1_Channel1->CCR &= ~DMA_CCR_EN;
+        hadc.battery_voltage = (float)(hadc.result[0] * hadc.resolution) / hadc.vdiv_racio;
+        hadc.battery_current = (hadc.result[1] * hadc.resolution)/hadc.sense_resistor;
+        hadc.status |= ADC_RDY;
+    //}
+    DMA1->IFCR |= DMA_IFCR_CGIF1;
+}
 /**
  * @brief Configure ADC for a HW_VBAT_CHANNEL channel in interrupt mode and initiates a convertion.
  *  After convertion the result is stored locally through the interrupt
  *
  * PA0/AN0 is the default channel
  * */
-static void adcInit(void){
+static void adcInit(void)
+{
     HW_VBAT_CH_INIT;
 
     RCC->APB2ENR  |= RCC_APB2ENR_ADC1EN;        // Enable and reset ADC1
@@ -599,9 +618,14 @@ static void adcInit(void){
     ADC1->SQR3 = (HW_ISENSE_CHANNEL << 5) | (HW_VBAT_CHANNEL << 0);
     ADC1->SQR1 = (1 << 20);                     // Two channels on sequence
     ADC1->CR1 |= ADC_CR1_SCAN;
-     // Configure DMA
-    RCC->AHBENR |= RCC_AHBENR_DMA1EN;               // Enable DMA1
-    DMA1_Channel1->CPAR = (uint32_t)&ADC1->DR;      // Source peripheral
+    // Configure DMA
+    adcdma.dir = DMA_DIR_P2M;
+    adcdma.ssize = DMA_CCR_PSIZE_16;
+    adcdma.dsize = DMA_CCR_MSIZE_16;
+    adcdma.src = (void*))&ADC1->DR;
+
+
+
     DMA1_Channel1->CCR =
             DMA_CCR_MSIZE_0 |                       // 16bit Dst size
             DMA_CCR_PSIZE_0 |                       // 16bit src size
@@ -641,9 +665,13 @@ float adcGetResolution(void){
  *
  * @return : battery voltage in mV
  * */
-uint32_t batteryGetVoltage(void){
+uint32_t batteryGetVoltage(void)
+{
+    uint32_t timeout = 0x100;
     adcStartConversion();
-    while((hadc.status & ADC_RDY) == 0 );
+    do{
+        timeout--;
+    }while((hadc.status & ADC_RDY) == 0 && timeout);
     return  hadc.battery_voltage;
 }
 
@@ -707,7 +735,7 @@ uint32_t batteryReadVI(vires_t *dst){
     }
     return 0;
 }
-
+#endif
 /**
  * @brief Rotary encorder init
  *  Configures a timer as pulse counter, the counter is incremented/decremented
@@ -772,7 +800,7 @@ void ppmOut(uint16_t *data){
 void ppmOutInit(void){
     gpioInit(GPIOB, 7, GPO_AF | GPO_2MHZ);
 
-     /* Configure DMA Channel1*/
+     /* Configure DMA Channel7 */
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;               // Enable DMA1
     DMA1_Channel7->CPAR = (uint32_t)&PPM_TIM->ARR;  // Destination peripheral
     DMA1_Channel7->CCR =
@@ -1029,16 +1057,6 @@ void SysTick_Handler(void){
     ticks++;
 }
 #endif
-// ADC1 DMA request
-void DMA1_Channel1_IRQHandler(void){
-    //if(DMA1->ISR & DMA_ISR_TCIF1){
-        DMA1_Channel1->CCR &= ~DMA_CCR_EN;
-        hadc.battery_voltage = (float)(hadc.result[0] * hadc.resolution) / hadc.vdiv_racio;
-        hadc.battery_current = (hadc.result[1] * hadc.resolution)/hadc.sense_resistor;
-        hadc.status |= ADC_RDY;
-    //}
-    DMA1->IFCR |= DMA_IFCR_CGIF1;
-}
 
 // TIM1 DMA request
 void DMA1_Channel5_IRQHandler(void){
