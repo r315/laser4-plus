@@ -201,11 +201,11 @@ void usbDisconnectCB(void *ptr)
 {
     (void)ptr;
     appReqModeChange(MODE_MULTIPROTOCOL);
-#if defined(ENABLE_DEBUG) && defined(ENABLE_USART)
+#if defined(ENABLE_DEBUG) && defined(ENABLE_UART)
     dbg_init(&pcom);
 #endif
 
-#if defined(ENABLE_CLI) && defined(ENABLE_USART)
+#if defined(ENABLE_CLI) && defined(ENABLE_UART)
     // redirect cli to physical com port
     con.setOutput(&pcom);
 #endif
@@ -456,7 +456,7 @@ extern "C" void setup(void)
 #if defined(ENABLE_DEBUG)
     #if defined(ENABLE_VCP)
     dbg_init(&vcp);
-    #else
+    #elif defined(ENABLE_UART)
     dbg_init(&pcom);
     #endif
 #endif
@@ -474,7 +474,7 @@ extern "C" void setup(void)
 #if defined(ENABLE_CLI)
     #if defined(ENABLE_VCP)
     #define CONSOLE_STDINOUT &vcp
-    #elif defined(ENABLE_USART)
+    #elif defined(ENABLE_UART)
     #define CONSOLE_STDINOUT &pcom
     #else
     #error "No stdinout defined for console"
@@ -564,7 +564,7 @@ extern "C" void loop(void)
             break;
     }
 
-#if defined(ENABLE_CLI) && (defined(ENABLE_VCP) || defined(ENABLE_USART))
+#if defined(ENABLE_CLI) && (defined(ENABLE_VCP) || defined(ENABLE_UART))
     con.process();
 #endif
 

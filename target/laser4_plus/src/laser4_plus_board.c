@@ -69,7 +69,7 @@ static void ppmOutInit(void);
 #endif
 
 
-#ifdef ENABLE_USART
+#ifdef ENABLE_UART
 static serialbus_t uartbus;
 
 int serial_available(void) { return UART_Available(&uartbus); }
@@ -126,7 +126,7 @@ static void laser4Init(void)
     TONE_PwmInit(&tone_init);
 #endif
     crcInit();
-#ifdef ENABLE_USART
+#ifdef ENABLE_UART
     uartbus.bus = UART_BUS0;
     uartbus.speed = 115200;
     UART_Init(&uartbus);
