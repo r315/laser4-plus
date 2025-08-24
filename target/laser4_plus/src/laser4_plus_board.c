@@ -86,6 +86,22 @@ stdinout_t pcom = {
 
 #endif
 
+extern void setup(void);
+extern void loop(void);
+
+int main(void)
+{
+    laser4Init();
+
+    setup();
+
+    while(1){
+        loop();
+    }
+
+    return 0;
+}
+
 // Functions implemenation
 void Error_Handler(char * file, int line)
 {

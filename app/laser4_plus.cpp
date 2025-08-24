@@ -438,12 +438,10 @@ void appDefaultEEPROM(void)
 /**
  * @brief Application setup call
  * */
-void setup(void)
+extern "C" void setup(void)
 {
 
     state = STARTING;
-
-    laser4Init();
 
 #if defined(ENABLE_DEBUG)
     #if defined(ENABLE_VCP)
@@ -524,7 +522,7 @@ void setup(void)
 /**
  * @brief Application main loop
  * */
-void loop(void)
+extern "C" void loop(void)
 {
     switch(state & STATE_MASK){
         case MODE_MULTIPROTOCOL:
@@ -569,13 +567,3 @@ void loop(void)
     reloadWatchDog();
 }
 
-int main(void)
-{
-    setup();
-
-    while(1){
-        loop();
-    }
-
-    return 0;
-}
