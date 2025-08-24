@@ -49,13 +49,11 @@ APP_PATH  :=$(PROJECT_DIR)/app
 TARGET_PATH =$(CURDIR)
 LIBEMB_PATH =$(PROJECT_DIR)/lib/libemb
 
-
-#LIB_USB_CDC_PATH :=$(PROJECT_DIR)/lib/stm32-usb-cdc
+LIB_USB_CDC_PATH :=$(PROJECT_DIR)/lib/stm32-usb-cdc
 LIB_USB_HID_PATH :=$(PROJECT_DIR)/lib/stm32-usb-cdc_hid
 LIB_DFU_PATH :=$(PROJECT_DIR)/lib/stm32-dfu-bootloader
 LIB_SERIAL_PATH :=$(CURPROJECT_DIRDIR)/lib/stm32-serial
 LIB_MULTIPROTOCOL_PATH :=$(PROJECT_DIR)/lib/multiprotocol
-#LIB_MULTIPROTOCOL_PATH :=$(PROJECT_DIR)/lib/cc2500
 
 FW :=STM32Cube_FW_F1_V1.8.2/
 
@@ -126,6 +124,7 @@ $(LIBEMB_PATH)/lib/src/fifo.c \
 $(LIBEMB_PATH)/lib/src/nvdata.c \
 $(LIBEMB_PATH)/lib/src/debug.c \
 $(LIBEMB_PATH)/drv/uart/uart_stm32f10x.c \
+$(LIBEMB_PATH)/drv/dma/dma_stm32f1xx.c \
 #$(LIB_SERIAL_PATH)/usart.c \
 $(LIBEMB_PATH)/misc/nvdata.c \
 #$(LIBEMB_PATH)/drv/tft/ssd1306.c \

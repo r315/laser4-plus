@@ -24,11 +24,9 @@
 
 #include "multiprotocol.h"
 #include "FrSkyDVX_Common.h"
+#include "app.h"
 #include "board.h"
 #include "debug.h"
-
-//TOOD: Fix this dependency
-#include "laser4_plus.h"
 
 //Personal config file
 #if defined(USE_MY_CONFIG)
@@ -46,7 +44,8 @@
 #define DBG_MULTI_ERR(...)
 #endif
 
-radio_t radio;
+static radio_t radio;
+uint16_t *eeprom_data;
 
 static uint8_t Update_All(void);
 static void modules_reset(void);
@@ -69,9 +68,10 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
  * */
 void multiprotocol_setup(void){
     DBG_MULTI_INF("Laser4+ version: %d.%d.%d", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+#ifdef ENABLE_PPM
     /* Configure PPM input pin PB5*/
     gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);
-
+#endif
     // Read status of bind button
     if(IS_BIND_BUTTON_PRESSED)
     {
@@ -161,7 +161,7 @@ uint8_t count=0;
         return;
     }
 
-    next_callback = radio.remote_callback() << 1;
+    next_callback = radio.remote_callback(&radio) << 1;
 
     cli();										    // Disable global int due to RW of 16 bits registers
     #ifndef STM32_BOARD
@@ -360,7 +360,7 @@ static uint16_t next_callback;
             #ifdef CC2500_INSTALLED
                 #if defined(FRSKYD_CC2500_INO)
                     case PROTO_FRSKYD:
-                        next_callback = initFrSky_2way();
+                        next_callback = initFrSky_2way(&radio);
                         radio.remote_callback = ReadFrSky_2way;
                         break;
                 #endif
@@ -517,4 +517,29 @@ static uint32_t random_id(uint8_t create_new)
 
     appSaveEEPROM();
     return id;
+}
+
+uint32_t multiprotocol_flags_get(void)
+{
+    return radio.flags;
+}
+
+uint32_t multiprotocol_protocol_id_get(void)
+{
+    return radio.protocol_id_master;
+}
+
+uint16_t *multiprotocol_channel_data_get(void)
+{
+    return radio.channel_data;
+}
+
+void multiprotocol_flags_set(uint32_t flags)
+{
+    radio.flags |= flags;
+}
+
+void multiprotocol_flags_clr(uint32_t flags)
+{
+    radio.flags &= ~flags;
 }

@@ -1,6 +1,7 @@
 
 #include "board.h"
 #include "console.h"
+#include "app.h"
 #include "laser4_plus.h"
 #include "iface_cc2500.h"
 #include "multiprotocol.h"
@@ -155,25 +156,27 @@ public:
 	}
 
 	void systemFlags(void){
+        uint32_t flags = multiprotocol_flags_get();
+
 		console->printf(
 			"RX              [%d]\n"
 			"Change protocol [%d]\n"
 			"Range           [%d]\n"
 			"PPM             [%d]\n"
 			"Bind done       [%d]\n",
-			IS_RX_FLAG_on,
-			IS_CHANGE_PROTOCOL_FLAG_on,
-			IS_RANGE_FLAG_on,
-			IS_PPM_FLAG_on,
-			IS_BIND_DONE
+			!!(flags & FLAG_RX),
+            !!(flags & FLAG_CHANGE_PROTOCOL),
+            !!(flags & FLAG_RANGE),
+            !!(flags & FLAG_PPM),
+            !!(flags & FLAG_BIND)
 		);
 		console->printf(
 			"Wait bind       [%d]\n"
 			"Tx pause        [%d]\n"
 			"Input signal    [%d]\n",
-			IS_WAIT_BIND_on,
-			IS_TX_MAIN_PAUSE_on,
-			IS_INPUT_SIGNAL_on
+            !!(flags & FLAG_WAIT_BIND),
+			!!(flags & FLAG_TX_PAUSE),
+            !!(flags & FLAG_INPUT_SIGNAL)
 		);
 	}
 #ifdef ENABLE_PPM
@@ -213,7 +216,7 @@ public:
 	void help(void) {}
 
 	char execute(int argc, char **argv) {
-        console->printf("Current ID: %x\n", radio.protocol_id_master);
+        console->printf("Current ID: %x\n", multiprotocol_protocol_id_get());
 		return CMD_OK;
 	}
 }cmdid;
@@ -234,13 +237,15 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {}
 	char execute(int argc, char **argv) {
-		if(IS_BIND_IN_PROGRESS){
+        uint32_t flags = multiprotocol_flags_get();
+
+		if((flags & FLAG_BIND) == 0){
 			console->print("Bind already in progress");
 		}else{
 			appReqModeChange(MODE_MULTIPROTOCOL);
-			CHANGE_PROTOCOL_FLAG_on;
-			BIND_IN_PROGRESS;
-			if(IS_INPUT_SIGNAL_off){
+            multiprotocol_flags_set(FLAG_CHANGE_PROTOCOL);
+		    multiprotocol_flags_clr(FLAG_BIND);
+			if((flags & FLAG_INPUT_SIGNAL) == 0){
 				console->print("No input signal!!");
 			}
 		}
@@ -263,12 +268,14 @@ public:
 	void help(void) {}
 	char execute(int argc, char **argv) {
 		switch(argv[2][0]){
-			case '0':
+			case '0': {
+                uint16_t *channel_data = multiprotocol_channel_data_get();
 				for(uint8_t i = 0; i < MAX_CHN_NUM; i++ ){
-					console->printf("\nChannel[%u]: %u", i, radio.channel_data[i]);
+					console->printf("\nChannel[%u]: %u", i, channel_data[i]);
 				}
 				console->printchar('\n');
 				break;
+            }
 			case '1':
                 DBG_DUMP_MEM((const uint8_t*)eeprom_data, EEPROM_SIZE);
 				break;

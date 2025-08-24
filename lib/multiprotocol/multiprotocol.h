@@ -60,6 +60,9 @@ extern "C" {
 #define FLAG_BIND_BUTTON            (1 << 5)
 #define FLAG_PPM                    (1 << 6)
 #define FLAG_BIND                   (1 << 7)
+#define FLAG_TX_PAUSE               (1 << 11)
+#define FLAG_INPUT_SIGNAL           (1 << 13)
+#define FLAG_WAIT_BIND              (1 << 15)
 //
 #define RX_FLAG_off                  _FLAGS_ &= ~FLAG_RX
 #define RX_FLAG_on                   _FLAGS_ |= FLAG_RX
@@ -179,6 +182,24 @@ extern "C" {
 #define MAX_AUX_CHANNELS    4
 #define BIND_FLAG_VALUE     0xF0
 
+/* Indexes of constants in eeprom */
+#define EEPROM_ID_OFFSET        0UL
+#define IDX_BUZ_VOLUME          28
+#define EEPROM_BIND_FLAG        29 //EEPROM_SIZE - 1
+// 32-bit indexes
+#define IDX_BAT_VOLTAGE_DIV     2
+#define IDX_SENSE_RESISTOR      4
+// 16-bit indexes
+#define IDX_CHANNEL_MAX_100     6
+#define IDX_CHANNEL_MIN_100     7
+#define IDX_CHANNEL_MAX_125     8
+#define IDX_CHANNEL_MIN_125	    9
+#define IDX_PPM_MAX_100         10
+#define IDX_PPM_MIN_100         11
+#define IDX_CHANNEL_SWITCH      12
+#define IDX_PPM_DEFAULT_VALUE   13
+
+#define DEFAULT_ID              0x2AD141A7
 
 enum protocols_e{
     MODE_SERIAL     = 0,
@@ -314,16 +335,21 @@ typedef struct radio{
     uint32_t protocol_id_master;
 
     //callback
-    uint16_t (*remote_callback)(void);
+    uint16_t (*remote_callback)(struct radio *radio);
 }radio_t;
 
-extern radio_t radio;
+//extern radio_t radio;
 extern uint8_t CH_AETR[];
 extern uint8_t CH_TAER[];
 extern uint8_t CH_EATR[];
 
 void multiprotocol_setup(void);
 void multiprotocol_loop(void);
+uint32_t multiprotocol_flags_get(void);
+void multiprotocol_flags_set(uint32_t flags);
+void multiprotocol_flags_clr(uint32_t flags);
+uint32_t multiprotocol_protocol_id_get(void);
+uint16_t *multiprotocol_channel_data_get(void);
 
 void ppm_setCallBack(void(*cb)(volatile uint16_t*, uint8_t));
 void update_channels_aux(void);

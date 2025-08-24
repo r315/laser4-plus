@@ -1,11 +1,15 @@
-#include "laser4_plus.h"
 #include "board.h"
+#include "app.h"
+#include "laser4_plus.h"
 #include "multiprotocol.h"
-#include "usb_device.h"
-#include "usbd_cdc_if.h"
 #include "mpanel.h"
 #include "tone.h"
 #include "debug.h"
+
+#if defined(ENABLE_VCP) || defined(ENABLE_GAME_CONTROLLER)
+#include "usb_device.h"
+#include "usbd_cdc_if.h"
+#endif
 
 #ifdef ENABLE_DEBUG_APP
 #define DBG_TAG     "APP : "
@@ -148,7 +152,6 @@ void appToggleLowBatIco(void);
 /**
  * EEPROM ram copy
  * */
-uint16_t *eeprom_data;
 
 static const uint16_t eeprom_default_data[EEPROM_SIZE / 2] = {
     (uint16_t)DEFAULT_ID, (uint16_t)(DEFAULT_ID>>16),
@@ -411,10 +414,10 @@ void appLoadEEPROM(void)
  * Note: In order to save eeprom
  *
  * */
-void appSaveEEPROM(void){
-
+void appSaveEEPROM(void)
+{
     // FIXME: Really should implement CRC
-    *((uint8_t*)eeprom_data+EEPROM_BIND_FLAG) = BIND_FLAG_VALUE;
+    *((uint8_t*)eeprom_data + EEPROM_BIND_FLAG) = BIND_FLAG_VALUE;
 
     EEPROM_Write(EEPROM_ID_OFFSET, (uint8_t*)eeprom_data, EEPROM_SIZE);
 
