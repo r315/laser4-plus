@@ -175,15 +175,14 @@ public:
             !!(flags & FLAG_INPUT_SIGNAL)
 		);
 	}
-#ifdef ENABLE_PPM
+
 	void channelValues(void){
         uint16_t *channel_data = multiprotocol_channel_data_get();
-        //radio.channel_aux + MAX_AUX_CHANNELS
+        // TODO: replace number radio.channel_aux + MAX_AUX_CHANNELS
 		for(uint8_t i = 0; i < 8; i++){
         	console->printf("CH[%u]:\t%u\n", i, channel_data[i]);
     	}
 	}
-#endif
 
 	char execute(int argc, char **argv) {
         (void) argc;
@@ -202,11 +201,11 @@ public:
         console->println("----------------------------------------");
         console->printf("Voltage          : %umV\n", batteryGetVoltage());
 #endif
-#ifdef ENABLE_PPM
+
         console->println("\n  Channel data");
         console->println("----------------------------------------");
 		channelValues();
-#endif
+
         uint8_t aux = appGetCurrentMode();
 		console->println("\n  Operating Mode");
         console->println("----------------------------------------");
@@ -331,6 +330,7 @@ public:
 	void help(void) {}
 	char execute(int argc, char **argv) {
 		if(argc == 1){
+            console->printf("Changes operating mode between game controller and multiprotocol");
 			console->printf("Current mode: %d\n",appGetCurrentMode());
 			return CMD_OK;
 		}

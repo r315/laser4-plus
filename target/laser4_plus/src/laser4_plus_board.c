@@ -114,6 +114,10 @@ static void laser4Init(void)
 #endif
     encInit();
 #ifdef ENABLE_PPM_OUTPUT
+    /* Configure PPM input pin PB5
+    TODO: Move to ppm_decoder??
+    */
+    gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);
     ppmOutInit();
 #endif
 

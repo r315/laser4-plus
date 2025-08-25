@@ -35,10 +35,12 @@
 
 #ifdef ENABLE_DEBUG_MULTI
 #define DBG_TAG             "MULTI : "
+#define DBG_MULTI_PRINT DBG_PRINT
 #define DBG_MULTI_INF(...)  DBG_INF(DBG_TAG __VA_ARGS__)
 #define DBG_MULTI_WRN(...)  DBG_WRN(DBG_TAG __VA_ARGS__)
 #define DBG_MULTI_ERR(...)  DBG_ERR(DBG_TAG __VA_ARGS__)
 #else
+#define DBG_MULTI_PRINT(...)
 #define DBG_MULTI_INF(...)
 #define DBG_MULTI_WRN(...)
 #define DBG_MULTI_ERR(...)
@@ -67,11 +69,7 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
  * @brief
  * */
 void multiprotocol_setup(void){
-    DBG_MULTI_INF("Laser4+ version: %d.%d.%d", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
-#ifdef ENABLE_PPM
-    /* Configure PPM input pin PB5*/
-    gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);
-#endif
+    DBG_MULTI_PRINT("***** Starting Multiprotocol *****");
     // Read status of bind button
     if(IS_BIND_BUTTON_PRESSED)
     {
@@ -334,8 +332,9 @@ static void update_led_status(void)
     }
 }
 
-static void protocol_init(void){
-static uint16_t next_callback;
+static void protocol_init(void)
+{
+    static uint16_t next_callback;
 
     if(IS_WAIT_BIND_off)
     {
@@ -408,6 +407,7 @@ static uint16_t next_callback;
 
 /**
  * After ppm synchronization, this function is called every ~20mS
+ * TODO: Move auxiliary channels to project application
  * */
 void update_channels_aux(void){
 

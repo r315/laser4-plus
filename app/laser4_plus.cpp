@@ -239,9 +239,9 @@ uint8_t cur_state = state & STATE_MASK;
  *
  * */
 static void changeMode(uint8_t new_mode){
+    DBG_PRINT("\n Laser4+ version: %d.%d.%d \n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
     switch(new_mode){
         case MODE_MULTIPROTOCOL:
-            DBG_PRINT("\n ***** Starting Multiprotocol *****\n");
             multiprotocol_setup();
 #ifdef ENABLE_BUZZER
             buzPlayTone(400,150);
