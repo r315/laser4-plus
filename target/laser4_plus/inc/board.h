@@ -6,36 +6,14 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-//TODO: Remove hal dependency
 #include "stm32f1xx_hal.h"
-#include "uart.h"
+#include "stdinout.h"
 #include "tone.h"
 #include "nvdata.h"
-#include "stdinout.h"
 
 #ifdef ENABLE_DISPLAY
 #include "ssd1306.h"
 #endif
-
-/* GPIO definitions */
-#define GPIO_MODE_MASK          15
-//#define GPIO_MODE_INPUT         (0 << 0) // Input, defined on HAL
-#define GPIO_MODE_O2MHZ         (2 << 0)
-#define GPIO_MODE_O10MHZ        (1 << 0)
-#define GPIO_MODE_O50MHZ        (3 << 0)
-#define GPIO_CNF_OD             (1 << 2)     // OUPUT: Open drain, INPUT: Floating
-#define GPIO_CNF_AF             (2 << 2)     // OUTPUT: Alternative function, INPUT: pull-up/pull-down
-
-/* Default push-pull */
-#define GPO_2MHZ                GPIO_MODE_O2MHZ
-#define GPO_10MHZ               GPIO_MODE_O10MHZ
-#define GPO_50MHZ               GPIO_MODE_O50MHZ
-#define GPO_OD                  GPIO_CNF_OD
-#define GPO_AF                  (2 << 2)
-#define GPI_ANALOG              0
-#define GPI_OD                  (1 << 2) // floating
-#define GPI_PD                  (2 << 2)
-#define GPI_PU                  (6 << 2) // 2 | 4
 
 #define GPIO_ENABLE             RCC->APB2ENR |=      \
                                 RCC_APB2ENR_IOPCEN \
@@ -43,7 +21,7 @@ extern "C" {
                                 | RCC_APB2ENR_IOPAEN \
                                 | RCC_APB2ENR_AFIOEN;
 
-#define GPO_INIT(_IO, _PIN)     gpioInit(_IO, _PIN, GPO_2MHZ)
+#define GPO_INIT(_IO, _PIN)     gpioInit(_IO, _PIN, GPO_LS)
 #define GPO_SET(_IO, _PIN)      _IO->BSRR = (1 << _PIN)
 #define GPO_CLR(_IO, _PIN)      _IO->BRR = (1 << _PIN)
 #define GPO_TOGGLE(_IO, _PIN)   _IO->ODR ^= (1<<_PIN)
@@ -123,7 +101,7 @@ extern "C" {
 /** RF enable for 35MHz transmiter */
 #define HW_TX_35MHZ_EN_PIN      3
 #define HW_TX_35MHZ_EN_PORT     GPIOA
-#define HW_TX_35MHZ_EN_INIT     gpioInit(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN, GPO_2MHZ); HW_TX_35MHZ_OFF
+#define HW_TX_35MHZ_EN_INIT     gpioInit(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN, GPO_LS); HW_TX_35MHZ_OFF
 #define HW_TX_35MHZ_ON          GPO_SET(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN)
 #define HW_TX_35MHZ_OFF         GPO_CLR(HW_TX_35MHZ_EN_PORT, HW_TX_35MHZ_EN_PIN)
 
@@ -151,8 +129,10 @@ extern "C" {
  * PA8 -> BUZ
  */
 #define BUZ_TIM                 TIM1
+#define BUZ_TIM_CH              (1 - 1)
+#define BUZ_PIN                 PA_8
+#define BUZ_PIN_IDLE            1
 #define BUZ_DEFAULT_VOLUME      9     // 10us pulse.
-#define FREQ_TO_US(_F)          (1000000/_F)
 
 /**
  * Rotary encoder
@@ -249,6 +229,7 @@ void DelayMs(uint32_t ms);
 uint32_t GetTick(void);
 void SPI_Write(uint8_t data);
 uint8_t SPI_Read(void);
+
 void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode);
 void gpioAttachInterrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*)(void));
 void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin);
@@ -272,11 +253,12 @@ uint32_t batteryReadVI(vires_t *dst);
 #endif
 
 void ppmOut(uint16_t *data);
-
+#ifdef ENABLE_BUZZER
 void buzPlayTone(uint16_t freq, uint16_t duration);
 void buzPlay(tone_t *tones);
 uint16_t buzSetLevel(uint16_t level);
 void buzWaitEnd(void);
+#endif
 
 uint32_t xrand(void);
 
@@ -284,7 +266,7 @@ void processTimers(void);
 uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void));
 void stopTimer(uint32_t tim);
 
-#ifdef ENABLE_USART
+#ifdef ENABLE_UART
 extern stdinout_t pcom;
 #endif
 
