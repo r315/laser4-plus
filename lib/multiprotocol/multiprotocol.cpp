@@ -68,7 +68,8 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
 /**
  * @brief
  * */
-void multiprotocol_setup(void){
+void multiprotocol_setup(void)
+{
     DBG_MULTI_PRINT("***** Starting Multiprotocol *****");
     // Read status of bind button
     if(IS_BIND_BUTTON_PRESSED)
@@ -94,7 +95,7 @@ void multiprotocol_setup(void){
 
     modules_reset();
 
-    radio.protocol_id_master = random_id(0);
+    radio.protocol_id_master = random_id(false);
     DBG_MULTI_INF("Module Id: %lx", radio.protocol_id_master);
 
 #ifdef ENABLE_PPM

@@ -200,18 +200,20 @@ extern "C" {
 #define IDX_PPM_DEFAULT_VALUE   13
 
 #define DEFAULT_ID              0x2AD141A7
+#define MODE_SERIAL             0
 
 enum protocols_e{
-    MODE_SERIAL     = 0,
-    PROTO_FLYSKY     = 1,    // =>A7105
+    PROTO_PROTOLIST	= 0,    // NO RF
+    PROTO_FLYSKY    = 1,    // =>A7105
     PROTO_KN        = 9,    // =>NRF24L01
     PROTO_FRSKYD    = 3,
-    PROTO_DEVO        = 7,    // =>CYRF6936
+    PROTO_DEVO      = 7,    // =>CYRF6936
     PROTO_FRSKYX    = 15,
-    PROTO_SFHSS        = 21,    // =>CC2500
+    PROTO_SFHSS     = 21,   // =>CC2500
     PROTO_FRSKYV    = 25,
     PROTO_AFHDS2A   = 28,
-    PROTO_WK2x01    = 30,    // =>CYRF6936
+    PROTO_WK2x01    = 30,   // =>CYRF6936
+    PROTO_FRSKY_RX	= 55,	// =>CC2500
 };
 
 enum KN {
@@ -225,6 +227,14 @@ enum Flysky {
         V6X6    = 2,
         V912    = 3,
         CX20    = 4,
+};
+
+enum FRSKY_RX
+{
+	FRSKY_RX	= 0,
+	FRSKY_CLONE	= 1,
+	FRSKY_ERASE	= 2,
+	FRSKY_CPPM  = 3,
 };
 
 enum AFHDS2A {
