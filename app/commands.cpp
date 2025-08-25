@@ -177,8 +177,10 @@ public:
 	}
 #ifdef ENABLE_PPM
 	void channelValues(void){
-		for(uint8_t i = 0; i < radio.channel_aux + MAX_AUX_CHANNELS; i++){
-        	console->print("CH[%u]:\t%u\n", i, radio.channel_data[i]);
+        uint16_t *channel_data = multiprotocol_channel_data_get();
+        //radio.channel_aux + MAX_AUX_CHANNELS
+		for(uint8_t i = 0; i < 8; i++){
+        	console->printf("CH[%u]:\t%u\n", i, channel_data[i]);
     	}
 	}
 #endif

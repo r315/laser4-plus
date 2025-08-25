@@ -354,7 +354,7 @@ uint16_t *multiprotocol_channel_data_get(void);
 void ppm_setCallBack(void(*cb)(volatile uint16_t*, uint8_t));
 void update_channels_aux(void);
 void setPpmFlag(volatile uint16_t *buf, uint8_t chan);
-uint16_t ppm_tx(void);
+uint16_t ppm_tx(struct radio *radio);
 uint16_t *ppm_getData(void);
 
 #ifdef __cplusplus

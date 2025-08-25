@@ -2,12 +2,15 @@
 #include "board.h"
 
 #if defined(ENABLE_PPM)
-static volatile uint16_t ppm_data[MAX_CHN_NUM];
+static volatile uint16_t ppm_data[MAX_CHN_NUM]; // TODO: move this to radio structure?
 static void (*ppmFrameCB)(volatile uint16_t *, uint8_t);
 
 static void ppm_decode(void);
 
-uint16_t ppm_tx(void){
+uint16_t ppm_tx(struct radio *radio)
+{
+    (void)radio;
+
     ppmOut((uint16_t *)ppm_data);
     return 9000;
 }

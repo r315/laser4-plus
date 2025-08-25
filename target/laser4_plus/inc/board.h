@@ -61,7 +61,6 @@ extern "C" {
  * PB13 -> SCK
  * PB14 <- MISO
  * PB15 -> MOSI
- *
  * */
 #define CC25_CS_PIN             12
 #define CC25_CS_PORT            GPIOB
@@ -113,6 +112,7 @@ extern "C" {
 #define HW_PPM_INPUT_PIN        5
 #define HW_PPM_INPUT_PORT       GPIOB
 #define PPM_TIM                 TIM4
+#define PPM_DMA_REQ             DMA1_REQ_TIM4_UP
 #define TIMER_BASE              TIM3          //PB5 -> TIM3_CH2
 #define TIMER_BASE_IRQn         TIM3_IRQn
 #define TIMER_BASE_IRQHandler   TIM3_IRQHandler

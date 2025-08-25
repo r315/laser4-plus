@@ -65,6 +65,8 @@ static void timInit(void);
 static void encInit(void);
 static void crcInit(void);
 #ifdef ENABLE_PPM
+static dmatype_t ppmdma;
+static uint16_t ppm_data[MAX_PPM_CHANNELS + 2];
 static void ppmOutInit(void);
 #endif
 
@@ -763,20 +765,28 @@ void encInit(void){
     ENC_TIM->SR = 0;
 }
 
+#if defined(ENABLE_PPM)
+static void ppmEotHandler(void)
+{
+    // As two extra channels were send,
+    // we end up here when transfering the first extra channel.
+    // As the timer is stoped we get only a rising edge due to update event
+    // and cancel the last channel transmission.
+    DMA_Cancel(&ppmdma);
+    PPM_TIM->CR1 &= ~TIM_CR1_CEN;
+}
+
 /**
- * @brief Generates PPM signal for 6 channels.
- * One extra channel is required in order to produce the last
- * pulse of the last channel. Another channel is added just to avoid wasting
- * cpu cycles waiting for the transmission of the last channel, this way the DMA
- * transfer complete interrupt doesn't stop the timer in the middle of the transmission.
+ * @brief Generates a single PPM frame with 6 channels.
+ * it should be called every 20ms with new data.
  *
  * @param data : pointer to the six channels data
  *
  * */
-#if defined(ENABLE_PPM)
-void ppmOut(uint16_t *data){
-    static uint16_t ppm_data[MAX_PPM_CHANNELS + 2];
-    // Copy channel data to temp buffer
+void ppmOut(uint16_t *data)
+{
+    // Copy channel data to local buffer allows
+    // application to change buffer right after this call
     for (uint16_t i = 0; i < MAX_PPM_CHANNELS; i++){
         ppm_data[i] = data[i];
     }
@@ -791,37 +801,58 @@ void ppmOut(uint16_t *data){
     // Configure DMA transfer, the first transfer will have the value on ppm_data[0]
     // since this value was transferred to produce initial pulse, it is necessary to send it again
     // to generate the channel time.
-    DMA1_Channel7->CMAR = (uint32_t)(ppm_data);
-    DMA1_Channel7->CNDTR = MAX_PPM_CHANNELS + 2;
-    DMA1_Channel7->CCR |= DMA_CCR_EN;
+    DMA_Start(&ppmdma);
     // Resume timer
     PPM_TIM->CR1 |= TIM_CR1_CEN;
-    //DBG_PIN_HIGH;
 }
 
 /**
- * @brief PPM output generation init
+ * @brief PPM output generation.
+ *
+ * PPM signal can be divided in frames transmitted every 20ms.
+ * Each frame can have up to 10 channels and a singe channel can vary it's period
+ * betwen 1ms and 2ms but have a fixed pulse width of 0.3ms
+ *
+ * This implementation generates an inverted ppm siganl with 6 channels.
+ *
+ * ---+ +----------+ +-------+ +----+ +-------+ +-------+ +-------+ +---------
+ *    |_|          |_|       |_|    |_|       |_|       |_|       |_|
+ *    ^            ^         ^      ^         ^         ^         ^
+ *    |    CH1     |   CH2   |  CH3 |   CH4   |   CH5   |   CH6   |
+ *
+ * A timer is configured to count downwards and a compare channel is configured in PMW mode 2.
+ * In this configuration, the output is high while counter value is greater than
+ * channel's value, and low otherwise.
+ * When counter reaches zero, it triggers a dma transfer to update ARR, which is then loaded
+ * back int to counter.
+ * Since the new counter value is again greater than compare value, the output becomes high,
+ * and cycle repeats.
+ *
+ * Two extra channels are used to generate the pulse for last channel.
+ * EOT handler is called after last dma transfer and while timer counter is
+ * greater than compare value. At this point dma is canceled and timer stopped,
+ * leaving just the final pulse. With this cpu cycles aren't wasted waiting
+ * for the end to generate the last pulse.
+ *
  * */
-void ppmOutInit(void){
-    gpioInit(GPIOB, 7, GPO_AF | GPO_2MHZ);
+void ppmOutInit(void)
+{
+    gpioInit(GPIOB, 7, GPO_LS_AF);
+    // Configure DMA
+    ppmdma.dir = DMA_DIR_M2P;
+    ppmdma.ssize = DMA_CCR_PSIZE_16;
+    ppmdma.dsize = DMA_CCR_MSIZE_16;
+    ppmdma.src = (void*)&PPM_TIM->ARR;
+    ppmdma.dst = (void*)&ppm_data[0];
+    ppmdma.eot = ppmEotHandler;
+    ppmdma.len = MAX_PPM_CHANNELS + 2;
+    DMA_Config(&ppmdma, PPM_DMA_REQ);
 
-     /* Configure DMA Channel7 */
-    RCC->AHBENR |= RCC_AHBENR_DMA1EN;               // Enable DMA1
-    DMA1_Channel7->CPAR = (uint32_t)&PPM_TIM->ARR;  // Destination peripheral
-    DMA1_Channel7->CCR =
-            DMA_CCR_PL |                            // Highest priority
-            DMA_CCR_MSIZE_0 |                       // 16bit Dst size
-            DMA_CCR_PSIZE_0 |                       // 16bit src size
-            DMA_CCR_DIR |                           // Read from memory
-            DMA_CCR_MINC |                          // increment memory pointer after transference
-            DMA_CCR_TCIE;                           // Enable end of transfer interrupt
-    NVIC_EnableIRQ(DMA1_Channel7_IRQn);
-
-    PPM_TIM->CR1 =  TIM_CR1_DIR | TIM_CR1_ARPE;
-    PPM_TIM->PSC = (SystemCoreClock/2000000) - 1;   // 36-1;for 72 MHZ /0.5sec/(35+1)
+    PPM_TIM->CR1 =  TIM_CR1_DIR | TIM_CR1_ARPE;     // Down count and buffered ARR
+    PPM_TIM->PSC = (SystemCoreClock/2000000) - 1;   // 2MHz clock, counts units of 0.5us
     PPM_TIM->CCMR1 = (7 << 12);                     // PWM mode 2
     PPM_TIM->CCER = TIM_CCER_CC2E;                  // Enable channel
-    // Force high state
+    // Force high state by having CNT > CCRx
     PPM_TIM->ARR = PPM_MAX_PERIOD;
     PPM_TIM->CNT = PPM_MAX_PERIOD;
     PPM_TIM->CCR2 = PPM_PULSE_WIDTH;
@@ -957,17 +988,3 @@ void SysTick_Handler(void){
     ticks++;
 }
 #endif
-
-// TIM4 DMA request
-void DMA1_Channel7_IRQHandler(void){
-    if(DMA1->ISR & DMA_ISR_TCIF7){
-        DMA1_Channel7->CCR &= ~DMA_CCR_EN;
-        // As two extra channels were send,
-        // we end up here when transfering the first extra channel.
-        // As the timer is stoped we get only a rising edge due to update event
-        // and cancel the last channel transmission.
-        PPM_TIM->CR1 &= ~TIM_CR1_CEN;
-        //DBG_PIN_LOW;
-    }
-    DMA1->IFCR |= DMA_IFCR_CGIF7;  // Clear DMA Flags TODO: ADD DMA Error handling ?
-}
