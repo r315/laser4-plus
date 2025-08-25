@@ -52,17 +52,17 @@ extern "C" {
 
 /* *************System flags ******************* */
 #define _FLAGS_                     radio.flags
-#define FLAG_RX                     (1 << 0)
-#define FLAG_CHANGE_PROTOCOL        (1 << 1)
-#define FLAG_POWER                  (1 << 2)
-#define FLAG_RANGE                  (1 << 3)
-#define FLAG_AUTOBIND               (1 << 4)
-#define FLAG_BIND_BUTTON            (1 << 5)
-#define FLAG_PPM                    (1 << 6)
-#define FLAG_BIND                   (1 << 7)
+#define FLAG_RX                     (1 << 0)    // When set indicates that a serial frame has been received
+#define FLAG_CHANGE_PROTOCOL        (1 << 1)    // When set indicates system to initialyze protocol
+#define FLAG_POWER                  (1 << 2)    // Together with CC2500_ENABLE_LOW_POWER, when cleared put CC2500 in low power
+#define FLAG_RANGE                  (1 << 3)    // Not used
+#define FLAG_AUTOBIND               (1 << 4)    // Used to wait for bind at startup
+#define FLAG_BIND_BUTTON            (1 << 5)    // When set forces current protocol initialization
+#define FLAG_PPM                    (1 << 6)    // When set idicates that a ppm frame has been received
+#define FLAG_BIND                   (1 << 7)    // When set indicates system to start bind process
 #define FLAG_TX_PAUSE               (1 << 11)
-#define FLAG_INPUT_SIGNAL           (1 << 13)
-#define FLAG_WAIT_BIND              (1 << 15)
+#define FLAG_INPUT_SIGNAL           (1 << 13)   // When set indicates that a valid input siganl is present
+#define FLAG_WAIT_BIND              (1 << 15)   // When set indicates system that shoul wait for bind process to conclude
 //
 #define RX_FLAG_off                  _FLAGS_ &= ~FLAG_RX
 #define RX_FLAG_on                   _FLAGS_ |= FLAG_RX
@@ -214,6 +214,8 @@ enum protocols_e{
     PROTO_AFHDS2A   = 28,
     PROTO_WK2x01    = 30,   // =>CYRF6936
     PROTO_FRSKY_RX	= 55,	// =>CC2500
+    PROTO_TEST      = 127,
+    PROTO_PPM       = 128
 };
 
 enum KN {
@@ -358,12 +360,11 @@ void multiprotocol_flags_set(uint32_t flags);
 void multiprotocol_flags_clr(uint32_t flags);
 uint32_t multiprotocol_protocol_id_get(void);
 uint16_t *multiprotocol_channel_data_get(void);
+void multiprotocol_setChannelData(volatile uint16_t *buf, uint8_t chan);
+void update_channels_aux(void);
 
 void ppm_setCallBack(void(*cb)(volatile uint16_t*, uint8_t));
-void update_channels_aux(void);
-void setPpmFlag(volatile uint16_t *buf, uint8_t chan);
 uint16_t ppm_tx(struct radio *radio);
-uint16_t *ppm_getData(void);
 
 #ifdef __cplusplus
 }

@@ -17,13 +17,6 @@ uint16_t ppm_tx(struct radio *radio)
 }
 
 /**
- * @brief
- * */
-uint16_t *ppm_getData(void){
-    return (uint16_t*)ppm_data;
-}
-
-/**
  * @brief Configure callback for PPM input pin interrupt
  *
  * @param cb : callback function

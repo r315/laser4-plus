@@ -100,7 +100,7 @@ void multiprotocol_setup(void)
 
 #ifdef ENABLE_PPM
     // Setup callback for ppm frame ready
-    ppm_setCallBack(setPpmFlag);
+    ppm_setCallBack(multiprotocol_setChannelData);
 
     radio.chan_order = 0;
     uint8_t bank = HW_BANK_SWITCH;
@@ -365,7 +365,7 @@ static void protocol_init(void)
             #endif
 
             #ifdef TX35_MHZ_INSTALLED
-                    case 255:
+                    case PROTO_PPM:
                         next_callback = 10000;
                         radio.remote_callback = ppm_tx;
                         HW_TX_35MHZ_ON;
@@ -455,9 +455,14 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id)
 }
 
 /**
- * @brief Callback from ppm_decode
- * */
-void setPpmFlag(volatile uint16_t *buf, uint8_t chan){
+ * @brief Function to set channels data.
+ * Callback for when channel data is ready from ppm_decode or
+ * simulation
+ *
+ * @param buf   Buffer with channel data
+ * @param chan  Number of channels
+ */
+void multiprotocol_setChannelData(volatile uint16_t *buf, uint8_t chan){
     PPM_FLAG_on;
 #ifdef ENABLE_PPM
     radio.ppm_data = buf;

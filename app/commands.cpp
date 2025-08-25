@@ -272,7 +272,7 @@ public:
 uint16_t ppm_sim_data[] = {3000, 3000, 1950, 3000};
 static void ppm_sim(void)
 {
-	setPpmFlag(ppm_sim_data, 4);
+	multiprotocol_setChannelData(ppm_sim_data, 4);
 }
 
 class CmdTest : public ConsoleCommand {
