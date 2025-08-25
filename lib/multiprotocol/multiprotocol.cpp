@@ -90,8 +90,6 @@ void multiprotocol_setup(void){
         radio.channel_data[i] = channel_default;
     }
 
-    ENC_TIM->CNT = radio.enc_count;
-
     radio.channel_data[THROTTLE] = eeprom_data[IDX_CHANNEL_MIN_125] ;
 
     modules_reset();
@@ -422,7 +420,7 @@ void update_channels_aux(void){
     }
 
     // Process encoder
-    int16_t diff = ENC_TIM->CNT - radio.enc_count;
+    int16_t diff = encGetDiff();
     if(diff != 0){
         uint16_t tmp = radio.channel_data[radio.channel_aux + MAX_AUX_CHANNELS - 1];
         tmp += diff * 10; // speed
@@ -432,7 +430,6 @@ void update_channels_aux(void){
             tmp = eeprom_data[IDX_CHANNEL_MIN_100];
         }
         radio.channel_data[radio.channel_aux + MAX_AUX_CHANNELS - 1] = tmp;
-        radio.enc_count += diff;
     }
 }
 

@@ -62,8 +62,12 @@ static void i2cInit(void);
 // Private functions
 static void spiInit(void);
 static void timInit(void);
-static void encInit(void);
 static void crcInit(void);
+#ifdef ENABLE_ENCODER
+static uint16_t enc_count;
+static uint16_t enc_speed;
+static void encInit(void);
+#endif
 #ifdef ENABLE_PPM_OUTPUT
 static dmatype_t ppmdma;
 static uint16_t ppm_data[MAX_PPM_CHANNELS + 2];
@@ -109,10 +113,15 @@ static void laser4Init(void)
 
     spiInit();
     timInit();
+
 #ifdef ENABLE_BATTERY_MONITOR
     adcInit();
 #endif
+
+#ifdef ENABLE_ENCODER
     encInit();
+#endif
+
 #ifdef ENABLE_PPM_OUTPUT
     /* Configure PPM input pin PB5
     TODO: Move to ppm_decoder??
@@ -747,6 +756,8 @@ uint32_t batteryReadVI(vires_t *dst){
     return 0;
 }
 #endif
+
+#ifdef ENABLE_ENCODER
 /**
  * @brief Rotary encorder init
  *  Configures a timer as pulse counter, the counter is incremented/decremented
@@ -768,6 +779,25 @@ void encInit(void){
     ENC_TIM->CR1 = TIM_CR1_CEN;
     ENC_TIM->SR = 0;
 }
+
+uint16_t encGetCnt(void)
+{
+    return ENC_TIM->CNT;
+}
+
+/**
+ * @brief Returns hom much counter has changes since last call
+ *
+ * @param
+ * @return delta from last time called
+ */
+int16_t encGetDiff(void)
+{
+    int16_t diff = ENC_TIM->CNT - enc_count;
+    enc_count += diff;
+    return diff;
+}
+#endif
 
 #ifdef ENABLE_PPM_OUTPUT
 static void ppmEotHandler(void)

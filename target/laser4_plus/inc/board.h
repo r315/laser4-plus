@@ -264,6 +264,9 @@ uint16_t buzSetLevel(uint16_t level);
 void buzWaitEnd(void);
 #endif
 
+#ifdef ENABLE_ENCODER
+int16_t encGetDiff(void);
+#endif
 uint32_t xrand(void);
 
 void processTimers(void);
