@@ -45,6 +45,18 @@ void DelayMs(uint32_t ms)
 }
 
 /**
+ * @brief meh close enougth
+ *
+ * @return : CRC'd number with timer
+ * */
+uint32_t xrand(void)
+{
+    CRC->DT = ticks;
+    return CRC->DT;
+}
+
+
+/**
  * @brief
  * @param data
  */
@@ -88,7 +100,9 @@ static void BOARD_Init(void)
 //    timInit();
 //    adcInit();
 //    encInit();
-//    crcInit();
+    /* CRC Init */
+    RCC_AHBPeriphClockCmd(RCC_AHBPERIPH_CRC, ENABLE);
+    CRC->CTRL = 1;
 
 #ifdef ENABLE_PPM_OUTPUT
     ppmOutInit();

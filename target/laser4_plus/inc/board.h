@@ -237,6 +237,7 @@ void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin);
 void enableWatchDog(uint32_t interval);
 void reloadWatchDog(void);
 
+uint32_t xrand(void);
 uint32_t readSwitches(void);
 
 #ifdef ENABLE_BATTERY_MONITOR
@@ -267,7 +268,6 @@ void buzWaitEnd(void);
 #ifdef ENABLE_ENCODER
 int16_t encGetDiff(void);
 #endif
-uint32_t xrand(void);
 
 void processTimers(void);
 uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void));
