@@ -112,6 +112,7 @@ extern "C" {
 #define HW_PPM_INPUT_PIN        5
 #define HW_PPM_INPUT_PORT       GPIOB
 #define PPM_TIM                 TIM4
+#define PPM_TIM_CH              (2 - 1)
 #define PPM_DMA_REQ             DMA1_REQ_TIM4_UP
 #define TIMER_BASE              TIM3          //PB5 -> TIM3_CH2
 #define TIMER_BASE_IRQn         TIM3_IRQn
@@ -252,7 +253,10 @@ uint32_t batteryGetCurrent(void);
 uint32_t batteryReadVI(vires_t *dst);
 #endif
 
+#ifdef ENABLE_PPM_OUTPUT
 void ppmOut(uint16_t *data);
+#endif
+
 #ifdef ENABLE_BUZZER
 void buzPlayTone(uint16_t freq, uint16_t duration);
 void buzPlay(tone_t *tones);

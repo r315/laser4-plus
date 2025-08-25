@@ -64,7 +64,7 @@ static void spiInit(void);
 static void timInit(void);
 static void encInit(void);
 static void crcInit(void);
-#ifdef ENABLE_PPM
+#ifdef ENABLE_PPM_OUTPUT
 static dmatype_t ppmdma;
 static uint16_t ppm_data[MAX_PPM_CHANNELS + 2];
 static void ppmOutInit(void);
@@ -113,7 +113,7 @@ static void laser4Init(void)
     adcInit();
 #endif
     encInit();
-#ifdef ENABLE_PPM
+#ifdef ENABLE_PPM_OUTPUT
     ppmOutInit();
 #endif
 
@@ -765,7 +765,7 @@ void encInit(void){
     ENC_TIM->SR = 0;
 }
 
-#if defined(ENABLE_PPM)
+#ifdef ENABLE_PPM_OUTPUT
 static void ppmEotHandler(void)
 {
     // As two extra channels were send,

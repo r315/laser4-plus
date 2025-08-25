@@ -10,8 +10,9 @@ static void ppm_decode(void);
 uint16_t ppm_tx(struct radio *radio)
 {
     (void)radio;
-
+#ifdef ENABLE_PPM_OUTPUT
     ppmOut((uint16_t *)ppm_data);
+#endif
     return 9000;
 }
 
