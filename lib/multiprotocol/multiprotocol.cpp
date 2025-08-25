@@ -169,6 +169,7 @@ uint8_t count=0;
     diff = TIMER_BASE->CCR1 - TIMER_BASE->CNT;	    // Calc the time difference
     #endif
     sei();										    // Enable global int
+
     if((diff&0x8000) && !(next_callback&0x8000))
     { // Negative result=callback should already have been called...
         DBG_MULTI_WRN("Short CB:%d", next_callback);
@@ -459,16 +460,14 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id)
  * Callback for when channel data is ready from ppm_decode or
  * simulation
  *
- * @param buf   Buffer with channel data
+ * @param buf   Buffer with channel data in 0.5us resolution
  * @param chan  Number of channels
  */
 void multiprotocol_setChannelData(volatile uint16_t *buf, uint8_t chan){
     PPM_FLAG_on;
 #ifdef ENABLE_PPM
     radio.ppm_data = buf;
-    // Saving the number of channels received
-    //if(chan > radio.channel_aux)
-        radio.channel_aux = chan;
+    radio.channel_aux = chan;
 #else
     (void)buf;
     (void)chan;

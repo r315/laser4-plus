@@ -11,7 +11,7 @@ uint16_t ppm_tx(struct radio *radio)
 {
     (void)radio;
 #ifdef ENABLE_PPM_OUTPUT
-    ppmOut((uint16_t *)ppm_data);
+    ppmOut((uint16_t *)radio->channel_data);
 #endif
     return 9000;
 }

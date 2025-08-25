@@ -275,52 +275,35 @@ static void ppm_sim(void)
 	multiprotocol_setChannelData(ppm_sim_data, 4);
 }
 
-class CmdTest : public ConsoleCommand {
+class CmdPpm : public ConsoleCommand {
 	Console *console;
-	int32_t tim;
+    int32_t tim;
 public:
-    CmdTest() : ConsoleCommand("test") {}
+    CmdPpm() : ConsoleCommand("ppm") {}
 	void init(void *params) { console = static_cast<Console*>(params); tim = -1;}
 	void help(void) {}
 	char execute(int argc, char **argv) {
         (void) argc;
         (void) argv;
 
-		switch(argv[2][0]){
-			case '0': {
-                uint16_t *channel_data = multiprotocol_channel_data_get();
-				for(uint8_t i = 0; i < MAX_CHN_NUM; i++ ){
-					console->printf("\nChannel[%u]: %u", i, channel_data[i]);
-				}
-				console->printchar('\n');
-				break;
+        if(!strcmp(argv[1], "sim")){
+            int32_t sim_enable;
+            if(ia2i(argv[2], &sim_enable)){
+                if(sim_enable & 1 && tim == -1){
+                    console->println("Starting ppm simulation");
+                    tim = startTimer(20, SWTIM_AUTO_RELOAD, ppm_sim);
+                }else{
+                    console->println("Stoping ppm simulation");
+                    stopTimer(tim);
+                    tim = -1;
+                }
             }
-			case '1':
-                DBG_DUMP_MEM((const uint8_t*)eeprom_data, EEPROM_SIZE);
-				break;
+            return CMD_OK;
+        }
 
-			case '2':
-				if(tim != -1 ){
-					break;
-				}
-				console->print("Starting ppm simulation");
-				tim = startTimer(20, SWTIM_AUTO_RELOAD, ppm_sim);
-				break;
-			case '3':
-				console->print("Stoping ppm simulation");
-				stopTimer(tim);
-				tim = -1;
-				break;
-			case '4':
-				//uint32_t start = HAL_GetTick();
-				/* Some function to test */
-				//console->print("Time: %ums\n", HAL_GetTick() - start);
-				break;
-
-		}
-		return CMD_OK;
+		return CMD_BAD_PARAM;
 	}
-}cmdtest;
+}cmdppm;
 
 class CmdMode : public ConsoleCommand {
 	Console *console;
@@ -582,7 +565,7 @@ ConsoleCommand *laser4_commands[]{
 	&cmdid,
 	&cmdbind,
 	&cmdstatus,
-	&cmdtest,
+	&cmdppm,
 	&cmdmode,
 	&cmdeeprom,
 #ifdef ENABLE_BATTERY_MONITOR
