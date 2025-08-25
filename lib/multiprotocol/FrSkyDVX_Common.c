@@ -18,10 +18,7 @@
 /******************************/
 
 #include "FrSkyDVX_Common.h"
-
-#if defined(CC2500_INSTALLED)
 #include "iface_cc2500.h"
-#endif
 
 #if defined(FRSKYX_CC2500_INO) || defined(FRSKY_RX_CC2500_INO)
 //**CRC**
