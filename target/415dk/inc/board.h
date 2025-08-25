@@ -21,6 +21,12 @@ extern "C" {
 #define GPO_CLR(_IO, _PIN)      _IO->BRE = (1 << _PIN)
 #define GPO_TOGGLE(_IO, _PIN)   _IO->ODR ^= (1<<_PIN)
 
+/* General symbols */
+#define RAM_CODE                __attribute__((section(".ram_code")))
+#define millis                  GetTick
+#define cli                     __disable_irq
+#define sei                     __enable_irq
+
 #define LED_PIN         PA_8
 #define LED_INIT       GPIO_Config(LED_PIN, GPO_LS);
 
@@ -30,12 +36,12 @@ extern "C" {
 
 
 /**
- * SPI2
+ * CC2500 Module
+ *
  * PB12 -> CS
  * PB13 -> SCK
  * PB14 <- MISO
  * PB15 -> MOSI
- *
  * */
 #define CC25_CS_PIN             12
 #define CC25_CS_PORT            GPIOB
@@ -49,6 +55,37 @@ extern "C" {
 #define SPI_PINS_INIT           GPIOB->CRH = (GPIOB->CRH & ~(0xFFF << 20)) | (0xB4B << 20);
 
 
+/**
+ * Switches
+ *
+ * AUX1 <- PC14
+ * AUX2 <- PC15
+ * AUX3 <- PB4 (encoder press)
+ * */
+#define HW_SW_AUX1_PIN          PC_14
+#define HW_SW_AUX2_PIN          PC_15
+#define HW_SW_AUX3_PIN          PB_4
+#define HW_SW_INIT              GPIO_Config(HW_SW_AUX1_PIN, GPI_PU); \
+                                GPIO_Config(HW_SW_AUX2_PIN, GPI_PU); \
+                                GPIO_Config(HW_SW_AUX3_PIN, GPI_PU); \
+
+#define HW_SW_READ              readSwitches()
+#define HW_SW_AUX1_VAL          GPIO_Read(HW_SW_AUX1_PIN)
+#define HW_SW_AUX2_VAL          GPIO_Read(HW_SW_AUX2_PIN)
+#define HW_SW_AUX3_VAL          GPIO_Read(HW_SW_AUX3_PIN)
+#define IS_HW_SW_AUX1_PRESSED   (HW_SW_AUX1_VAL == 0)
+#define IS_HW_SW_AUX2_PRESSED   (HW_SW_AUX2_VAL == 0)
+#define IS_HW_SW_AUX3_PRESSED   (HW_SW_AUX3_VAL == 0)
+#define IS_BIND_BUTTON_PRESSED  IS_HW_SW_AUX1_PRESSED
+
+#ifdef TX35_MHZ_INSTALLED
+#define HW_PROTOCOL_SWITCH      (IS_HW_SW_AUX3_PRESSED)? 14 : 10      /* 1...14 */
+#else
+#define HW_PROTOCOL_SWITCH      10      /* 1...14 */
+#endif
+#define HW_BANK_SWITCH          0       /* bank_switch(); */
+
+
 void DelayMs(uint32_t ms);
 uint32_t GetTick(void);
 uint32_t ElapsedTicks(uint32_t start_ticks);
@@ -59,6 +96,8 @@ void SPI_Write(uint8_t data);
 uint8_t SPI_Read(void);
 
 uint32_t batteryGetVoltage(void);
+
+uint32_t readSwitches(void);
 
 #ifdef __cplusplus
 }

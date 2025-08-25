@@ -3,7 +3,7 @@
 #include "stdinout.h"
 #include "uart.h"
 
-#ifdef ENABLE_USART
+#ifdef ENABLE_UART
 static serialbus_t uartbus;
 
 int serial_available(void) { return UART_Available(&uartbus); }
@@ -27,12 +27,12 @@ int main(void)
 {
     BOARD_Init();
 
-    setup();
+    //setup();
 
     pcom.write("hello\n", 6);
 
     while (1) {
-        loop();
+        //loop();
     }
 
     return 0;
@@ -44,16 +44,38 @@ void DelayMs(uint32_t ms)
     while(ticks < timeout){ }
 }
 
+/**
+ * @brief
+ * @param data
+ */
 void SPI_Write(uint8_t data)
 {
 
 }
 
+/**
+ * @brief
+ * @param
+ * @return
+ */
 uint8_t SPI_Read(void)
 {
     return 0;
 }
 
+
+/**
+ * @brief Read digital switches values
+ *
+ * @return : bitmask with active switches
+ * */
+uint32_t readSwitches(void){
+    uint16_t state = 0;
+
+        state = (IS_HW_SW_AUX1_PRESSED << 0) | (IS_HW_SW_AUX1_PRESSED << 1) | (IS_HW_SW_AUX1_PRESSED << 2);
+
+        return state;
+    }
 static void BOARD_Init(void)
 {
     RCC_APB2PeriphClockCmd(RCC_APB2EN_GPIOAEN, ENABLE);
@@ -68,7 +90,7 @@ static void BOARD_Init(void)
 //    encInit();
 //    crcInit();
 
-#ifdef ENABLE_PPM
+#ifdef ENABLE_PPM_OUTPUT
     ppmOutInit();
 #endif
 
@@ -76,7 +98,7 @@ static void BOARD_Init(void)
     buzInit();
 #endif
 
-#ifdef ENABLE_USART
+#ifdef ENABLE_UART
     uartbus.bus = UART_BUS0;
     uartbus.speed = 115200;
     UART_Init(&uartbus);
