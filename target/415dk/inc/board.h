@@ -9,10 +9,11 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 #include "at32f4xx.h"
-#include "spi.h"
-#include "gpio.h"
 #include "gpio_at32f4xx.h"
 #include "tone_at32f4xx.h"
+#include "spi.h"
+#include "gpio.h"
+#include "stdinout.h"
 
 #define SET_BIT(REG, BIT)       ((REG) |= (BIT))
 #define CLEAR_BIT(REG, BIT)     ((REG) &= ~(BIT))
@@ -27,12 +28,13 @@ extern "C" {
 #define cli                     __disable_irq
 #define sei                     __enable_irq
 
-#define LED_PIN         PA_8
-#define LED_INIT       GPIO_Config(LED_PIN, GPO_LS);
+#define LED_PIN                 PA_8
+#define LED_INIT                GPIO_Config(LED_PIN, GPO_LS);
 
-#define LED_OFF        GPIO_Write(LED_PIN, GPIO_PIN_HIGH)
-#define LED_ON         GPIO_Write(LED_PIN, GPIO_PIN_LOW)
-#define LED_TOGGLE     GPIO_Toggle(LED_PIN)
+#define LED_OFF                 GPIO_Write(LED_PIN, GPIO_PIN_HIGH)
+#define LED_ON                  GPIO_Write(LED_PIN, GPIO_PIN_LOW)
+#define LED_TOGGLE              GPIO_Toggle(LED_PIN)
+#define IS_LED_on               (GPIOA->IPTDT & (1<<8))
 
 
 /**
@@ -69,7 +71,6 @@ extern "C" {
                                 GPIO_Config(HW_SW_AUX2_PIN, GPI_PU); \
                                 GPIO_Config(HW_SW_AUX3_PIN, GPI_PU); \
 
-#define HW_SW_READ              readSwitches()
 #define HW_SW_AUX1_VAL          GPIO_Read(HW_SW_AUX1_PIN)
 #define HW_SW_AUX2_VAL          GPIO_Read(HW_SW_AUX2_PIN)
 #define HW_SW_AUX3_VAL          GPIO_Read(HW_SW_AUX3_PIN)
@@ -95,9 +96,45 @@ void __debugbreak(void);
 void SPI_Write(uint8_t data);
 uint8_t SPI_Read(void);
 
-uint32_t batteryGetVoltage(void);
+uint32_t xrand(void);
+uint32_t cpuGetId(void);
 
-uint32_t readSwitches(void);
+#ifdef ENABLE_BATTERY_MONITOR
+float adcGetResolution(void);
+void adcSetVdivRacio(float r);
+float adcGetVdivRacio(void);
+void adcSetSenseResistor(float rs);
+float adcGetSenseResistor(void);
+uint32_t adcCalibrate(void);
+uint32_t batteryGetVoltage(void);
+// uint32_t batteryReadVoltage(uint32_t *dst); remove when confirmed not necessary
+uint32_t batteryGetCurrent(void);
+// uint32_t batteryReadCurrent(uint32_t *dst);
+//uint32_t batteryReadVI(vires_t *dst);
+#endif
+
+#ifdef ENABLE_PPM_OUTPUT
+void ppmOut(uint16_t *data);
+#endif
+
+#ifdef ENABLE_ENCODER
+int16_t encGetDiff(void);
+#endif
+
+#ifdef ENABLE_AUX_CHANNELS
+uint32_t readAuxSwitches(void);
+#endif
+
+#ifdef ENABLE_BUZZER
+void buzPlayTone(uint16_t freq, uint16_t duration);
+void buzPlay(tone_t *tones);
+uint16_t buzSetLevel(uint16_t level);
+void buzWaitEnd(void);
+#endif
+
+#ifdef ENABLE_UART
+extern stdinout_t pcom;
+#endif
 
 #ifdef __cplusplus
 }

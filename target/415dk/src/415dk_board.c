@@ -55,6 +55,16 @@ uint32_t xrand(void)
     return CRC->DT;
 }
 
+/**
+ * @brief
+ *
+ * @param
+ * @return
+ */
+uint32_t cpuIdGet(void)
+{
+    return MCUDBG->IDCR;
+}
 
 /**
  * @brief

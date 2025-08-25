@@ -990,6 +990,20 @@ uint32_t xrand(void){
 }
 
 /**
+ * @brief
+ *
+ * @param
+ * @return
+ */
+uint32_t cpuGetId(void)
+{
+    //#define UID_BASE ((uint32_t *)0x1FFFF7E8)
+    //return UID_BASE[0] ^ UID_BASE[1] ^ UID_BASE[2];
+    return *(uint32_t*)UID_BASE;
+}
+
+
+/**
  * @brief Interrupts handlers
  * */
 /**

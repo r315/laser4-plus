@@ -89,7 +89,6 @@ extern "C" {
                                 gpioInit(HW_SW_AUX2_PORT, HW_SW_AUX2_PIN, GPI_PU); \
                                 gpioInit(HW_SW_AUX3_PORT, HW_SW_AUX3_PIN, GPI_PU); \
 
-#define HW_SW_READ              readSwitches()
 #define HW_SW_AUX1_VAL          ((HW_SW_AUX1_PORT->IDR & (1 << HW_SW_AUX1_PIN)) == 0)
 #define HW_SW_AUX2_VAL          ((HW_SW_AUX2_PORT->IDR & (1 << HW_SW_AUX2_PIN)) == 0)
 #define HW_SW_AUX3_VAL          ((HW_SW_AUX3_PORT->IDR & (1 << HW_SW_AUX3_PIN)) == 0)
@@ -238,7 +237,11 @@ void enableWatchDog(uint32_t interval);
 void reloadWatchDog(void);
 
 uint32_t xrand(void);
-uint32_t readSwitches(void);
+uint32_t cpuGetId(void);
+
+void processTimers(void);
+uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void));
+void stopTimer(uint32_t tim);
 
 #ifdef ENABLE_BATTERY_MONITOR
 float adcGetResolution(void);
@@ -269,9 +272,9 @@ void buzWaitEnd(void);
 int16_t encGetDiff(void);
 #endif
 
-void processTimers(void);
-uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void));
-void stopTimer(uint32_t tim);
+#ifdef ENABLE_AUX_CHANNELS
+uint32_t readAuxSwitches(void);
+#endif
 
 #ifdef ENABLE_UART
 extern stdinout_t pcom;

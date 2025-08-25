@@ -409,7 +409,8 @@ static void protocol_init(void)
  * */
 void update_channels_aux(void){
 
-    uint8_t switches = HW_SW_READ;
+#ifdef ENABLE_AUX_CHANNELS
+    uint8_t switches = readAuxSwitches();
 
     for(uint8_t i = 0; i < MAX_AUX_CHANNELS - 1; i++){
         if((switches & (1<<i)) == 0){
@@ -418,7 +419,9 @@ void update_channels_aux(void){
             radio.channel_data[radio.channel_aux + i] = eeprom_data[IDX_CHANNEL_SWITCH];
         }
     }
+#endif
 
+#ifdef ENABLE_ENCODER
     // Process encoder
     int16_t diff = encGetDiff();
     if(diff != 0){
@@ -431,6 +434,7 @@ void update_channels_aux(void){
         }
         radio.channel_data[radio.channel_aux + MAX_AUX_CHANNELS - 1] = tmp;
     }
+#endif
 }
 
 /**
@@ -481,9 +485,15 @@ int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int1
 /**
  *
  * */
-static void modules_reset(void){
+static void modules_reset(void)
+{
+    #ifdef CC2500_INSTALLED
     HW_CC2500_MODULE_RESET;
+    #endif
+
+    #ifdef TX35_MHZ_INSTALLED
     HW_TX_35MHZ_OFF;
+    #endif
 }
 /**
  *
@@ -495,18 +505,13 @@ static uint32_t random_id(uint8_t create_new)
     id = eeprom_data[EEPROM_ID_OFFSET + 1] << 16 | eeprom_data[EEPROM_ID_OFFSET];
 
     if(!create_new){
-        if(id != DEFAULT_ID)	//ID with seed=0
-        {
+        if(id != DEFAULT_ID){	//ID with seed=0
             DBG_MULTI_INF("Using ID 0x%x from EEPROM", id);
             return id;
         }
 
-    // Generate a random ID
-#if defined STM32_BOARD
-        #define STM32_UUID ((uint32_t *)0x1FFFF7E8)
-        id = STM32_UUID[0] ^ STM32_UUID[1] ^ STM32_UUID[2];
+        id = cpuGetId();
         DBG_MULTI_INF("Using Chip UUID 0x%x", id);
-#endif
     }else{
         id = xrand();
     }

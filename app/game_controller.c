@@ -62,7 +62,12 @@ RAM_CODE void CONTROLLER_Process(void){
 
         update_channels_aux();
         laser4.aux2 = radio.channel_data[radio.channel_aux + MAX_AUX_CHANNELS - 1];
-        laser4.buttons = HW_SW_READ;
+#ifdef ENABLE_AUX_CHANNELS
+        laser4.buttons = readAuxSwitches();
+#else
+        laser4.buttons = 0;
+#endif
+
 #else
         //float t = angle * 0.15915f; // Normalize t = x/2pi - floor(x/2pi)
         //t = t - (int)t;
