@@ -1,17 +1,19 @@
 #include "multiprotocol.h"
 #include "board.h"
 
-
 #define PPM_TX_INTERVAL     20000 /* ms */
 
 #if defined(ENABLE_PPM)
+static int8_t chan = 0, bad_frame = 1;
+static uint16_t prev_tick;
+
 /**
  * @brief ppm_data contains ppm frame in units of 0.5us
  * using 0.5us units give more precision when maping to servo data.
  * Becose of this it makes sense that ppm_data bing static here
  */
-static volatile uint16_t ppm_data[MAX_CHN_NUM];
-static void (*ppmFrameCB)(const uint16_t *, uint8_t);
+static uint16_t ppm_data[MAX_CHN_NUM];
+static void (*ppm_frame_ready)(const uint16_t *, uint8_t);
 
 /**
  * @brief
@@ -29,32 +31,31 @@ uint16_t ppm_tx(struct radio *radio)
 }
 
 /**
- * @brief PPM_decode from multiprotocol project.
- * This function is calledfrom PPM pin input interrupt handler
+ * @brief  Interrupt handler for falling edge of ppm input pin
+ * Channel data is obtained by measuring time between falling edges
  * */
-RAM_CODE static void ppm_decode(void){
-    static int8_t chan = 0, bad_frame = 1;
-    static uint16_t Prev_TCNT1 = 0;
-    uint16_t Cur_TCNT1;
-    // Capture current Timer value
-    Cur_TCNT1 = TIMER_BASE->CNT - Prev_TCNT1;
-    if(Cur_TCNT1 < PPM_MIN_PERIOD){
+RAM_CODE static void ppm_handler(void){
+    uint16_t cur_tick;
+    // Get current ticks
+    cur_tick = ticksElapsed(prev_tick);
+
+    if(cur_tick < PPM_MIN_PERIOD << 1){
         bad_frame = 1;					// bad frame
-    }else if(Cur_TCNT1 > PPM_MAX_PERIOD){
+    }else if(cur_tick > PPM_MAX_PERIOD << 1){
         //start of frame
         if(chan >= MIN_PPM_CHANNELS){
             //DBG_PIN_TOGGLE;
-            ppmFrameCB(ppm_data, chan);
+            ppm_frame_ready(ppm_data, chan);
         }
         chan = 0;						// reset channel counter
         bad_frame = 0;
     }else if(bad_frame == 0){			// need to wait for start of frame
         //servo values between 800us and 2200us will end up here
-        ppm_data[chan] = Cur_TCNT1;
+        ppm_data[chan] = cur_tick;
         if(chan++ >= MAX_PPM_CHANNELS)
-            bad_frame = 1;		// don't accept any new channels
+            bad_frame = 1;		        // don't accept any new channels
     }
-    Prev_TCNT1 += Cur_TCNT1;
+    prev_tick += cur_tick;
 }
 
 /**
@@ -68,7 +69,7 @@ void ppm_setCallBack(void(*cb)(const uint16_t*, uint8_t)){
        return;
    }
    gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);
-   ppmFrameCB = cb;
-   gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, ppm_decode);
+   ppm_frame_ready = cb;
+   gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, ppm_handler);
 }
 #endif

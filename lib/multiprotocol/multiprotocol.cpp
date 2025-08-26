@@ -148,7 +148,7 @@ uint8_t count=0;
             #ifndef STM32_BOARD
             OCR1A=TCNT1;						// Callback should already have been called... Use "now" as new sync point.
             #else
-            TIMER_BASE->CCR1 = TIMER_BASE->CNT;
+            TIME_BASE->CCR1 = TIME_BASE->CNT;
             #endif
             sei();								// Enable global int
         }
@@ -161,9 +161,9 @@ uint8_t count=0;
     #ifndef STM32_BOARD
     TIFR1=OCF1A_bm;							        // Clear compare A=callback flag
     #else
-    TIMER_BASE->CCR1 += next_callback;			    // Calc when next_callback should happen
-    TIMER_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;	    // Clear Timer2/Comp1 interrupt flag
-    diff = TIMER_BASE->CCR1 - TIMER_BASE->CNT;	    // Calc the time difference
+    TIME_BASE->CCR1 += next_callback;			    // Calc when next_callback should happen
+    TIME_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;	    // Clear Timer2/Comp1 interrupt flag
+    diff = TIME_BASE->CCR1 - TIME_BASE->CNT;	    // Calc the time difference
     #endif
     sei();										    // Enable global int
 
@@ -185,7 +185,7 @@ uint8_t count=0;
         #ifndef STM32_BOARD
             while((TIFR1 & OCF1A_bm) == 0)
         #else
-        while((TIMER_BASE->SR & TIM_SR_CC1IF ) == 0)
+        while((TIME_BASE->SR & TIM_SR_CC1IF ) == 0)
         #endif
         {
             if(diff > (900*2))
@@ -198,7 +198,7 @@ uint8_t count=0;
                 count=0;
                 Update_All();
                 #ifdef ENABLE_DEBUG
-                if(TIMER_BASE->SR & TIM_SR_CC1IF )
+                if(TIME_BASE->SR & TIM_SR_CC1IF )
                     DBG_MULTI_WRN("Long update");
                 #endif
                 if(radio.remote_callback == NULL)
@@ -207,7 +207,7 @@ uint8_t count=0;
                 #ifndef STM32_BOARD
                 diff = OCR1A-TCNT1;				// Calc the time difference
                 #else
-                diff = TIMER_BASE->CCR1 - TIMER_BASE->CNT;
+                diff = TIME_BASE->CCR1 - TIME_BASE->CNT;
                 #endif
                 sei();							// Enable global int
             }
@@ -397,8 +397,8 @@ static void protocol_init(void)
         next_callback -= temp << 10;                        // between 2-3ms left at this stage
     }
     cli();											        // disable global int
-    TIMER_BASE->CCR1 = TIMER_BASE->CNT + next_callback * 2;	// set compare A for callback
-    TIMER_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;				// Clear Timer2/Comp1 interrupt flag
+    TIME_BASE->CCR1 = TIME_BASE->CNT + next_callback * 2;	// set compare A for callback
+    TIME_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;				// Clear Timer2/Comp1 interrupt flag
     sei();										            // enable global int
 }
 

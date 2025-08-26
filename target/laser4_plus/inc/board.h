@@ -113,9 +113,7 @@ extern "C" {
 #define PPM_TIM                 TIM4
 #define PPM_TIM_CH              (2 - 1)
 #define PPM_DMA_REQ             DMA1_REQ_TIM4_UP
-#define TIMER_BASE              TIM3          //PB5 -> TIM3_CH2
-#define TIMER_BASE_IRQn         TIM3_IRQn
-#define TIMER_BASE_IRQHandler   TIM3_IRQHandler
+#define TIME_BASE               TIM3
 
 #define MIN_PPM_CHANNELS        4
 #define MAX_PPM_CHANNELS        6
@@ -218,9 +216,11 @@ typedef struct vires {
 /* Public variables */
 extern uint32_t SystemCoreClock;
 
+uint32_t ticksGet(void);
+uint32_t ticksElapsed(uint32_t start);
+
 /* Function prototyes */
 void DelayMs(uint32_t ms);
-uint32_t GetTick(void);
 void SPI_Write(uint8_t data);
 uint8_t SPI_Read(void);
 

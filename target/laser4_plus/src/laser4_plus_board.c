@@ -45,7 +45,7 @@ swtimer_t timers[SWTIM_NUM];
 
 // Private variables
 static SPI_HandleTypeDef hspi;
-static volatile uint32_t ticks;
+static volatile uint32_t systicks;
 static void (*pinIntCB)(void);
 
 #ifdef ENABLE_BATTERY_MONITOR
@@ -61,7 +61,7 @@ static void i2cInit(void);
 
 // Private functions
 static void spiInit(void);
-static void timInit(void);
+static void systicksInit(void);
 static void crcInit(void);
 #ifdef ENABLE_ENCODER
 static uint16_t enc_count;
@@ -112,7 +112,7 @@ static void laser4Init(void)
     HW_TX_35MHZ_EN_INIT;
 
     spiInit();
-    timInit();
+    systicksInit();
 
 #ifdef ENABLE_BATTERY_MONITOR
     adcInit();
@@ -219,8 +219,9 @@ void SPI_Write(uint8_t data)
     HAL_SPI_Transmit(&hspi, &data, 1, 10);
 }
 
-uint8_t SPI_Read(void){
-uint8_t data;
+uint8_t SPI_Read(void)
+{
+    uint8_t data;
     HAL_SPI_Receive(&hspi, &data, 1, 10);
     return data;
 }
@@ -243,6 +244,7 @@ static void spiInit(){
     hspi.Init.TIMode = SPI_TIMODE_DISABLE;
     hspi.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     hspi.Init.CRCPolynomial = 10;
+
     if (HAL_SPI_Init(&hspi) != HAL_OK){
         Error_Handler(__FILE__, __LINE__);
     }
@@ -337,50 +339,52 @@ uint8_t requestLcdUpdate(void){
 #endif
 
 /**
- * @brief Initialyze 1ms general purpose time base
- *          using timer4
- *
+ * @brief Initialyze system time bases
  * */
-static void timInit(void){
-
-    ticks = 0;
-
-    RCC->APB1ENR    |= RCC_APB1ENR_TIM4EN | RCC_APB1ENR_TIM3EN | RCC_APB1ENR_TIM2EN;
-    RCC->APB2ENR    |= RCC_APB2ENR_TIM1EN;
-    RCC->APB1RSTR   |= RCC_APB1RSTR_TIM4RST | RCC_APB1RSTR_TIM3RST | RCC_APB1RSTR_TIM2RST;
-    RCC->APB1RSTR   &= ~(RCC_APB1RSTR_TIM4RST | RCC_APB1RSTR_TIM3RST | RCC_APB1RSTR_TIM2RST);
-    RCC->APB2RSTR   |= RCC_APB2RSTR_TIM1RST;
-    RCC->APB2RSTR   &= ~RCC_APB2RSTR_TIM1RST;
-    /* Configure 1ms timer*/
-#if NO_SYS_TICK
-    TIM4->PSC = (SystemCoreClock/1000000) - 1; // Set Timer clock
-    TIM4->ARR = 1000 - 1;
-    TIM4->DIER = TIM_DIER_UIE;
-    TIM4->CR1 |= TIM_CR1_CEN;
-    NVIC_EnableIRQ(TIM4_IRQn);
-#else
+static void systicksInit(void)
+{
+    /** 1ms time base using cortex-M systick
+     * for software timers
+     */
+    systicks = 0;
     SysTick_Config(SystemCoreClock / 1000);
     NVIC_EnableIRQ(SysTick_IRQn);
-#endif
+
     /* Configure 0.5us time base for multiprotocol */
-    TIMER_BASE->CR1 = 0;                                // Stop counter
-    TIMER_BASE->PSC = (SystemCoreClock/2000000) - 1;    // 36-1;for 72 MHZ /0.5sec/(35+1)
-    TIMER_BASE->ARR = 0xFFFF;                           // Count until 0xFFFF
-    TIMER_BASE->CCMR1 = (1<<4);                         // Main scheduler
-    TIMER_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;            // Clear Timer/Comp2 interrupt flag
-    TIMER_BASE->DIER = 0;                               // Disable Timer/Comp2 interrupts
-    TIMER_BASE->EGR |= TIM_EGR_UG;                      // Refresh the timer's count, prescale, and overflow
-    TIMER_BASE->CR1 |= TIM_CR1_CEN;                     // Enable counter
+    RCC->APB1ENR    |= RCC_APB1ENR_TIM2EN;
+    RCC->APB1RSTR   |= RCC_APB1RSTR_TIM2RST;
+    RCC->APB1RSTR   &= ~RCC_APB1RSTR_TIM2RST;
+
+    TIME_BASE->CR1 = 0;                                // Stop counter
+    TIME_BASE->PSC = (SystemCoreClock/2000000) - 1;    // 36-1;for 72 MHZ /0.5sec/(35+1)
+    TIME_BASE->ARR = 0xFFFF;                           // Count until 0xFFFF
+    TIME_BASE->CCMR1 = (1<<4);                         // Compare mode, CCR1 is used for precise timming
+    TIME_BASE->SR = 0;                                 // Clear all flags
+    TIME_BASE->DIER = 0;                               // Disable Timer/Comp2 interrupts
+    TIME_BASE->EGR |= TIM_EGR_UG;                      // Refresh the timer's count, prescale, and overflow
+    TIME_BASE->CR1 = TIM_CR1_CEN;                      // Enable counter
+}
+
+uint32_t ticksGet(void)
+{
+    return 0;
+}
+
+uint32_t ticksElapsed(uint32_t start)
+{
+    return TIME_BASE->CNT - start;
 }
 
 void DelayMs(uint32_t ms)
 {
-    uint32_t timeout = ticks + ms;
-    while(ticks < timeout){ }
+    uint32_t timeout = systicks + ms;
+    while(systicks < timeout){ }
 }
 
-uint32_t GetTick(void){ return ticks; }
-uint32_t HAL_GetTick(void){ return GetTick(); }
+uint32_t HAL_GetTick(void)
+{
+    return systicks;
+}
 
 /**
  * @brief Flash write functions for EEPROM emulation
@@ -766,6 +770,10 @@ uint32_t batteryReadVI(vires_t *dst){
  * Using TIM2 CH1 and CH2 as TI1 and TI2, also filter is configured
  * */
 void encInit(void){
+    RCC->APB1ENR    |= RCC_APB1ENR_TIM2EN;
+    RCC->APB1RSTR   |= RCC_APB1RSTR_TIM2RST;
+    RCC->APB1RSTR   &= ~RCC_APB1RSTR_TIM2RST;
+
     gpioInit(GPIOB, 3, GPI_PU);
     gpioInit(GPIOA, 15, GPI_PU);
     AFIO->MAPR = (AFIO->MAPR & ~(3 << 8)) | (1 << 8);       // Partial remap for TIM2; PA15 -> CH1, PB3 -> CH2
@@ -872,6 +880,10 @@ void ppmOut(const uint16_t *data, uint8_t nch)
  * */
 void ppmOutInit(void)
 {
+    RCC->APB1ENR    |= RCC_APB1ENR_TIM4EN;
+    RCC->APB1RSTR   |= RCC_APB1RSTR_TIM4RST;
+    RCC->APB1RSTR   &= ~RCC_APB1RSTR_TIM4RST;
+
     gpioInit(GPIOB, 7, GPO_LS_AF);
     // Configure DMA
     ppmdma.dir = DMA_DIR_M2P;
@@ -961,7 +973,7 @@ void stopTimer(uint32_t tim){
  * */
 void processTimers(void){
 static uint32_t last_tick = 0;
-uint32_t diff = ticks - last_tick;
+uint32_t diff = systicks - last_tick;
 swtimer_t *tim = timers;
     for(uint32_t i = 0; i < SWTIM_NUM; i++, tim++){
         if(tim->status & SWTIM_RUNNING){
@@ -977,7 +989,7 @@ swtimer_t *tim = timers;
         }
     }
 
-    last_tick = ticks;
+    last_tick = systicks;
 }
 
 /**
@@ -985,8 +997,9 @@ swtimer_t *tim = timers;
  *
  * @return : CRC'd number with timer
  * */
-uint32_t xrand(void){
-    CRC->DR = TIMER_BASE->CNT;
+uint32_t xrand(void)
+{
+    CRC->DR = TIME_BASE->CNT;
     return CRC->DR;
 }
 
@@ -1026,14 +1039,6 @@ uint32_t pr = EXTI->PR;
     EXTI->PR = pr;
 }
 
-#ifdef NO_SYS_TICK
-void TIM4_IRQHandler(void){
-    TIM4->SR = ~TIM4->SR;
-    ticks++;
-    //DBG_PIN_TOGGLE;
-}
-#else
 void SysTick_Handler(void){
-    ticks++;
+    systicks++;
 }
-#endif
