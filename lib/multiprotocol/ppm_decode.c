@@ -1,40 +1,31 @@
 #include "multiprotocol.h"
 #include "board.h"
 
-#if defined(ENABLE_PPM)
-static volatile uint16_t ppm_data[MAX_CHN_NUM]; // TODO: move this to radio structure?
-static void (*ppmFrameCB)(volatile uint16_t *, uint8_t);
 
-static void ppm_decode(void);
+#define PPM_TX_INTERVAL     20000 /* ms */
+
+#if defined(ENABLE_PPM)
+/**
+ * @brief ppm_data contains ppm frame in units of 0.5us
+ * using 0.5us units give more precision when maping to servo data.
+ * Becose of this it makes sense that ppm_data bing static here
+ */
+static volatile uint16_t ppm_data[MAX_CHN_NUM];
+static void (*ppmFrameCB)(const uint16_t *, uint8_t);
 
 /**
  * @brief
  * @param radio
- * @return
+ * @return time in ms for next call
  */
 uint16_t ppm_tx(struct radio *radio)
 {
 #ifdef ENABLE_PPM_OUTPUT
-    ppmOut((uint16_t *)radio->channel_data);
+    ppmOut(radio->channel_data, 4); // TODO: replace 4 by radio->nchannels
 #else
     (void)radio;
 #endif
-    return 9000;
-}
-
-/**
- * @brief Configure callback for PPM input pin interrupt
- *
- * @param cb : callback function
- *
- * */
-void ppm_setCallBack(void(*cb)(volatile uint16_t*, uint8_t)){
-     if(cb == NULL){
-        return;
-    }
-    gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);
-    ppmFrameCB = cb;
-    gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, ppm_decode);
+    return PPM_TX_INTERVAL;
 }
 
 /**
@@ -64,5 +55,20 @@ RAM_CODE static void ppm_decode(void){
             bad_frame = 1;		// don't accept any new channels
     }
     Prev_TCNT1 += Cur_TCNT1;
+}
+
+/**
+ * @brief Configure callback for PPM input pin interrupt
+ *
+ * @param cb : callback function
+ *
+ * */
+void ppm_setCallBack(void(*cb)(const uint16_t*, uint8_t)){
+    if(cb == NULL){
+       return;
+   }
+   gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);
+   ppmFrameCB = cb;
+   gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, ppm_decode);
 }
 #endif

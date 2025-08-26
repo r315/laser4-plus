@@ -814,19 +814,19 @@ static void ppmEotHandler(void)
  * @brief Generates a single PPM frame with 6 channels.
  * it should be called every 20ms with new data.
  *
- * @param data : pointer to the six channels data
+ * @param data : pointer to servo data in us unit
  *
  * */
-void ppmOut(uint16_t *data)
+void ppmOut(const uint16_t *data, uint8_t nch)
 {
     // Copy channel data to local buffer allows
     // application to change buffer right after this call
-    for (uint16_t i = 0; i < MAX_PPM_CHANNELS; i++){
+    for (uint16_t i = 0; i < nch; i++){
         ppm_data[i] = data[i];
     }
-    // Set extra channels to end ppm signal
-    ppm_data[MAX_PPM_CHANNELS] = PPM_MAX_PERIOD;
-    ppm_data[MAX_PPM_CHANNELS + 1] = PPM_MAX_PERIOD;
+    // Set extra channels with max width at end ppm signal
+    ppm_data[nch]     = PPM_MAX_PERIOD;
+    ppm_data[nch + 1] = PPM_MAX_PERIOD;
     // Force counter update and DMA request, setting the period here
     // will produce a rising edge, but as the ppm line should be high
     // we get only the initial ppm low pulse.
@@ -835,6 +835,7 @@ void ppmOut(uint16_t *data)
     // Configure DMA transfer, the first transfer will have the value on ppm_data[0]
     // since this value was transferred to produce initial pulse, it is necessary to send it again
     // to generate the channel time.
+    ppmdma.len = nch + 2;
     DMA_Start(&ppmdma);
     // Resume timer
     PPM_TIM->CR1 |= TIM_CR1_CEN;
@@ -876,14 +877,14 @@ void ppmOutInit(void)
     ppmdma.dir = DMA_DIR_M2P;
     ppmdma.ssize = DMA_CCR_PSIZE_16;
     ppmdma.dsize = DMA_CCR_MSIZE_16;
-    ppmdma.src = (void*)&PPM_TIM->ARR;
-    ppmdma.dst = (void*)&ppm_data[0];
+    ppmdma.src = (void*)&ppm_data[0];
+    ppmdma.dst = (void*)&PPM_TIM->ARR;
     ppmdma.eot = ppmEotHandler;
     ppmdma.len = MAX_PPM_CHANNELS + 2;
     DMA_Config(&ppmdma, PPM_DMA_REQ);
 
     PPM_TIM->CR1 =  TIM_CR1_DIR | TIM_CR1_ARPE;     // Down count and buffered ARR
-    PPM_TIM->PSC = (SystemCoreClock/2000000) - 1;   // 2MHz clock, counts units of 0.5us
+    PPM_TIM->PSC = (SystemCoreClock/1000000) - 1;   // 1MHz clock, counts units of 1us
     PPM_TIM->CCMR1 = (7 << 12);                     // PWM mode 2
     PPM_TIM->CCER = TIM_CCER_CC2E;                  // Enable channel
     // Force high state by having CNT > CCRx

@@ -316,7 +316,7 @@ typedef struct radio{
 
 #ifdef ENABLE_PPM
     // PPM variable
-    volatile uint16_t *ppm_data;
+    const uint16_t *ppm_data;
     uint8_t chan_order;
 #endif
     //Received packets buffer
@@ -348,10 +348,10 @@ void multiprotocol_flags_set(uint32_t flags);
 void multiprotocol_flags_clr(uint32_t flags);
 uint32_t multiprotocol_protocol_id_get(void);
 uint16_t *multiprotocol_channel_data_get(void);
-void multiprotocol_setChannelData(volatile uint16_t *buf, uint8_t chan);
+void multiprotocol_setChannelData(const uint16_t *buf, uint8_t chan);
 void update_channels_aux(void);
 
-void ppm_setCallBack(void(*cb)(volatile uint16_t*, uint8_t));
+void ppm_setCallBack(void(*cb)(const uint16_t*, uint8_t));
 uint16_t ppm_tx(struct radio *radio);
 
 #ifdef __cplusplus

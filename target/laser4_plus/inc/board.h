@@ -119,10 +119,9 @@ extern "C" {
 
 #define MIN_PPM_CHANNELS        4
 #define MAX_PPM_CHANNELS        6
-#define PPM_MAX_PERIOD          4400 // 2200
-#define PPM_MIN_PERIOD          1600 // 800
-#define PPM_MED_PERIOD          (PPM_MAX_PERIOD - PPM_MIN_PERIOD)
-#define PPM_PULSE_WIDTH         600     /* 300us */
+#define PPM_MAX_PERIOD          2200    /* servo values in us */
+#define PPM_MIN_PERIOD          800
+#define PPM_PULSE_WIDTH         300
 
 /**
  * Buzzer
@@ -258,7 +257,7 @@ uint32_t batteryReadVI(vires_t *dst);
 #endif
 
 #ifdef ENABLE_PPM_OUTPUT
-void ppmOut(uint16_t *data);
+void ppmOut(const uint16_t *data, uint8_t nch);
 #endif
 
 #ifdef ENABLE_BUZZER

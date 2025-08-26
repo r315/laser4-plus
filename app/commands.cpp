@@ -269,7 +269,7 @@ public:
 	}
 }cmdbind;
 
-uint16_t ppm_sim_data[] = {3000, 3000, 2000, 3000};
+static const uint16_t ppm_sim_data[] = {3000, 3000, 2000, 3000};
 static void ppm_sim(void)
 {
 	multiprotocol_setChannelData(ppm_sim_data, 4);

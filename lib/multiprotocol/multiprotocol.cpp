@@ -462,7 +462,7 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id)
  * @param buf   Buffer with channel data in 0.5us resolution
  * @param chan  Number of channels
  */
-void multiprotocol_setChannelData(volatile uint16_t *buf, uint8_t chan){
+void multiprotocol_setChannelData(const uint16_t *buf, uint8_t chan){
     PPM_FLAG_on;
 #ifdef ENABLE_PPM
     radio.ppm_data = buf;
