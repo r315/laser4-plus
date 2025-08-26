@@ -54,16 +54,15 @@ static void modules_reset(void);
 //static void update_serial_data(void);
 static void protocol_init(void);
 static void update_led_status(void);
-int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max);
+static int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max);
 static uint32_t random_id(uint8_t create_new);
+static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
 
 //Channel mapping for protocols
 uint8_t CH_AETR[]={AILERON, ELEVATOR, THROTTLE, RUDDER, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 uint8_t CH_TAER[]={THROTTLE, AILERON, ELEVATOR, RUDDER, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 //uint8_t CH_RETA[]={RUDDER, ELEVATOR, THROTTLE, AILERON, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
 uint8_t CH_EATR[]={ELEVATOR, AILERON, THROTTLE, RUDDER, CH5, CH6, CH7, CH8, CH9, CH10, CH11, CH12, CH13, CH14, CH15, CH16};
-
-static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
 
 /**
  * @brief
@@ -477,7 +476,7 @@ void multiprotocol_setChannelData(volatile uint16_t *buf, uint8_t chan){
 /**
  *
  * */
-int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max)
+static int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max)
 {
 //  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     long y ;
@@ -485,7 +484,7 @@ int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int1
     y = out_max - out_min ;
     y *= x ;
     x = y / (in_max - in_min) ;
-    return x  + out_min ;
+    return x + out_min ;
 }
 /**
  *
