@@ -203,7 +203,8 @@ enum protocols_e{
     PROTO_WK2x01    = 30,   // =>CYRF6936
     PROTO_FRSKY_RX	= 55,	// =>CC2500
     PROTO_TEST      = 127,
-    PROTO_PPM       = 128
+    PROTO_PPM       = 128,
+    PROTO_USB       = 129
 };
 
 enum KN {
@@ -349,6 +350,7 @@ void multiprotocol_flags_clr(uint32_t flags);
 uint32_t multiprotocol_protocol_id_get(void);
 uint16_t *multiprotocol_channel_data_get(void);
 void multiprotocol_setChannelData(const uint16_t *buf, uint8_t chan);
+void multiprotocol_set_mode(uint8_t mode);
 void update_channels_aux(void);
 
 void ppm_setCallBack(void(*cb)(const uint16_t*, uint8_t));

@@ -180,7 +180,7 @@ public:
         uint16_t *channel_data = multiprotocol_channel_data_get();
         // TODO: replace number radio.channel_aux + MAX_AUX_CHANNELS
 		for(uint8_t i = 0; i < 8; i++){
-        	console->printf("CH[%u]:\t%u\n", i, channel_data[i]);
+        	console->printf("CH[%u]            : %u\n", i, channel_data[i]);
     	}
 	}
 
@@ -205,12 +205,17 @@ public:
         console->println("\n  Channel data");
         console->println("----------------------------------------");
 		channelValues();
-
-        uint8_t aux = appGetCurrentMode();
+        const char *mode_name;
+        switch(appGetCurrentMode()){
+            case MODE_PPM: mode_name = "TX 35MHz"; break;
+            case MODE_SERIAL: mode_name = "Serial"; break;
+            case MODE_HID: mode_name = "Game controller"; break;
+            case MODE_CC2500: mode_name = "CC2500"; break;
+            default: mode_name = "NONE"; break;
+        }
 		console->println("\n  Operating Mode");
         console->println("----------------------------------------");
-        console->printf("Mode             : %s\n\n",
-            aux == MODE_MULTIPROTOCOL ? "Multiprotocol" : "Game Controller");
+        console->printf("Mode             : %s\n\n",mode_name);
         return CMD_OK;
 	}
 }cmdstatus;
@@ -258,7 +263,7 @@ public:
 		if((flags & FLAG_BIND) == 0){
 			console->print("Bind already in progress");
 		}else{
-			appReqModeChange(MODE_MULTIPROTOCOL);
+			appChangeModeReq(0, MODE_CC2500);
             multiprotocol_flags_set(FLAG_CHANGE_PROTOCOL);
 		    multiprotocol_flags_clr(FLAG_BIND);
 			if((flags & FLAG_INPUT_SIGNAL) == 0){
@@ -315,17 +320,18 @@ public:
 	void help(void) {
         console->println("Changes operating mode between game controller and multiprotocol");
         console->println("usage: mode [mode]");
-        console->println("mode, 0-1");
+        console->println("mode, 0-14");
     }
 	char execute(int argc, char **argv) {
+        uint8_t cur_mode = appGetCurrentMode();
 		if(argc == 1){
-			console->printf("Current mode: %d\n",appGetCurrentMode());
+			console->printf("Current mode: %d\n", cur_mode);
 			return CMD_OK;
 		}
 
         int32_t int_value;
-		if(ia2i(argv[2], &int_value)){
-			appReqModeChange((uint8_t)int_value);
+		if(ia2i(argv[1], &int_value)){
+			appChangeModeReq(cur_mode, (uint8_t)int_value);
             return CMD_OK;
 		}
 

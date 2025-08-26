@@ -23,8 +23,8 @@
 #define DBG_APP_ERR(...)
 #endif
 
-volatile uint8_t state;
-uint32_t app_flags = 0;
+static volatile uint8_t app_state;
+static uint32_t app_flags = 0;
 
 #ifdef ENABLE_BUZZER
 static tone_t chime[] = {
@@ -169,7 +169,7 @@ static const uint16_t eeprom_default_data[EEPROM_SIZE / 2] = {
  * @brief
  * */
 uint8_t appGetCurrentMode(void){
-    return state;
+    return app_state & STATE_MASK;
 }
 
 /**
@@ -181,7 +181,7 @@ uint8_t appGetCurrentMode(void){
 void usbConnectCB(void *ptr)
 {
     (void)ptr;
-    appReqModeChange(MODE_HID);
+    appChangeModeReq(app_state, MODE_HID);
 #if defined(ENABLE_DEBUG) && defined(EANBLE_VCP)
     dbg_init(&vcp);
 #endif
@@ -200,7 +200,7 @@ void usbConnectCB(void *ptr)
 void usbDisconnectCB(void *ptr)
 {
     (void)ptr;
-    appReqModeChange(MODE_MULTIPROTOCOL);
+    appChangeModeReq(app_state, MODE_CC2500);
 #if defined(ENABLE_DEBUG) && defined(ENABLE_UART)
     dbg_init(&pcom);
 #endif
@@ -215,33 +215,50 @@ void usbDisconnectCB(void *ptr)
  * @brief Operating mode change request
  *
  * */
-void appReqModeChange(uint8_t new_mode){
-uint8_t cur_state = state & STATE_MASK;
-    // Do nothing if requesting the current mode
-    if(cur_state == new_mode){
+void appChangeModeReq(uint8_t prev_mode, uint8_t new_mode)
+{
+    uint8_t cur_state = app_state & STATE_MASK;
+
+    // Do nothing if requesting the current mode or invalid
+    if(cur_state == new_mode || new_mode > MODE_NONE){
         return;
     }
     // Request in progress, if same return
-    if(cur_state == REQ_MODE_CHANGE){
-        if((state >> STATE_BITS) == new_mode){
+    if(cur_state == MODE_CHANGE_REQ){
+        if(((app_state & MODE_MASK) >> MODE_BIT_POS) == new_mode){
             return;
         }
     }
+
+    if(new_mode != MODE_SERIAL &&
+        new_mode != MODE_PPM &&
+        new_mode != MODE_CC2500 &&
+        new_mode != MODE_HID){
+        app_state = prev_mode;
+        return;
+    }
+
 #ifdef ENABLE_DISPLAY
     LCD_FillRect(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
 #endif
+
+    if(new_mode == MODE_PPM || new_mode == MODE_CC2500){
+        multiprotocol_set_mode(new_mode);
+    }
+
     // set the requested mode by overwriting the previous
-    state = (new_mode << STATE_BITS) | REQ_MODE_CHANGE;
+    app_state = (new_mode << MODE_BIT_POS) | MODE_CHANGE_REQ;
 }
 
 /**
  * @brief Change mode request handler
  *
  * */
-static void changeMode(uint8_t new_mode){
-    DBG_PRINT("\n Laser4+ version: %d.%d.%d \n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+static void appChangeMode(uint8_t new_mode)
+{
     switch(new_mode){
-        case MODE_MULTIPROTOCOL:
+        case MODE_CC2500:
+        case MODE_PPM:
             multiprotocol_setup();
 #ifdef ENABLE_BUZZER
             buzPlayTone(400,150);
@@ -450,8 +467,7 @@ void appDefaultEEPROM(void)
  * */
 extern "C" void setup(void)
 {
-
-    state = STARTING;
+    app_state = MODE_NONE;
 
 #if defined(ENABLE_DEBUG)
     #if defined(ENABLE_VCP)
@@ -470,6 +486,8 @@ extern "C" void setup(void)
 #ifdef ENABLE_GAME_CONTROLLER
     CONTROLLER_Init();
 #endif
+
+    DBG_PRINT("\n Laser4+ version: %d.%d.%d \n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
 
 #if defined(ENABLE_CLI)
     #if defined(ENABLE_VCP)
@@ -530,6 +548,13 @@ extern "C" void setup(void)
 #endif
     // Configure watchdog
     enableWatchDog(WATCHDOG_TIME);
+
+#ifdef TX35_MHZ_INSTALLED
+    multiprotocol_set_mode(IS_HW_SW_AUX3_PRESSED ? MODE_PPM : MODE_CC2500);
+#else
+    multiprotocol_set_mode(MODE_CC2500);
+#endif
+
 }
 
 /**
@@ -537,8 +562,9 @@ extern "C" void setup(void)
  * */
 extern "C" void loop(void)
 {
-    switch(state & STATE_MASK){
-        case MODE_MULTIPROTOCOL:
+    switch(app_state & STATE_MASK){
+        case MODE_CC2500:
+        case MODE_PPM:
             multiprotocol_loop();
             break;
 
@@ -548,16 +574,16 @@ extern "C" void loop(void)
 #endif
             break;
 
-        case REQ_MODE_CHANGE:
-            state = state >> STATE_BITS;
-            changeMode(state);
+        case MODE_CHANGE_REQ:
+            app_state = app_state >> MODE_BIT_POS;
+            appChangeMode(app_state);
 #ifdef ENABLE_DISPLAY
             SET_LCD_UPDATE;
 #endif
             break;
 
-        case STARTING:
-            appReqModeChange(MODE_MULTIPROTOCOL);
+        case MODE_NONE:
+            appChangeModeReq(app_state, MODE_CC2500);
             break;
 
         default:

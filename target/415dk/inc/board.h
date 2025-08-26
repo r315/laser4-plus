@@ -79,13 +79,7 @@ extern "C" {
 #define IS_HW_SW_AUX3_PRESSED   (HW_SW_AUX3_VAL == 0)
 #define IS_BIND_BUTTON_PRESSED  IS_HW_SW_AUX1_PRESSED
 
-#ifdef TX35_MHZ_INSTALLED
-#define HW_PROTOCOL_SWITCH      (IS_HW_SW_AUX3_PRESSED)? 14 : 10      /* 1...14 */
-#else
-#define HW_PROTOCOL_SWITCH      10      /* 1...14 */
-#endif
 #define HW_BANK_SWITCH          0       /* bank_switch(); */
-
 
 void DelayMs(uint32_t ms);
 uint32_t GetTick(void);

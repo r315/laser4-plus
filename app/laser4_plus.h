@@ -56,8 +56,10 @@ extern "C" {
 
 #define EEPROM_SIZE             31
 
-#define STATE_BITS          4
-#define STATE_MASK          ((1<<STATE_BITS) - 1)
+#define MODE_BIT_POS            4
+#define STATE_BIT_POS           4
+#define MODE_MASK               (0xF0)
+#define STATE_MASK              (0x0F)
 
 #define TIMER_BATTERY_TIME  10000U  // ms
 #define TIMER_LOWBAT_TIME   500U    // ms
@@ -69,11 +71,13 @@ extern "C" {
 #define ON                  0
 #define OFF                 1
 
-enum {
-    STARTING = 0,
-    MODE_MULTIPROTOCOL,
-    MODE_HID,
-    REQ_MODE_CHANGE,
+enum modes{
+    MODE_SERIAL = 0,
+    MODE_CHANGE_REQ = 1,
+    MODE_CC2500 = 10,
+    MODE_HID = 11,
+    MODE_PPM = 14,
+    MODE_NONE = 15,
 };
 
 typedef union {
@@ -82,11 +86,9 @@ typedef union {
 }f2u_u;
 
 extern uint16_t *eeprom_data;
-extern uint32_t app_flags;
 
-void appReqModeChange(uint8_t new_mode);
+void appChangeModeReq(uint8_t pre_mode, uint8_t new_mode);
 uint8_t appGetCurrentMode(void);
-
 
 #ifdef __cplusplus
 #if defined(ENABLE_CLI)

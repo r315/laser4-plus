@@ -69,7 +69,7 @@ uint8_t CH_EATR[]={ELEVATOR, AILERON, THROTTLE, RUDDER, CH5, CH6, CH7, CH8, CH9,
  * */
 void multiprotocol_setup(void)
 {
-    DBG_MULTI_PRINT("***** Starting Multiprotocol *****");
+    DBG_MULTI_PRINT("\n***** Starting Multiprotocol *****\n");
     // Read status of bind button
     if(IS_BIND_BUTTON_PRESSED)
     {
@@ -80,9 +80,7 @@ void multiprotocol_setup(void)
     else
         BIND_DONE;
 
-    radio.mode_select = HW_PROTOCOL_SWITCH;
-
-    DBG_MULTI_INF("Protocol selection switch reads as %d", radio.mode_select);
+    DBG_MULTI_INF("Protocol selection index : %d", radio.mode_select);
 
     uint16_t channel_default = (eeprom_data[IDX_CHANNEL_MAX_100] - eeprom_data[IDX_CHANNEL_MIN_100]) >> 1;
 
@@ -551,4 +549,17 @@ void multiprotocol_flags_set(uint32_t flags)
 void multiprotocol_flags_clr(uint32_t flags)
 {
     radio.flags &= ~flags;
+}
+
+/**
+ * @brief Set operation mode.
+ * Usually defined at startup by hardware switches,
+ * it determines which entry in the My_PPM_prot table to use.
+ * mode must be set before calling multiprotocol_setup
+ *
+ * @param mode My_PPM_prot entry number 0-14
+ */
+void multiprotocol_set_mode(uint8_t mode)
+{
+    radio.mode_select = mode;
 }

@@ -142,11 +142,6 @@ extern "C" {
 #define ENC_TIM                 TIM2
 #define ENC_TIM_IRQHandler      TIM2_IRQHandler
 
-#ifdef TX35_MHZ_INSTALLED
-#define HW_PROTOCOL_SWITCH      (IS_HW_SW_AUX3_PRESSED)? 14 : 10      /* 1...14 */
-#else
-#define HW_PROTOCOL_SWITCH      10      /* 1...14 */
-#endif
 #define HW_BANK_SWITCH          0       /* bank_switch(); */
 
 #if defined(ENABLE_PWM)
