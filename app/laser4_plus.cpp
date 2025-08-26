@@ -526,7 +526,7 @@ extern "C" void setup(void)
 
     MPANEL_print(VERSION_POS, &pixelDustFont, "V%u.%u.%u", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
     LCD_Update();
-    delayMs(1000);
+    DelayMs(1000);
     LCD_FillRect(VERSION_POS, 64, pixelDustFont.h, BLACK); // Erase version from display
 
     dro_bat.setIcon(&ico_volt);

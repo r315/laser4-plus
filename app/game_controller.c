@@ -35,7 +35,7 @@ RAM_CODE void CONTROLLER_Process(void){
     static uint8_t count = 0;
     angle += 0.1;
     SET_PPM_FRAME;
-    delayMs(20);
+    DelayMs(20);
 #endif
 
     if(IS_PPM_FRAME_READY)

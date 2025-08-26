@@ -170,7 +170,7 @@ extern "C" {
 
 /* General symbols */
 #define RAM_CODE                __attribute__((section(".ram_code")))
-#define millis                  GetTick
+#define millis                  HAL_GetTick
 #define cli                     __disable_irq
 #define sei                     __enable_irq
 
