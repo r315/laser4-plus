@@ -269,7 +269,7 @@ public:
 	}
 }cmdbind;
 
-uint16_t ppm_sim_data[] = {3000, 3000, 1950, 3000};
+uint16_t ppm_sim_data[] = {3000, 3000, 2000, 3000};
 static void ppm_sim(void)
 {
 	multiprotocol_setChannelData(ppm_sim_data, 4);
@@ -281,7 +281,9 @@ class CmdPpm : public ConsoleCommand {
 public:
     CmdPpm() : ConsoleCommand("ppm") {}
 	void init(void *params) { console = static_cast<Console*>(params); tim = -1;}
-	void help(void) {}
+	void help(void) {
+        console->println("usage: ppm [sim]");
+    }
 	char execute(int argc, char **argv) {
         (void) argc;
         (void) argv;
@@ -310,10 +312,13 @@ class CmdMode : public ConsoleCommand {
 public:
     CmdMode() : ConsoleCommand("mode") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
-	void help(void) {}
+	void help(void) {
+        console->println("Changes operating mode between game controller and multiprotocol");
+        console->println("usage: mode [mode]");
+        console->println("mode, 0-1");
+    }
 	char execute(int argc, char **argv) {
 		if(argc == 1){
-            console->printf("Changes operating mode between game controller and multiprotocol");
 			console->printf("Current mode: %d\n",appGetCurrentMode());
 			return CMD_OK;
 		}
@@ -335,25 +340,25 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); }
 
 	void help(void) {
-		console->print("usage: eeprom [dump|load|save|erase|default]");
+		console->println("usage: eeprom [dump|load|save|erase|default]");
 	}
 
 	void id(void){
 		uint32_t *ptr = (uint32_t*)eeprom_data;
 
 		console->printf(
-			"ID          \t\t0x%X\n",
+			"ID          \t\t: 0x%X\n",
 			*(ptr + EEPROM_ID_OFFSET)
 		);
 	}
 
 	void channelRanges(void){
 		console->printf(
-			"CH MAX      \t\t%d\n"
-			"CH MIN      \t\t%d\n"
-			"CH switch   \t\t%d\n"
-			"PPM MAX     \t\t%d\n"
-			"PPM MIN     \t\t%d\n",
+			"CH MAX      \t\t: %d us\n"
+			"CH MIN      \t\t: %d us\n"
+			"CH switch   \t\t: %d us\n"
+			"PPM MAX     \t\t: %d 1/2us\n"
+			"PPM MIN     \t\t: %d 1/2us\n",
 			eeprom_data[IDX_CHANNEL_MAX_100],
 			eeprom_data[IDX_CHANNEL_MIN_100],
 			eeprom_data[IDX_CHANNEL_SWITCH],
