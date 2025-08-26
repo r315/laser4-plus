@@ -43,7 +43,7 @@ public:
 	}
 }cmdhelp;
 
-
+#ifdef CC2500_INSTALLED
 class CmdCC25 : public ConsoleCommand {
 	Console *console;
 
@@ -143,6 +143,7 @@ public:
         return CMD_BAD_PARAM;
 	}
 }cmdcc25;
+#endif
 
 class CmdStatus : public ConsoleCommand {
 	Console *console;
@@ -571,7 +572,9 @@ public:
 
 ConsoleCommand *laser4_commands[]{
     &cmdhelp,
+#ifdef CC2500_INSTALLED
     &cmdcc25,
+#endif
 	&cmdreset,
 	&cmdid,
 	&cmdbind,

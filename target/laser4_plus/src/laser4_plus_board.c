@@ -42,11 +42,11 @@ typedef struct {
 }swtimer_t;
 
 swtimer_t timers[SWTIM_NUM];
-
 // Private variables
-static SPI_HandleTypeDef hspi;
 static volatile uint32_t systicks;
-static void (*pinIntCB)(void);
+#ifdef CC2500_INSTALLED
+static SPI_HandleTypeDef hspi;
+#endif
 
 #ifdef ENABLE_BATTERY_MONITOR
 static adc_t hadc;
@@ -60,20 +60,24 @@ static void i2cInit(void);
 #endif
 
 // Private functions
-static void spiInit(void);
 static void systicksInit(void);
 static void crcInit(void);
+
+#ifdef CC2500_INSTALLED
+static void spiInit(void);
+#endif
+
 #ifdef ENABLE_ENCODER
 static uint16_t enc_count;
 static uint16_t enc_speed;
 static void encInit(void);
 #endif
+
 #ifdef ENABLE_PPM_OUTPUT
 static dmatype_t ppmdma;
 static uint16_t ppm_data[MAX_PPM_CHANNELS + 2];
 static void ppmOutInit(void);
 #endif
-
 
 #ifdef ENABLE_UART
 static serialbus_t uartbus;
@@ -106,13 +110,16 @@ static void laser4Init(void)
 {
     GPIO_ENABLE;
     AFIO->MAPR = (2 << 24); // SW-DP Enabled
-    CC25_CS_INIT;
     LED_INIT;
     HW_SW_INIT;
     HW_TX_35MHZ_EN_INIT;
 
-    spiInit();
     systicksInit();
+
+#ifdef CC2500_INSTALLED
+    CC25_CS_INIT;
+    spiInit();
+#endif
 
 #ifdef ENABLE_BATTERY_MONITOR
     adcInit();
@@ -213,7 +220,7 @@ void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin)
     NVIC_DisableIRQ(EXTI9_5_IRQn);
 }
 
-
+#ifdef CC2500_INSTALLED
 void SPI_Write(uint8_t data)
 {
     HAL_SPI_Transmit(&hspi, &data, 1, 10);
@@ -225,12 +232,11 @@ uint8_t SPI_Read(void)
     HAL_SPI_Receive(&hspi, &data, 1, 10);
     return data;
 }
-
 /**
  *
  */
-static void spiInit(){
-
+static void spiInit()
+{
     __HAL_RCC_SPI2_CLK_ENABLE();
     hspi.Instance = SPI2;
     hspi.Init.Mode = SPI_MODE_MASTER;
@@ -251,6 +257,7 @@ static void spiInit(){
 
     SPI_PINS_INIT;
 }
+#endif
 
 #ifdef ENABLE_DISPLAY
 /**
