@@ -179,7 +179,6 @@ extern "C" {
 #define MCO_EN                  GPIOA->CRH = (GPIOA->CRH & ~(15<<0)) | (11 << 0); \
                                 RCC->APB2ENR |= (1 << 0)
 
-
 #define ADC_RDY                 (1 << 0)
 #define ADC_DIV                 (1 << 1)
 #define ADC_CAL                 (1 << 2)
@@ -214,8 +213,6 @@ typedef struct vires {
 
 
 /* Public variables */
-extern uint32_t SystemCoreClock;
-
 uint32_t ticksGet(void);
 uint32_t ticksElapsed(uint32_t start);
 
@@ -233,9 +230,9 @@ void reloadWatchDog(void);
 uint32_t xrand(void);
 uint32_t cpuGetId(void);
 
-void processTimers(void);
 uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void));
 void stopTimer(uint32_t tim);
+void processTimer(void);
 
 #ifdef ENABLE_BATTERY_MONITOR
 float adcGetResolution(void);

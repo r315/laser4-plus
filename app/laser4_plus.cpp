@@ -594,7 +594,7 @@ extern "C" void loop(void)
     con.process();
 #endif
 
-    processTimers();
+    processTimer();
 
 #ifdef ENABLE_DISPLAY
     if(IS_LCD_UPDATE){

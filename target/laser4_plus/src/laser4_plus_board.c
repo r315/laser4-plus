@@ -41,9 +41,11 @@ typedef struct {
         void (*action)(void);
 }swtimer_t;
 
-swtimer_t timers[SWTIM_NUM];
 // Private variables
+static swtimer_t timers[SWTIM_NUM];
 static volatile uint32_t systicks;
+static void (*gpio_int_handler)(void);
+
 #ifdef CC2500_INSTALLED
 static SPI_HandleTypeDef hspi;
 #endif
@@ -205,7 +207,7 @@ void gpioAttachInterrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*cb
         return;
     }
 
-    pinIntCB = cb;
+    gpio_int_handler = cb;
     AFIO->EXTICR[1] = ( 1 << 4);        // PB5 -> EXTI5
     EXTI->IMR  = ( 1 << 5);             // MR5
     EXTI->FTSR = (1 << 5);
@@ -978,10 +980,12 @@ void stopTimer(uint32_t tim){
  * @brief Check if timers have expired and execute correspondent action
  *
  * */
-void processTimers(void){
-static uint32_t last_tick = 0;
-uint32_t diff = systicks - last_tick;
-swtimer_t *tim = timers;
+void processTimer(void)
+{
+    static uint32_t last_tick = 0;
+    uint32_t diff = systicks - last_tick;
+    swtimer_t *tim = timers;
+
     for(uint32_t i = 0; i < SWTIM_NUM; i++, tim++){
         if(tim->status & SWTIM_RUNNING){
             tim->count += diff;
@@ -1041,7 +1045,7 @@ void USB_LP_CAN1_RX0_IRQHandler(void){
 void EXTI9_5_IRQHandler(void){
 uint32_t pr = EXTI->PR;
     if((pr & EXTI_PR_PR5) != 0){
-        pinIntCB();
+        gpio_int_handler();
     }
     EXTI->PR = pr;
 }
