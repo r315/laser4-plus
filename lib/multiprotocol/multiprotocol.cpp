@@ -178,9 +178,9 @@ uint8_t count=0;
     {
         if(IS_RX_FLAG_on || IS_PPM_FLAG_on)
         { // Serial or PPM is waiting...
-            if(++count>10)
+            if(++count > 10)
             { //The protocol does not leave enough time for an update so forcing it
-                count=0;
+                count = 0;
                 DBG_MULTI_WRN("Force update");
                 Update_All();
             }
@@ -245,8 +245,8 @@ static uint8_t Update_All(void){
                 val = radio.ppm_data[i];
                 sei();										// enable global int
                 val = map16b(val,
-                            eeprom_data[IDX_PPM_MIN_100] * 2,
-                            eeprom_data[IDX_PPM_MAX_100] * 2,
+                            eeprom_data[IDX_PPM_MIN_100],
+                            eeprom_data[IDX_PPM_MAX_100],
                             eeprom_data[IDX_CHANNEL_MIN_100],
                             eeprom_data[IDX_CHANNEL_MAX_100]);
 

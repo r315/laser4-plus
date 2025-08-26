@@ -168,18 +168,6 @@ extern "C" {
 #define    THROTTLE   2
 #define    RUDDER     3
 
-//Channel MIN MAX values
-#define CHANNEL_MAX_100        1844    //    100%
-#define CHANNEL_MIN_100        204     //    100%
-#define CHANNEL_MAX_125        2047    //    125%
-#define CHANNEL_MIN_125        0       //  125%
-#define CHANNEL_SWITCH         1104    //  1550us
-
-#define PPM_MAX_100            2012    //    100%
-#define PPM_MIN_100            988     //    100%
-
-#define PPM_DEFAULT_VALUE   0
-#define MAX_AUX_CHANNELS    4
 #define BIND_FLAG_VALUE     0xF0
 
 /* Indexes of constants in eeprom */

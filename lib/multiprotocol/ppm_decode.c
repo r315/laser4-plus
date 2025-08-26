@@ -7,11 +7,17 @@ static void (*ppmFrameCB)(volatile uint16_t *, uint8_t);
 
 static void ppm_decode(void);
 
+/**
+ * @brief
+ * @param radio
+ * @return
+ */
 uint16_t ppm_tx(struct radio *radio)
 {
-    (void)radio;
 #ifdef ENABLE_PPM_OUTPUT
     ppmOut((uint16_t *)radio->channel_data);
+#else
+    (void)radio;
 #endif
     return 9000;
 }

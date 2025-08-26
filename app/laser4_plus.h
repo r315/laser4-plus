@@ -16,6 +16,18 @@ extern "C" {
 #include "game_controller.h"
 #endif
 
+//Channel MIN MAX values
+#define CHANNEL_MAX_100         1844    // 100%
+#define CHANNEL_MIN_100         844     // 100%
+#define CHANNEL_MAX_125         2047    // 125%
+#define CHANNEL_MIN_125         0       // 125%
+#define CHANNEL_SWITCH          1104    // 1550us
+
+#define PPM_MAX_100             (2012 << 1) // 0.5us
+#define PPM_MIN_100             (988 << 1)  // 0.5us
+
+#define PPM_DEFAULT_VALUE       0
+#define MAX_AUX_CHANNELS        4
 
 #define DEFAULT_VOLTAGE_DIV     0x3e27ef9e  // 0.164
 #define DEFAULT_SENSE_RESISTOR  0x3db851ec  // 0.09
