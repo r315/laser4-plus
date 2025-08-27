@@ -23,7 +23,7 @@
 #define DBG_BOARD_ERR(...)
 #endif
 
-typedef struct {
+typedef struct adc{
     volatile uint16_t status;
     uint16_t result[2];
     uint32_t calibration_code;
@@ -34,7 +34,7 @@ typedef struct {
     uint32_t battery_current;
 }adc_t;
 
-typedef struct {
+typedef struct swtimer{
         uint32_t time;
         uint32_t count;
         uint32_t status;
@@ -46,6 +46,14 @@ static swtimer_t timers[SWTIM_NUM];
 static volatile uint32_t systicks;
 static void (*gpio_int_handler)(void);
 
+// Private functions prototypes
+static void systicksInit(void);
+static void crcInit(void);
+
+extern void setup(void);
+extern void loop(void);
+
+// Optional private varables and function prototypes
 #ifdef CC2500_INSTALLED
 static SPI_HandleTypeDef hspi;
 #endif
@@ -60,10 +68,6 @@ static void adcInit(void);
 I2C_HandleTypeDef hi2c2;
 static void i2cInit(void);
 #endif
-
-// Private functions
-static void systicksInit(void);
-static void crcInit(void);
 
 #ifdef CC2500_INSTALLED
 static void spiInit(void);
@@ -96,17 +100,8 @@ stdinout_t pcom = {
 
 #endif
 
-extern void setup(void);
-extern void loop(void);
 
 // Functions implemenation
-void Error_Handler(char * file, int line)
-{
-    (void)file;
-    (void)line;
-    while(1){
-    }
-}
 
 static void laser4Init(void)
 {
@@ -131,11 +126,11 @@ static void laser4Init(void)
     encInit();
 #endif
 
-#ifdef ENABLE_PPM_OUTPUT
-    /* Configure PPM input pin PB5
-    TODO: Move to ppm_decoder??
-    */
+#ifdef ENABLE_PPM
     gpioInit(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, GPI_PU);
+#endif
+
+#ifdef ENABLE_PPM_OUTPUT
     ppmOutInit();
 #endif
 
@@ -254,7 +249,7 @@ static void spiInit()
     hspi.Init.CRCPolynomial = 10;
 
     if (HAL_SPI_Init(&hspi) != HAL_OK){
-        Error_Handler(__FILE__, __LINE__);
+        DBG_BOARD_ERR("SPI Init fail");
     }
 
     SPI_PINS_INIT;
@@ -278,7 +273,7 @@ static void i2cInit(void){
     hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
     hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
     if(HAL_I2C_Init(&hi2c2) != HAL_OK) {
-        Error_Handler(__FILE__, __LINE__);
+        DBG_BOARD_ERR("I2C Init fail");
     }
 }
 const uint8_t APBPrescTable[8U] =  {0, 0, 0, 0, 1, 2, 3, 4};
@@ -959,14 +954,6 @@ void buzWaitEnd(void)
 #endif
 
 /**
- * @brief Enable CRC unit
- * */
-void crcInit(void){
-    RCC->AHBENR |= RCC_AHBENR_CRCEN;
-    CRC->CR = 1;
-}
-
-/**
  * @brief Start a software timer
  *
  * @param time : Timer duration
@@ -1020,6 +1007,14 @@ void processTimer(void)
     }
 
     last_tick = systicks;
+}
+
+/**
+ * @brief Enable CRC unit
+ * */
+void crcInit(void){
+    RCC->AHBENR |= RCC_AHBENR_CRCEN;
+    CRC->CR = 1;
 }
 
 /**

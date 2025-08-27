@@ -94,6 +94,7 @@ static void __attribute__((unused)) frsky2way_data_frame(radio_t *radio)
 	}
 }
 
+// TODO: Add retun value to inicate comunication with cc2500
 uint16_t initFrSky_2way(radio_t *radio)
 {
 	Frsky_init_hop(radio);
