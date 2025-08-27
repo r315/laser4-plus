@@ -1,8 +1,6 @@
 #include "multiprotocol.h"
 #include "board.h"
 
-#define PPM_TX_INTERVAL     20000 /* ms */
-
 #if defined(ENABLE_PPM)
 static int8_t chan = 0, bad_frame = 1;
 static uint16_t prev_tick;
@@ -37,7 +35,7 @@ uint16_t ppm_tx(struct radio *radio)
 RAM_CODE static void ppm_handler(void){
     uint16_t cur_tick;
     // Get current ticks
-    cur_tick = ticksElapsed(prev_tick);
+    cur_tick = ticksGetElapsed(prev_tick);
 
     if(cur_tick < PPM_MIN_PERIOD << 1){
         bad_frame = 1;					// bad frame

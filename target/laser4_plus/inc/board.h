@@ -211,29 +211,46 @@ typedef struct vires {
     uint32_t cur;
 }vires_t;
 
+/**
+ * Functions implemented by board file
+ */
 
-/* Public variables */
-uint32_t ticksGet(void);
-uint32_t ticksElapsed(uint32_t start);
+/* Percision timer with 0.5us resolution */
+uint16_t ticksGet(void);
+uint16_t ticksGetElapsed(uint16_t start);
+void ticksSetInterval(uint16_t interval);
+void ticksResetInterval(void);
+uint16_t ticksGetIntervalRemaining(void);
+uint16_t ticksIsIntervalTimedout(void);
 
-/* Function prototyes */
+/* Generic delay function */
 void DelayMs(uint32_t ms);
-void SPI_Write(uint8_t data);
-uint8_t SPI_Read(void);
 
-void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode);
-void gpioAttachInterrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*)(void));
-void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin);
-void enableWatchDog(uint32_t interval);
-void reloadWatchDog(void);
-
-uint32_t xrand(void);
-uint32_t cpuGetId(void);
-
+/* Software timers */
 uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void));
 void stopTimer(uint32_t tim);
 void processTimer(void);
 
+/* SPI API */
+void SPI_Write(uint8_t data);
+uint8_t SPI_Read(void);
+
+/* Gpio API */
+void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode);
+void gpioAttachInterrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*)(void));
+void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin);
+
+/* Watchdog */
+void enableWatchDog(uint32_t interval);
+void reloadWatchDog(void);
+
+/* Random number generator and cpu unique id */
+uint32_t xrand(void);
+uint32_t cpuGetId(void);
+
+/**
+ * Optional API
+ */
 #ifdef ENABLE_BATTERY_MONITOR
 float adcGetResolution(void);
 void adcSetVdivRacio(float r);

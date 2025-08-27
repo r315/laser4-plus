@@ -360,9 +360,7 @@ static void systicksInit(void)
     NVIC_EnableIRQ(SysTick_IRQn);
 
     /* Configure 0.5us time base for multiprotocol */
-    RCC->APB1ENR    |= RCC_APB1ENR_TIM2EN;
-    RCC->APB1RSTR   |= RCC_APB1RSTR_TIM2RST;
-    RCC->APB1RSTR   &= ~RCC_APB1RSTR_TIM2RST;
+    RCC->APB1ENR    |= RCC_APB1ENR_TIM3EN;
 
     TIME_BASE->CR1 = 0;                                // Stop counter
     TIME_BASE->PSC = (SystemCoreClock/2000000) - 1;    // 36-1;for 72 MHZ /0.5sec/(35+1)
@@ -374,14 +372,35 @@ static void systicksInit(void)
     TIME_BASE->CR1 = TIM_CR1_CEN;                      // Enable counter
 }
 
-uint32_t ticksGet(void)
+uint16_t ticksGet(void)
 {
-    return 0;
+    return TIME_BASE->CNT;
 }
 
-uint32_t ticksElapsed(uint32_t start)
+uint16_t ticksGetElapsed(uint16_t start)
 {
     return TIME_BASE->CNT - start;
+}
+
+void ticksSetInterval(uint16_t interval)
+{
+    TIME_BASE->CCR1 += interval;
+    TIME_BASE->SR = 0;
+}
+
+void ticksResetInterval(void)
+{
+    TIME_BASE->CCR1 = TIME_BASE->CNT;
+}
+
+uint16_t ticksGetIntervalRemaining(void)
+{
+    return TIME_BASE->CCR1 - TIME_BASE->CNT;
+}
+
+uint16_t ticksIsIntervalTimedout(void)
+{
+    return TIME_BASE->SR & TIM_SR_CC1IF;
 }
 
 void DelayMs(uint32_t ms)
@@ -1022,8 +1041,6 @@ uint32_t xrand(void)
  */
 uint32_t cpuGetId(void)
 {
-    //#define UID_BASE ((uint32_t *)0x1FFFF7E8)
-    //return UID_BASE[0] ^ UID_BASE[1] ^ UID_BASE[2];
     return *(uint32_t*)UID_BASE;
 }
 

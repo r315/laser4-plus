@@ -71,14 +71,13 @@ void multiprotocol_setup(void)
 {
     DBG_MULTI_PRINT("\n***** Starting Multiprotocol *****\n");
     // Read status of bind button
-    if(IS_BIND_BUTTON_PRESSED)
-    {
+    if(IS_BIND_BUTTON_PRESSED){
         BIND_BUTTON_FLAG_on;	// If bind button pressed save the status
         BIND_IN_PROGRESS;		// Request bind
         DBG_MULTI_INF("Bind button pressed");
-    }
-    else
+    }else{
         BIND_DONE;
+    }
 
     DBG_MULTI_INF("Protocol selection index : %d", radio.mode_select);
 
@@ -137,22 +136,22 @@ void multiprotocol_setup(void)
 /**
  * @brief main loop for multiprotocol mode
  * */
-void multiprotocol_loop(void){
-uint16_t next_callback, diff;
-uint8_t count=0;
+void multiprotocol_loop(void)
+{
+    uint16_t next_callback, diff;
+    uint8_t count = 0;
 
     while(radio.remote_callback == NULL || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off){
         if(!Update_All()){
-            TIME_BASE->CCR1 = TIME_BASE->CNT;       // Reset timer
+            ticksResetInterval();
         }
         return;
     }
 
-    next_callback = radio.remote_callback(&radio) << 1;
+    next_callback = radio.remote_callback(&radio) << 1; // Convert returned ms time to timer units
 
-    TIME_BASE->CCR1 += next_callback;			    // Calc when next_callback should happen
-    TIME_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;	        // Clear Timer2/Comp1 interrupt flag
-    diff = TIME_BASE->CCR1 - TIME_BASE->CNT;	    // Calc the time difference
+    ticksSetInterval(next_callback);
+    diff = ticksGetIntervalRemaining();
 
     if((diff & 0x8000) && !(next_callback & 0x8000)){
         // Negative result=callback should already have been called...
@@ -168,23 +167,23 @@ uint8_t count=0;
             }
         }
 
-        while((TIME_BASE->SR & TIM_SR_CC1IF ) == 0){
-            if(diff > (900 * 2)){
+        while(!ticksIsIntervalTimedout()){
+            if(diff > (900 << 1)){
                 //If at least 1ms is available update values
                 if((diff & 0x8000) && !(next_callback & 0x8000)){
                     //Should never get here...
-                    DBG_MULTI_WRN("!!!BUG!!!");
+                    DBG_MULTI_ERR("!!!BUG!!!");
                     break;
                 }
-                count=0;
+                count = 0;
                 Update_All();
             #ifdef ENABLE_DEBUG
-                if(TIME_BASE->SR & TIM_SR_CC1IF )
+                if(ticksIsIntervalTimedout())
                     DBG_MULTI_WRN("Long update");
             #endif
                 if(radio.remote_callback == NULL)
                     break;
-                diff = TIME_BASE->CCR1 - TIME_BASE->CNT;
+                diff = ticksGetIntervalRemaining();
             }
         }
     }
@@ -193,8 +192,8 @@ uint8_t count=0;
  * @brief process PPM channel data and aux channels
  * @return : 1 - if protocol change was requested, 0 - otherwise
  * */
-static uint8_t Update_All(void){
-
+static uint8_t Update_All(void)
+{
     #ifdef ENABLE_SERIAL
         if(radio.mode_select == MODE_SERIAL && IS_RX_FLAG_on)		// Serial mode and something has been received
         {
@@ -248,13 +247,15 @@ static uint8_t Update_All(void){
             radio.last_signal = millis();
         }
     #endif //ENABLE_PPM
+
     update_led_status();
 
-    if(IS_CHANGE_PROTOCOL_FLAG_on)
-    { // Protocol needs to be changed or relaunched for bind
+    if(IS_CHANGE_PROTOCOL_FLAG_on){
+        // Protocol needs to be changed or relaunched for bind
         protocol_init();									//init new protocol
         return 1;
     }
+
     return 0;
 }
 
@@ -305,12 +306,11 @@ static void update_led_status(void)
 
 static void protocol_init(void)
 {
-    static uint16_t next_callback;
+    uint16_t next_callback;
 
     if(IS_WAIT_BIND_off)
     {
         radio.remote_callback = NULL;	// No protocol
-        next_callback = 0;				// Default is immediate call back
         LED_OFF;						// Led off during protocol init
         modules_reset();				// Reset all modules
 
@@ -327,25 +327,30 @@ static void protocol_init(void)
 
         switch(radio.protocol)				// Init the requested protocol
         {
-            #ifdef CC2500_INSTALLED
-                #if defined(FRSKYD_CC2500_INO)
-                    case PROTO_FRSKYD:
-                        next_callback = initFrSky_2way(&radio);
-                        radio.remote_callback = ReadFrSky_2way;
-                        break;
-                #endif
+            #if defined(CC2500_INSTALLED) && defined(FRSKYD_CC2500_INO)
+            case PROTO_FRSKYD:
+                next_callback = initFrSky_2way(&radio);
+                radio.remote_callback = ReadFrSky_2way;
+                DBG_MULTI_INF("CC2550 Active");
+                break;
             #endif
 
             #ifdef TX35_MHZ_INSTALLED
-                    case PROTO_PPM:
-                        next_callback = 10000;
-                        radio.remote_callback = ppm_tx;
-                        HW_TX_35MHZ_ON;
-                        DBG_MULTI_INF("TX 35MHz enabled");
-                        break;
+            case PROTO_PPM:
+                next_callback = PPM_TX_INTERVAL;
+                radio.remote_callback = ppm_tx;
+                HW_TX_35MHZ_ON;
+                DBG_MULTI_INF("TX 35MHz enabled");
+                break;
             #endif
+
+            default:
+                next_callback = PROTOCOL_DEFAULT_INTERVAL;
+                break;
         }
+
         DBG_MULTI_INF("Protocol selected: %d, sub proto %d, rxnum %d, option %d", radio.protocol, radio.sub_protocol, radio.rx_num, radio.option);
+
         if(IS_BIND_IN_PROGRESS){
             DBG_MULTI_INF("Bind started");
         }
@@ -364,15 +369,8 @@ static void protocol_init(void)
     CHANGE_PROTOCOL_FLAG_off;
     BIND_BUTTON_FLAG_off;
 
-    if(next_callback > 32000)
-    { // next_callback should not be more than 32767 so we will wait here...
-        uint16_t temp = (next_callback >> 10) - 2;
-        DelayMs(temp);
-        next_callback -= temp << 10;                        // between 2-3ms left at this stage
-    }
-
-    TIME_BASE->CCR1 = TIME_BASE->CNT + next_callback * 2;	// set compare A for callback
-    TIME_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;				// Clear Timer2/Comp1 interrupt flag
+    ticksResetInterval();
+    ticksSetInterval(next_callback << 1);
 }
 
 /**

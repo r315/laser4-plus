@@ -27,10 +27,15 @@ extern "C" {
 #define VERSION_MINOR               1
 #define VERSION_PATCH               1
 
+//******************
+// Constants
+//******************
 #define BAUD                        100000
 #define RXBUFFER_SIZE               36    // 26 + 1 + 9
 #define MAX_CHN_NUM                 16
 #define TELEMETRY_BUFFER_SIZE       30
+#define PPM_TX_INTERVAL             20000 /* ms */
+#define PROTOCOL_DEFAULT_INTERVAL   5000
 
 //********************
 //*** Blink timing ***
