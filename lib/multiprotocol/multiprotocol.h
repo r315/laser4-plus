@@ -43,12 +43,6 @@ extern "C" {
 #define BLINK_WAIT_BIND_TIME_HIGH   1000
 #define BLINK_BIND_TIME             100
 
-//********************
-//***  Board defs  ***
-//********************
-#if defined(BOARD_BLUEPILL) || defined(BOARD_LASER4PLUS)
-#define STM32_BOARD
-#endif
 
 /* *************System flags ******************* */
 #define _FLAGS_                     radio.flags
@@ -283,7 +277,7 @@ typedef struct radio{
     // Servo data
     uint16_t channel_data[MAX_CHN_NUM];
     uint8_t  channel_aux;               // index of aux channels
-#ifdef FAILSAFE_ENABLE
+#ifdef ENABLE_FAILSAFE
         uint16_t Failsafe_data[NUM_CHN];
 #endif
 

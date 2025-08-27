@@ -142,74 +142,49 @@ uint16_t next_callback, diff;
 uint8_t count=0;
 
     while(radio.remote_callback == NULL || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off){
-        if(!Update_All())
-        {
-            cli();								// Disable global int due to RW of 16 bits registers
-            #ifndef STM32_BOARD
-            OCR1A=TCNT1;						// Callback should already have been called... Use "now" as new sync point.
-            #else
-            TIME_BASE->CCR1 = TIME_BASE->CNT;
-            #endif
-            sei();								// Enable global int
+        if(!Update_All()){
+            TIME_BASE->CCR1 = TIME_BASE->CNT;       // Reset timer
         }
         return;
     }
 
     next_callback = radio.remote_callback(&radio) << 1;
 
-    cli();										    // Disable global int due to RW of 16 bits registers
-    #ifndef STM32_BOARD
-    TIFR1=OCF1A_bm;							        // Clear compare A=callback flag
-    #else
     TIME_BASE->CCR1 += next_callback;			    // Calc when next_callback should happen
-    TIME_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;	    // Clear Timer2/Comp1 interrupt flag
+    TIME_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;	        // Clear Timer2/Comp1 interrupt flag
     diff = TIME_BASE->CCR1 - TIME_BASE->CNT;	    // Calc the time difference
-    #endif
-    sei();										    // Enable global int
 
-    if((diff&0x8000) && !(next_callback&0x8000))
-    { // Negative result=callback should already have been called...
+    if((diff & 0x8000) && !(next_callback & 0x8000)){
+        // Negative result=callback should already have been called...
         DBG_MULTI_WRN("Short CB:%d", next_callback);
-    }
-    else
-    {
-        if(IS_RX_FLAG_on || IS_PPM_FLAG_on)
-        { // Serial or PPM is waiting...
-            if(++count > 10)
-            { //The protocol does not leave enough time for an update so forcing it
+    }else{
+        if(IS_RX_FLAG_on || IS_PPM_FLAG_on){
+            // Serial or PPM is waiting...
+            if(++count > 10){
+                //The protocol does not leave enough time for an update so forcing it
                 count = 0;
                 DBG_MULTI_WRN("Force update");
                 Update_All();
             }
         }
-        #ifndef STM32_BOARD
-            while((TIFR1 & OCF1A_bm) == 0)
-        #else
-        while((TIME_BASE->SR & TIM_SR_CC1IF ) == 0)
-        #endif
-        {
-            if(diff > (900*2))
-            {	//If at least 1ms is available update values
-                if((diff&0x8000) && !(next_callback&0x8000))
-                {//Should never get here...
+
+        while((TIME_BASE->SR & TIM_SR_CC1IF ) == 0){
+            if(diff > (900 * 2)){
+                //If at least 1ms is available update values
+                if((diff & 0x8000) && !(next_callback & 0x8000)){
+                    //Should never get here...
                     DBG_MULTI_WRN("!!!BUG!!!");
                     break;
                 }
                 count=0;
                 Update_All();
-                #ifdef ENABLE_DEBUG
+            #ifdef ENABLE_DEBUG
                 if(TIME_BASE->SR & TIM_SR_CC1IF )
                     DBG_MULTI_WRN("Long update");
-                #endif
+            #endif
                 if(radio.remote_callback == NULL)
                     break;
-                cli();							// Disable global int due to RW of 16 bits registers
-                #ifndef STM32_BOARD
-                diff = OCR1A-TCNT1;				// Calc the time difference
-                #else
                 diff = TIME_BASE->CCR1 - TIME_BASE->CNT;
-                #endif
-                sei();							// Enable global int
             }
         }
     }
@@ -235,12 +210,12 @@ static uint8_t Update_All(void){
         {
             uint32_t chan_or = radio.chan_order;
             uint8_t ch;
-            for(uint8_t i = 0; i < radio.channel_aux; i++)
-            { // update servo data without interrupts to prevent bad read
+            for(uint8_t i = 0; i < radio.channel_aux; i++){
+                // update servo data without interrupts to prevent bad read
                 uint16_t val;
-                cli();										// disable global int
+                cli();
                 val = radio.ppm_data[i];
-                sei();										// enable global int
+                sei();
                 val = map16b(val,
                             eeprom_data[IDX_PPM_MIN_100],
                             eeprom_data[IDX_PPM_MAX_100],
@@ -253,22 +228,21 @@ static uint8_t Update_All(void){
                     val = eeprom_data[IDX_CHANNEL_MAX_125];
                 }
 
-                if(chan_or)
-                {
+                if(chan_or){
                     ch = chan_or >> 28;
                     if(ch)
                         radio.channel_data[ch-1] = val;
                     else
                         radio.channel_data[i] = val;
                     chan_or<<=4;
-                }
-                else
+                }else{
                     radio.channel_data[i] = val;
+                }
             }
             PPM_FLAG_off;									// wait for next frame before update
-            #ifdef FAILSAFE_ENABLE
-                PPM_failsafe();
-            #endif
+        #ifdef ENABLE_FAILSAFE
+            PPM_failsafe();
+        #endif
             update_channels_aux();
             INPUT_SIGNAL_on;								// valid signal received
             radio.last_signal = millis();
@@ -344,9 +318,9 @@ static void protocol_init(void)
         radio.protocol_id = radio.rx_num + radio.protocol_id_master;
         set_rx_tx_addr(radio.rx_tx_addr, radio.protocol_id);
 
-        #ifdef FAILSAFE_ENABLE
-            FAILSAFE_VALUES_off;
-        #endif
+    #ifdef ENABLE_FAILSAFE
+        FAILSAFE_VALUES_off;
+    #endif
         DATA_BUFFER_LOW_off;
 
         radio.blink = millis();
@@ -396,10 +370,9 @@ static void protocol_init(void)
         DelayMs(temp);
         next_callback -= temp << 10;                        // between 2-3ms left at this stage
     }
-    cli();											        // disable global int
+
     TIME_BASE->CCR1 = TIME_BASE->CNT + next_callback * 2;	// set compare A for callback
     TIME_BASE->SR = 0x1E5F & ~TIM_SR_CC1IF;				// Clear Timer2/Comp1 interrupt flag
-    sei();										            // enable global int
 }
 
 /**
