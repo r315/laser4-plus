@@ -6,7 +6,7 @@
 
 #define PANEL_MAX_LEN   (128/8)
 
-typedef struct mpanleitemdata{
+typedef struct idata{
     uint8_t width;
     uint8_t hight;
     uint8_t data[];
@@ -15,41 +15,35 @@ typedef struct mpanleitemdata{
 typedef struct mpanelicon{
     uint16_t posx;
     uint16_t posy;
-    struct mpanleitemdata *data;
+    idata_t *data;
 }mpanelicon_t;
 
 class MpanelItem{
 protected:
-    idata_t *idata;
-    uint16_t posx;
-    uint16_t posy;
+    const idata_t *idata = nullptr;
+    uint16_t posx = 0;
+    uint16_t posy = 0;
 public:
-    virtual void draw(void);
+    virtual ~MpanelItem() = default;  // important for polymorphic base
+    virtual void draw(void) = 0;
 };
 
-class MpanelDro : MpanelItem{
-    font_t *font;
+class MpanelDro : public MpanelItem{
+    const font_t *font;
     float value;
     mpanelicon_t *icon;
     const char *fmt;
 public:
+    void draw(void) override;
     void update(float value);
     void update(uint32_t value);
-    void draw(void);
     void setIcon(mpanelicon_t *icon);
-    MpanelDro(uint16_t posx, uint16_t posy, const char *fmt, font_t *font){
-        this->posx = posx;
-        this->posy = posy;
-        this->font = font;
-        this->value = 0.0f;
-        this->fmt = fmt;
-        this->icon = NULL;
-    }    
+    MpanelDro(uint16_t posx, uint16_t posy, const char *fmt, const font_t *font);
 };
 
 extern font_t font_seven_seg;
 
-void MPANEL_drawIcon(uint16_t x, uint16_t y, idata_t *data);
-void MPANEL_print(uint16_t x, uint16_t y, font_t *font, const char *fmt, ...);
+void MPANEL_drawIcon(uint16_t x, uint16_t y, const idata_t *data);
+void MPANEL_print(uint16_t x, uint16_t y, const font_t *font, const char *fmt, ...);
 
 #endif /* _mpanel_h_ */

@@ -5,7 +5,6 @@
 #include "mpanel.h"
 #include "tone.h"
 #include "debug.h"
-#include "dma_stm32f1xx.h"
 
 #if defined(ENABLE_VCP) || defined(ENABLE_GAME_CONTROLLER)
 #include "usb_device.h"
@@ -56,7 +55,7 @@ static Console con;
 #define ICO_CLR_START   ICO_35MHZ_POS
 #define ICO_CLR_SIZE    15+17+13, 8
 
-#define APP_DRAW_ICON(ICO)      MPANEL_drawIcon(ICO.posx, ICO.posy, ICO.data)
+#define APP_DRAW_ICON(ICO)      MPANEL_drawIcon(ICO.posx, ICO.posy, (const idata_t*)ICO.data)
 #define APP_ERASE_ICON(ICO)     LCD_FillRect(ICO.posx, ICO.posy, ICO.data->width, ICO.data->hight, BLACK);
 
 /**
@@ -140,9 +139,9 @@ static mpanelicon_t ico_bind = {
     (idata_t*)ico_bind_data
 };
 
-MpanelDro dro_bat(DRO_BAT_POS, "%.2f",&font_seven_seg);
-MpanelDro dro_amph(DRO_AMPH_POS, "%.2f",&font_seven_seg);
-MpanelDro dro_ma(DRO_MA_POS, "%3uMA", &pixelDustFont);
+static MpanelDro dro_bat(DRO_BAT_POS, "%.2f",&font_seven_seg);
+static MpanelDro dro_amph(DRO_AMPH_POS, "%.2f",&font_seven_seg);
+static MpanelDro dro_ma(DRO_MA_POS, "%3uMA", &pixelDustFont);
 
 static uint8_t bat_low_tim;
 static float bat_consumed = 0;  //mAh
@@ -264,7 +263,7 @@ static void appChangeMode(uint8_t new_mode)
             buzPlayTone(400,150);
 #endif
 #ifdef ENABLE_DISPLAY
-            if(radio.mode_select == 14){
+            if(new_mode == MODE_PPM){
                 APP_DRAW_ICON(ico_35mhz);
             }else{
                 APP_DRAW_ICON(ico_2_4ghz);
@@ -341,9 +340,11 @@ void appToggleLowBatIco(void){
  * @brief check multiprotocol flags and place icons
  * accordingly
  * */
-void appCheckProtocolFlags(void){
+void appCheckProtocolFlags(void)
+{
+    uint32_t flags = multiprotocol_flags_get();
 
-    if(IS_INPUT_SIGNAL_off){
+    if(!(flags & FLAG_INPUT_SIGNAL)){
         if(!(IS_ERROR_ICO_ON)){
             SET_ERROR_ICO;
             APP_DRAW_ICON(ico_error);
@@ -357,7 +358,7 @@ void appCheckProtocolFlags(void){
         }
     }
 
-    if(IS_BIND_IN_PROGRESS){
+    if(!(flags & FLAG_BIND)){
          if(!(IS_BIND_ICO_ON)){
             SET_BIND_ICO;
             APP_DRAW_ICON(ico_bind);
@@ -531,7 +532,7 @@ extern "C" void setup(void)
 
     dro_bat.setIcon(&ico_volt);
     dro_amph.setIcon(&ico_amph);
-	dro_bat.draw();
+    dro_bat.draw();
     dro_amph.draw();
     dro_ma.draw();
     startTimer(TIMER_BATTERY_TIME, SWTIM_AUTO_RELOAD, appCheckBattery);

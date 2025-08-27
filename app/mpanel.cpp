@@ -5,11 +5,11 @@
  * ==============================================
  * */
 
-#include "board.h"
-#include <font.h>
-#include "mpanel.h"
 #include <stdarg.h>
-#include <strfunc.h>
+#include "board.h"
+#include "font.h"
+#include "mpanel.h"
+#include "strfunc.h"
 
 #ifdef ENABLE_DISPLAY
 const uint8_t font_seven_seg_data[] = {
@@ -39,15 +39,15 @@ font_t font_seven_seg = {
 static uint16_t seven_seg_dp(uint16_t x, uint16_t y){
     LCD_FillRect(x-1, y, 4, 20, BLACK);
     LCD_FillRect(x, y + 20 - 2, 2, 2, WHITE);
-    return x + 3; 
+    return x + 3;
 }
 
 /**
  * data format: w,h,data...
- * 
+ *
  */
-void MPANEL_drawIcon(uint16_t x, uint16_t y, idata_t *data){
-    uint8_t *p = data->data;
+void MPANEL_drawIcon(uint16_t x, uint16_t y, const idata_t *data){
+    const uint8_t *p = data->data;
 
     for(uint8_t h = y; h < y + data->hight; h++, p++){
         uint8_t line = *p;
@@ -62,7 +62,7 @@ void MPANEL_drawIcon(uint16_t x, uint16_t y, idata_t *data){
                 LCD_Pixel(w, h, WHITE);
             else
                 LCD_Pixel(w, h, BLACK);
-            
+
         }
     }
 }
@@ -71,13 +71,13 @@ void MPANEL_drawIcon(uint16_t x, uint16_t y, idata_t *data){
  * @brief draws a character using a font table.
  * the font table must be 1bpp
  */
-static uint8_t MPANEL_drawChar(uint16_t x, uint16_t y, uint8_t c, font_t *font){
+static uint8_t MPANEL_drawChar(uint16_t x, uint16_t y, uint8_t c, const font_t *font){
     const uint8_t *p;
 
     if(c == '.' && font == &font_seven_seg){
         return seven_seg_dp(x,y);
     }
-    
+
     c -= font->offset;
     p = font->data + (c * font->h * font->bpl);
 
@@ -92,25 +92,32 @@ static uint8_t MPANEL_drawChar(uint16_t x, uint16_t y, uint8_t c, font_t *font){
                 line = *(++p);
             }
             if(line & (0x80>>bc))
-                LCD_Pixel(w, h,WHITE);
+                LCD_Pixel(w, h, WHITE);
             else
-                LCD_Pixel(w, h,BLACK);
+                LCD_Pixel(w, h, BLACK);
         }
     }
     return x + font->w + font->spacing;
 }
 
-void MPANEL_print(uint16_t x, uint16_t y, font_t *font, const char *fmt, ...){
+void MPANEL_print(uint16_t x, uint16_t y, const font_t *font, const char *fmt, ...){
     char buf[PANEL_MAX_LEN];
     uint8_t i = 0;
 	va_list arp;
 	va_start(arp, fmt);
-	strformater(buf, fmt, arp);
+	strformater(buf, fmt, arp, sizeof(buf));
 	va_end(arp);
 
     while(buf[i] != '\0'){
         x = MPANEL_drawChar(x, y, buf[i++], font);
     }
+}
+
+MpanelDro::MpanelDro(uint16_t posx, uint16_t posy, const char *fmt, const font_t *font)
+                : font(font), value(0.0f), icon(nullptr), fmt(fmt)
+{
+    this->posx = posx;
+    this->posy = posy;
 }
 
 void MpanelDro::update(float value){

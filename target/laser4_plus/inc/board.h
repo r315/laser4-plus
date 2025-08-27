@@ -13,6 +13,7 @@ extern "C" {
 
 #ifdef ENABLE_DISPLAY
 #include "ssd1306.h"
+#include "font.h"
 #endif
 
 #define GPIO_ENABLE             RCC->APB2ENR |=      \
@@ -289,10 +290,8 @@ extern stdinout_t pcom;
 #endif
 
 #ifdef ENABLE_DISPLAY
-extern I2C_HandleTypeDef hi2c2;
-#define I2C_Write(_A, _D, _S) HAL_I2C_Master_Transmit(&hi2c2, _A << 1, _D, _S, 100)
 
-void I2C_WriteBlock(uint16_t address, uint8_t *data, uint16_t size);
+void i2cWriteBlock(uint16_t address, uint8_t *data, uint16_t size);
 uint8_t requestLcdUpdate(void);
 #endif
 

@@ -65,8 +65,12 @@ static void adcInit(void);
 #endif
 
 #ifdef ENABLE_DISPLAY
-I2C_HandleTypeDef hi2c2;
-static void i2cInit(void);
+static I2C_HandleTypeDef hi2c2;
+static drvlcdi2c_t drvlcdi2c;
+static volatile uint8_t lcd_busy;
+const uint8_t APBPrescTable[8U] =  {0, 0, 0, 0, 1, 2, 3, 4};
+#define drvlcd ssd13xx_drv
+static void i2cInit(i2cbus_t *i2cbus);
 #endif
 
 #ifdef CC2500_INSTALLED
@@ -152,10 +156,8 @@ static void laser4Init(void)
 #endif
 
 #ifdef ENABLE_DISPLAY
-    i2cInit();
-    LCD_Init();
-    //LCD_Fill(0, 0, 128, 32, BLACK);
-    //LCD_Update();
+    i2cInit(&drvlcdi2c.i2cdev);
+    drvlcd.init(&drvlcdi2c);
 #endif
 }
 
@@ -262,7 +264,8 @@ static void spiInit()
   * @param None
   * @retval None
   */
-static void i2cInit(void){
+static void i2cInit(i2cbus_t *i2cbus)
+{
     hi2c2.Instance = I2C2;
     hi2c2.Init.ClockSpeed = 100000;
     hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
@@ -272,12 +275,19 @@ static void i2cInit(void){
     hi2c2.Init.OwnAddress2 = 0;
     hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
     hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
+
     if(HAL_I2C_Init(&hi2c2) != HAL_OK) {
         DBG_BOARD_ERR("I2C Init fail");
     }
+
+    i2cbus->addr = hi2c2.Init.OwnAddress1;
+    i2cbus->peripheral = &hi2c2;
+    i2cbus->speed = hi2c2.Init.ClockSpeed;
+    i2cbus->bus_num = I2C_BUS1;
 }
-const uint8_t APBPrescTable[8U] =  {0, 0, 0, 0, 1, 2, 3, 4};
-uint32_t HAL_RCC_GetPCLK1Freq(void){
+
+uint32_t HAL_RCC_GetPCLK1Freq(void)
+{
   return (SystemCoreClock >> APBPrescTable[(RCC->CFGR & RCC_CFGR_PPRE1) >> RCC_CFGR_PPRE1_Pos]);
 }
 
@@ -289,10 +299,11 @@ uint32_t HAL_RCC_GetPCLK1Freq(void){
 * @param hi2c: I2C handle pointer
 * @retval None
 */
-void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c){
+void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
+{
     __HAL_RCC_GPIOB_CLK_ENABLE();
-    gpioInit(GPIOB, 10, GPO_10MHZ | GPO_AF | GPO_OD);
-    gpioInit(GPIOB, 11, GPO_10MHZ | GPO_AF | GPO_OD);
+    gpioInit(GPIOB, 10, GPO_MS_AF_OD);
+    gpioInit(GPIOB, 11, GPO_MS_AF_OD);
     __HAL_RCC_I2C2_CLK_ENABLE();
     HAL_NVIC_SetPriority(I2C2_EV_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(I2C2_EV_IRQn);
@@ -300,20 +311,23 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c){
     HAL_NVIC_EnableIRQ(I2C2_ER_IRQn);
 }
 
-void I2C2_EV_IRQHandler(void){
+void I2C2_EV_IRQHandler(void)
+{
     HAL_I2C_EV_IRQHandler(&hi2c2);
 }
 
-void I2C2_ER_IRQHandler(void){
+void I2C2_ER_IRQHandler(void)
+{
     HAL_I2C_ER_IRQHandler(&hi2c2);
 }
 
-static volatile uint8_t lcd_busy;
-void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c){
+void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
+{
     lcd_busy = 0;
 }
 
-void I2C_WriteBlock(uint16_t address, uint8_t *data, uint16_t size){
+void i2cWriteBlock(uint16_t address, uint8_t *data, uint16_t size)
+{
 #if 0
     uint32_t retry = 100;
     while(retry--){
@@ -328,11 +342,29 @@ void I2C_WriteBlock(uint16_t address, uint8_t *data, uint16_t size){
     }
 #endif
 }
+
+uint16_t I2C_Write(i2cbus_t *i2c, uint8_t addr, const uint8_t *data, uint16_t size)
+{
+    HAL_I2C_Master_Transmit((I2C_HandleTypeDef*)i2c->peripheral, addr << 1, (uint8_t*)data, size, 100);
+    return size;
+}
+
+uint16_t I2C_Read(i2cbus_t *i2c, uint8_t addr, uint8_t *data, uint16_t size)
+{
+    // Not used
+    (void)i2c;
+    (void)addr;
+    (void)data;
+
+    return size;
+}
+
 /**
  * @brief request lcd update
  * @return : 0 if lcd is busy, otherwise success
  * */
-uint8_t requestLcdUpdate(void){
+uint8_t requestLcdUpdate(void)
+{
     if(!lcd_busy){
         LCD_Update();
         return 1;
