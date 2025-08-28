@@ -84,7 +84,7 @@ static void __attribute__((unused)) frsky2way_data_frame(radio_t *radio)
 	radio->packet[17] = 0;
 	for(uint8_t i = 0; i < 8; i++)
 	{
-		uint16_t value = convert_channel_frsky(radio, i);
+		uint16_t value = convert_channel_frsky(radio->channel_data[i]);
 
 		if(i < 4)
 		{

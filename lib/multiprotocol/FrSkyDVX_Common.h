@@ -50,7 +50,7 @@ extern const PROGMEM uint8_t FRSKYD_cc2500_conf[];
 void Frsky_init_hop(radio_t *radio);
 void FRSKY_init_cc2500(radio_t *radio, const uint8_t *ptr);
 void Frsky_SetPower(radio_t *radio);
-uint16_t convert_channel_frsky(radio_t *radio, uint8_t num);
+uint16_t convert_channel_frsky(uint16_t val);
 
 //FrSkyD
 uint16_t initFrSky_2way(radio_t *radio);

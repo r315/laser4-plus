@@ -63,10 +63,9 @@ void Frsky_SetPower(radio_t *radio){
 }
 
 // Channel value for FrSky (PPM is multiplied by 1.5)
-uint16_t convert_channel_frsky(radio_t *radio, uint8_t num)
+uint16_t convert_channel_frsky(uint16_t val)
 {
-    uint16_t val = radio->channel_data[num];
-    return ((val*15) >> 4) + 1290;
+    return ((val * 15) >> 4) + 1290;
 }
 
 #if defined(FRSKYD_CC2500_INO) || defined(FRSKYX_CC2500_INO)

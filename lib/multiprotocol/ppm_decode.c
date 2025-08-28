@@ -8,7 +8,7 @@ static uint16_t prev_tick;
 /**
  * @brief ppm_data contains ppm frame in units of 0.5us
  * using 0.5us units give more precision when maping to servo data.
- * Becose of this it makes sense that ppm_data bing static here
+ * Because of this it makes sense for making ppm_data static here
  */
 static uint16_t ppm_data[MAX_CHN_NUM];
 static void (*ppm_frame_ready)(const uint16_t *, uint8_t);
