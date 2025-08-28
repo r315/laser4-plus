@@ -21,7 +21,7 @@ static void (*ppm_frame_ready)(const uint16_t *, uint8_t);
 uint16_t ppm_tx(struct radio *radio)
 {
 #ifdef ENABLE_PPM_OUTPUT
-    ppmOut(radio->channel_data, 4); // TODO: replace 4 by radio->nchannels
+    ppmOut(radio->channel_data, radio->nchannels);
 #else
     (void)radio;
 #endif

@@ -1,12 +1,12 @@
 
 /*********************************************************
-					Multiprotocol Tx code
+                    Multiprotocol Tx code
                by Midelic and Pascal Langer(hpnuts)
-	http://www.rcgroups.com/forums/showthread.php?t=2165676
+    http://www.rcgroups.com/forums/showthread.php?t=2165676
     https://github.com/pascallanger/DIY-Multiprotocol-TX-Module/edit/master/README.md
 
-	Thanks to PhracturedBlue, Hexfet, Goebish, Victzh and all protocol developers
-				Ported  from deviation firmware
+    Thanks to PhracturedBlue, Hexfet, Goebish, Victzh and all protocol developers
+                Ported  from deviation firmware
 
  This project is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
@@ -72,8 +72,8 @@ void multiprotocol_setup(void)
     DBG_MULTI_PRINT("\n***** Starting Multiprotocol *****\n");
     // Read status of bind button
     if(IS_BIND_BUTTON_PRESSED){
-        BIND_BUTTON_FLAG_on;	// If bind button pressed save the status
-        BIND_IN_PROGRESS;		// Request bind
+        BIND_BUTTON_FLAG_on;    // If bind button pressed save the status
+        BIND_IN_PROGRESS;        // Request bind
         DBG_MULTI_INF("Bind button pressed");
     }else{
         BIND_DONE;
@@ -96,7 +96,7 @@ void multiprotocol_setup(void)
 
 #ifdef ENABLE_PPM
     // Setup callback for ppm frame ready
-    ppm_setCallBack(multiprotocol_setChannelData);
+    ppm_setCallBack(multiprotocol_channel_data_set);
 
     radio.chan_order = 0;
     uint8_t bank = HW_BANK_SWITCH;
@@ -104,10 +104,10 @@ void multiprotocol_setup(void)
     if(radio.mode_select != MODE_SERIAL)
     { // PPM
         #ifdef MY_PPM_PROT
-			const PPM_Parameters *PPM_prot_line = &My_PPM_prot[ bank * 14 + radio.mode_select -1];
-		#else
-			const PPM_Parameters *PPM_prot_line = &PPM_prot[bank * 14 + radio.mode_select - 1];
-		#endif
+            const PPM_Parameters *PPM_prot_line = &My_PPM_prot[ bank * 14 + radio.mode_select -1];
+        #else
+            const PPM_Parameters *PPM_prot_line = &PPM_prot[bank * 14 + radio.mode_select - 1];
+        #endif
 
         radio.protocol          = PPM_prot_line->protocol;
         radio.cur_protocol[1]   = radio.protocol;
@@ -115,7 +115,7 @@ void multiprotocol_setup(void)
         radio.rx_num            = PPM_prot_line->rx_num;
         radio.chan_order        = PPM_prot_line->chan_order;
 
-        radio.option = (uint8_t)PPM_prot_line->option;	// Use radio-defined option value
+        radio.option = (uint8_t)PPM_prot_line->option;    // Use radio-defined option value
 
         radio.prev_power = 0xFD; // unused power value
 
@@ -124,9 +124,9 @@ void multiprotocol_setup(void)
         }
 
         if(PPM_prot_line->autobind){
-			AUTOBIND_FLAG_on;
-			BIND_IN_PROGRESS;	// Force a bind at protocol startup
-		}
+            AUTOBIND_FLAG_on;
+            BIND_IN_PROGRESS;    // Force a bind at protocol startup
+        }
 
         protocol_init();
     }
@@ -194,22 +194,19 @@ void multiprotocol_loop(void)
  * */
 static uint8_t Update_All(void)
 {
-    #ifdef ENABLE_SERIAL
-        if(radio.mode_select == MODE_SERIAL && IS_RX_FLAG_on)		// Serial mode and something has been received
-        {
-            update_serial_data();							// Update protocol and data
-            update_channels_aux();
-            INPUT_SIGNAL_on;								//valid signal received
-            radio.last_signal = millis();
+    uint8_t ch;
+    uint32_t chan_or = radio.chan_order;
+    if(IS_RX_FLAG_on){
+        #ifdef ENABLE_SERIAL
+        if(radio.mode_select == MODE_SERIAL){       // Serial mode and something has been received
+            update_serial_data();                   // Update protocol and data
         }
-    #endif //ENABLE_SERIAL
+        #endif //ENABLE_SERIAL
 
-    #ifdef ENABLE_PPM
-        if(radio.mode_select != MODE_SERIAL && IS_PPM_FLAG_on)		// PPM mode and a full frame has been received
+        #ifdef ENABLE_PPM
+        if(radio.mode_select != MODE_SERIAL)        // PPM mode and a full frame has been received
         {
-            uint32_t chan_or = radio.chan_order;
-            uint8_t ch;
-            for(uint8_t i = 0; i < radio.channel_aux; i++){
+            for(uint8_t i = 0; i < radio.nchannels; i++){
                 // update servo data without interrupts to prevent bad read
                 uint16_t val;
                 cli();
@@ -238,21 +235,30 @@ static uint8_t Update_All(void)
                     radio.channel_data[i] = val;
                 }
             }
-            PPM_FLAG_off;									// wait for next frame before update
+            PPM_FLAG_off;                                    // wait for next frame before update
         #ifdef ENABLE_FAILSAFE
             PPM_failsafe();
         #endif
-            update_channels_aux();
-            INPUT_SIGNAL_on;								// valid signal received
-            radio.last_signal = millis();
         }
     #endif //ENABLE_PPM
+
+        uint16_t *channel_aux = &radio.channel_data[radio.nchannels];
+        appGetAuxChannels(&channel_aux, &ch);
+        if(radio.nchannels + ch < MAX_CHN_NUM){
+            radio.nchannels += ch;
+        }else{
+            DBG_MULTI_WRN("Too many aux channels received");
+            radio.nchannels = MAX_CHN_NUM;
+        }
+        INPUT_SIGNAL_on;                                // valid signal received
+        radio.last_signal = millis();
+    }
 
     update_led_status();
 
     if(IS_CHANGE_PROTOCOL_FLAG_on){
         // Protocol needs to be changed or relaunched for bind
-        protocol_init();									//init new protocol
+        protocol_init();                                    //init new protocol
         return 1;
     }
 
@@ -264,7 +270,7 @@ static void update_led_status(void)
     if(IS_INPUT_SIGNAL_on)
         if(millis() - radio.last_signal > 70)
         {
-            INPUT_SIGNAL_off;							//no valid signal (PPM or Serial) received for 70ms
+            INPUT_SIGNAL_off;                            //no valid signal (PPM or Serial) received for 70ms
             DBG_MULTI_WRN("Lost input signal");
         }
     if(radio.blink < millis())
@@ -272,14 +278,14 @@ static void update_led_status(void)
         if(IS_INPUT_SIGNAL_off)
         {
             if(radio.mode_select == MODE_SERIAL)
-                radio.blink += BLINK_SERIAL_TIME;				//blink slowly if no valid serial input
+                radio.blink += BLINK_SERIAL_TIME;                //blink slowly if no valid serial input
             else
-                radio.blink += BLINK_PPM_TIME;					//blink more slowly if no valid PPM input
+                radio.blink += BLINK_PPM_TIME;                    //blink more slowly if no valid PPM input
         }
         else
             if(radio.remote_callback == NULL)
             { // Invalid protocol
-                if(IS_LED_on)							//flash to indicate invalid protocol
+                if(IS_LED_on)                            //flash to indicate invalid protocol
                     radio.blink += BLINK_BAD_PROTO_TIME_LOW;
                 else
                     radio.blink += BLINK_BAD_PROTO_TIME_HIGH;
@@ -288,7 +294,7 @@ static void update_led_status(void)
             {
                 if(IS_WAIT_BIND_on)
                 {
-                    if(IS_LED_on)							//flash to indicate WAIT_BIND
+                    if(IS_LED_on)                            //flash to indicate WAIT_BIND
                         radio.blink += BLINK_WAIT_BIND_TIME_LOW;
                     else
                         radio.blink += BLINK_WAIT_BIND_TIME_HIGH;
@@ -296,8 +302,8 @@ static void update_led_status(void)
                 else
                 {
                     if(IS_BIND_DONE)
-                        LED_OFF;							//bind completed force led on
-                    radio.blink += BLINK_BIND_TIME;					//blink fastly during binding
+                        LED_OFF;                            //bind completed force led on
+                    radio.blink += BLINK_BIND_TIME;                    //blink fastly during binding
                 }
             }
         LED_TOGGLE;
@@ -310,9 +316,9 @@ static void protocol_init(void)
 
     if(IS_WAIT_BIND_off)
     {
-        radio.remote_callback = NULL;	// No protocol
-        LED_OFF;						// Led off during protocol init
-        modules_reset();				// Reset all modules
+        radio.remote_callback = NULL;    // No protocol
+        LED_OFF;                        // Led off during protocol init
+        modules_reset();                // Reset all modules
 
         //Set global ID and rx_tx_addr
         radio.protocol_id = radio.rx_num + radio.protocol_id_master;
@@ -325,7 +331,7 @@ static void protocol_init(void)
 
         radio.blink = millis();
 
-        switch(radio.protocol)				// Init the requested protocol
+        switch(radio.protocol)                // Init the requested protocol
         {
             #if defined(CC2500_INSTALLED) && defined(FRSKYD_CC2500_INO)
             case PROTO_FRSKYD:
@@ -374,40 +380,6 @@ static void protocol_init(void)
 }
 
 /**
- * After ppm synchronization, this function is called every ~20mS
- * TODO: Move auxiliary channels to project application
- * */
-void update_channels_aux(void){
-
-#ifdef ENABLE_AUX_CHANNELS
-    uint8_t switches = readAuxSwitches();
-
-    for(uint8_t i = 0; i < MAX_AUX_CHANNELS - 1; i++){
-        if((switches & (1<<i)) == 0){
-            radio.channel_data[radio.channel_aux + i] = eeprom_data[IDX_CHANNEL_MIN_100];
-        }else{
-            radio.channel_data[radio.channel_aux + i] = eeprom_data[IDX_CHANNEL_SWITCH];
-        }
-    }
-#endif
-
-#ifdef ENABLE_ENCODER
-    // Process encoder
-    int16_t diff = encGetDiff();
-    if(diff != 0){
-        uint16_t tmp = radio.channel_data[radio.channel_aux + MAX_AUX_CHANNELS - 1];
-        tmp += diff * 10; // speed
-        if(tmp > eeprom_data[IDX_CHANNEL_MAX_100]){
-            tmp = eeprom_data[IDX_CHANNEL_MAX_100];
-        }else if(tmp < eeprom_data[IDX_CHANNEL_MIN_100]){
-            tmp = eeprom_data[IDX_CHANNEL_MIN_100];
-        }
-        radio.channel_data[radio.channel_aux + MAX_AUX_CHANNELS - 1] = tmp;
-    }
-#endif
-}
-
-/**
  *  Private Functions, maybe move them to own file?
  * */
 
@@ -421,25 +393,6 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id)
     dst[2] = (id >>  8) & 0xFF;
     dst[3] = (id >>  0) & 0xFF;
     dst[4] = (dst[2]&0xF0)|(dst[3]&0x0F);
-}
-
-/**
- * @brief Function to set channels data.
- * Callback for when channel data is ready from ppm_decode or
- * simulation
- *
- * @param buf   Buffer with channel data in 0.5us resolution
- * @param chan  Number of channels
- */
-void multiprotocol_setChannelData(const uint16_t *buf, uint8_t chan){
-    PPM_FLAG_on;
-#ifdef ENABLE_PPM
-    radio.ppm_data = buf;
-    radio.channel_aux = chan;
-#else
-    (void)buf;
-    (void)chan;
-#endif
 }
 
 /**
@@ -478,7 +431,7 @@ static uint32_t random_id(uint8_t create_new)
     id = eeprom_data[EEPROM_ID_OFFSET + 1] << 16 | eeprom_data[EEPROM_ID_OFFSET];
 
     if(!create_new){
-        if(id != DEFAULT_ID){	//ID with seed=0
+        if(id != DEFAULT_ID){    //ID with seed=0
             DBG_MULTI_INF("Using ID 0x%x from EEPROM", id);
             return id;
         }
@@ -507,9 +460,29 @@ uint32_t multiprotocol_protocol_id_get(void)
     return radio.protocol_id_master;
 }
 
-uint16_t *multiprotocol_channel_data_get(void)
+/**
+ * @brief Function to set channels data.
+ * Callback for when channel data is ready from ppm_decode or
+ * simulation
+ *
+ * @param buf   Buffer with channel data in 0.5us resolution
+ * @param chan  Number of channels
+ */
+void multiprotocol_channel_data_set(const uint16_t *buf, uint8_t chan){
+    PPM_FLAG_on;
+#ifdef ENABLE_PPM
+    radio.ppm_data = buf;
+    radio.nchannels = chan;
+#else
+    (void)buf;
+    (void)chan;
+#endif
+}
+
+void multiprotocol_channel_data_get(uint16_t **channel_data, uint8_t *nchannels)
 {
-    return radio.channel_data;
+    *channel_data = radio.channel_data;
+    *nchannels = radio.nchannels;
 }
 
 void multiprotocol_flags_set(uint32_t flags)
@@ -530,7 +503,7 @@ void multiprotocol_flags_clr(uint32_t flags)
  *
  * @param mode My_PPM_prot entry number 0-14
  */
-void multiprotocol_set_mode(uint8_t mode)
+void multiprotocol_mode_set(uint8_t mode)
 {
     radio.mode_select = mode;
 }

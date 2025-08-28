@@ -281,7 +281,7 @@ typedef struct radio{
 
     // Servo data
     uint16_t channel_data[MAX_CHN_NUM];
-    uint8_t  channel_aux;               // index of aux channels
+    uint8_t  nchannels;
 #ifdef ENABLE_FAILSAFE
         uint16_t Failsafe_data[NUM_CHN];
 #endif
@@ -347,10 +347,9 @@ uint32_t multiprotocol_flags_get(void);
 void multiprotocol_flags_set(uint32_t flags);
 void multiprotocol_flags_clr(uint32_t flags);
 uint32_t multiprotocol_protocol_id_get(void);
-uint16_t *multiprotocol_channel_data_get(void);
-void multiprotocol_setChannelData(const uint16_t *buf, uint8_t chan);
-void multiprotocol_set_mode(uint8_t mode);
-void update_channels_aux(void);
+void multiprotocol_channel_data_get(uint16_t **, uint8_t *nchannels);
+void multiprotocol_channel_data_set(const uint16_t *buf, uint8_t chan);
+void multiprotocol_mode_set(uint8_t mode);
 
 void ppm_setCallBack(void(*cb)(const uint16_t*, uint8_t));
 uint16_t ppm_tx(struct radio *radio);

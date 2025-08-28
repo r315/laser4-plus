@@ -51,11 +51,11 @@ public:
     CmdCC25() : ConsoleCommand("cc2500") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {
-		console->println("usage: cc2500 <[-r, --reset, -rs, status]>");
-		console->println("\t-r <0-2E>, Read Register");
-		console->println("\t-w <0-2E>, Write Register");
-		console->println("\t-rs <30-3D>, Read status register");
-		console->println("\t--reset, Reset CC2500 module");
+		console->println("usage: cc2500 <[rs, rr, wr, status, reset]>");
+		console->println("\trr <0-2E>, Read Register");
+		console->println("\twr <0-2E>, Write Register");
+		console->println("\trs <30-3D>, Read status register");
+		console->println("\treset, Reset CC2500 module");
 	}
 
 	char reset(void){
@@ -116,20 +116,20 @@ public:
 			return reset();
 		}
 
-		if((param = getOptValue("-r", argc, argv)) != NULL){
+		if((param = getOptValue("rr", argc, argv)) != NULL){
 			if(ha2u(param, &value)){
 				return readRegister(value & 255);
 			}
 		}
 
-		if((param = getOptValue("-rs", argc, argv)) != NULL){
+		if((param = getOptValue("rs", argc, argv)) != NULL){
 			if(ha2u(param, &value)){
 				console->printf("Status [0x%02x] = %x\n", value, CC2500_ReadStatus(value & 255));
 				return CMD_OK;
 			}
 		}
 
-		if((param = getOptValue("-w", argc, argv)) != NULL){
+		if((param = getOptValue("wr", argc, argv)) != NULL){
 			uint32_t reg, val;
 			if(nextHex(&param, &reg)){
 				param++; // skip string terminator
@@ -178,9 +178,10 @@ public:
 	}
 
 	void channelValues(void){
-        uint16_t *channel_data = multiprotocol_channel_data_get();
-        // TODO: replace number radio.channel_aux + MAX_AUX_CHANNELS
-		for(uint8_t i = 0; i < 8; i++){
+        uint16_t *channel_data;
+        uint8_t nchannels;
+        multiprotocol_channel_data_get(&channel_data, &nchannels);
+		for(uint8_t i = 0; i < nchannels; i++){
         	console->printf("CH[%u]            : %u\n", i, channel_data[i]);
     	}
 	}
@@ -278,7 +279,7 @@ public:
 static const uint16_t ppm_sim_data[] = {3000, 3000, 2000, 3000};
 static void ppm_sim(void)
 {
-	multiprotocol_setChannelData(ppm_sim_data, 4);
+	multiprotocol_channel_data_set(ppm_sim_data, 4);
 }
 
 class CmdPpm : public ConsoleCommand {

@@ -23,7 +23,6 @@
 #endif
 
 static volatile uint8_t app_state;
-static uint32_t app_flags = 0;
 
 #ifdef ENABLE_BUZZER
 static tone_t chime[] = {
@@ -40,6 +39,7 @@ static Console con;
 #endif
 
 #ifdef ENABLE_DISPLAY
+
 #define DRO_BAT_POS     4, 10
 #define DRO_AMPH_POS    74, 10
 #define ICO_LOWBAT_POS  1, 1  // 29x7
@@ -57,6 +57,8 @@ static Console con;
 
 #define APP_DRAW_ICON(ICO)      MPANEL_drawIcon(ICO.posx, ICO.posy, (const idata_t*)ICO.data)
 #define APP_ERASE_ICON(ICO)     LCD_FillRect(ICO.posx, ICO.posy, ICO.data->width, ICO.data->hight, BLACK);
+
+static uint32_t app_flags = 0;
 
 /**
  * Icons bitmaps
@@ -242,7 +244,7 @@ void appChangeModeReq(uint8_t prev_mode, uint8_t new_mode)
 #endif
 
     if(new_mode == MODE_PPM || new_mode == MODE_CC2500){
-        multiprotocol_set_mode(new_mode);
+        multiprotocol_mode_set(new_mode);
     }
 
     // set the requested mode by overwriting the previous
@@ -374,6 +376,42 @@ void appCheckProtocolFlags(void)
 }
 
 #endif /* ENABLE_DISPLAY */
+
+
+/**
+ * After ppm synchronization, this function is called every ~20mS
+ * TODO: Move auxiliary channels to project application
+ * */
+void appGetAuxChannels(uint16_t **channel_aux, uint8_t *nchannel)
+{
+
+    #ifdef ENABLE_AUX_CHANNELS
+        uint8_t switches = readAuxSwitches();
+
+        for(uint8_t i = 0; i < MAX_AUX_CHANNELS - 1; i++){
+            if((switches & (1<<i)) == 0){
+                radio.channel_data[radio.nchannels + i] = eeprom_data[IDX_CHANNEL_MIN_100];
+            }else{
+                radio.channel_data[radio.nchannels + i] = eeprom_data[IDX_CHANNEL_SWITCH];
+            }
+        }
+    #endif
+
+    #ifdef ENABLE_ENCODER
+        // Process encoder
+        int16_t diff = encGetDiff();
+        if(diff != 0){
+            uint16_t tmp = radio.channel_data[radio.nchannels + MAX_AUX_CHANNELS - 1];
+            tmp += diff * 10; // speed
+            if(tmp > eeprom_data[IDX_CHANNEL_MAX_100]){
+                tmp = eeprom_data[IDX_CHANNEL_MAX_100];
+            }else if(tmp < eeprom_data[IDX_CHANNEL_MIN_100]){
+                tmp = eeprom_data[IDX_CHANNEL_MIN_100];
+            }
+            radio.channel_data[radio.nchannels + MAX_AUX_CHANNELS - 1] = tmp;
+        }
+    #endif
+    }
 
 static uint32_t eepromLoad(uint8_t *buf, uint16_t size)
 {
@@ -551,9 +589,9 @@ extern "C" void setup(void)
     enableWatchDog(WATCHDOG_TIME);
 
 #ifdef TX35_MHZ_INSTALLED
-    multiprotocol_set_mode(IS_HW_SW_AUX3_PRESSED ? MODE_PPM : MODE_CC2500);
+    multiprotocol_mode_set(IS_HW_SW_AUX3_PRESSED ? MODE_PPM : MODE_CC2500);
 #else
-    multiprotocol_set_mode(MODE_CC2500);
+    multiprotocol_mode_set(MODE_CC2500);
 #endif
 
 }
