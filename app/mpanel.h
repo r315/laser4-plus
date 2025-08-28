@@ -41,7 +41,7 @@ public:
     MpanelDro(uint16_t posx, uint16_t posy, const char *fmt, const font_t *font);
 };
 
-extern font_t font_seven_seg;
+extern const font_t font_seven_seg;
 
 void MPANEL_drawIcon(uint16_t x, uint16_t y, const idata_t *data);
 void MPANEL_print(uint16_t x, uint16_t y, const font_t *font, const char *fmt, ...);

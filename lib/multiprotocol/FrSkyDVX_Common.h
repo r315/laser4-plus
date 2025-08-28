@@ -53,8 +53,8 @@ void Frsky_SetPower(radio_t *radio);
 uint16_t convert_channel_frsky(uint16_t val);
 
 //FrSkyD
-uint16_t initFrSky_2way(radio_t *radio);
-uint16_t ReadFrSky_2way(radio_t *radio);
+uint16_t FRSKYD_init(radio_t *radio);
+uint16_t FRSKYD_callback(radio_t *radio);
 
 
 #ifdef __cplusplus

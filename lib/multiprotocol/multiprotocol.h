@@ -282,28 +282,31 @@ typedef struct radio{
     // Servo data
     uint16_t channel_data[MAX_CHN_NUM];
     uint8_t  nchannels;
-#ifdef ENABLE_FAILSAFE
-        uint16_t Failsafe_data[NUM_CHN];
-#endif
 
     // Protocol variables
-    uint8_t  rx_tx_addr[5];
-#ifdef HOTT_CC2500_INO
-        uint8_t  hopping_frequency[75];
-#else
-        uint8_t  hopping_frequency[50];
-#endif
-    uint16_t state;
-    uint8_t  len;
-    uint8_t  packet_count;
-    uint16_t bind_counter;
+    uint8_t rx_tx_addr[5];
     uint8_t sub_protocol;
     uint8_t protocol;
     uint8_t option;
     uint8_t cur_protocol[3];
+    uint8_t rx_num;         // RF index number
+    uint32_t protocol_id;
+    uint32_t protocol_id_master;
+
+#ifdef HOTT_CC2500_INO
+    uint8_t  hopping_frequency[75];
+#else
+    uint8_t  hopping_frequency[50];
+#endif
+    // RF variables
+    uint16_t state;         // RF State
+    uint8_t len;            // RF packet length
+    uint8_t packet_count;   // RF number of packets
+    uint8_t packet[50];
+    uint8_t packet_in[TELEMETRY_BUFFER_SIZE];  // Received packets buffer
     uint8_t prev_option;
     uint8_t prev_power;
-    uint8_t rx_num;
+    uint16_t counter;
 
 #ifdef ENABLE_SERIAL
     // Serial RX
@@ -319,18 +322,19 @@ typedef struct radio{
     const uint16_t *ppm_data;
     uint8_t chan_order;
 #endif
-    //Received packets buffer
-    uint8_t packet_in[TELEMETRY_BUFFER_SIZE];
+
 #if defined(TELEMETRY)
     //Telemetry
 #endif
+
+#ifdef ENABLE_FAILSAFE
+        uint16_t Failsafe_data[NUM_CHN];
+#endif
+
     //general variables
-    uint16_t counter;
-    uint8_t  packet[50];
+
     uint32_t last_signal;
     uint32_t blink;
-    uint32_t protocol_id;
-    uint32_t protocol_id_master;
 
     //callback
     uint16_t (*remote_callback)(struct radio *radio);

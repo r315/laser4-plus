@@ -72,9 +72,10 @@ void multiprotocol_setup(void)
     DBG_MULTI_PRINT("\n***** Starting Multiprotocol *****\n");
     DBG_MULTI_INF("Protocol selection index : %d", radio.mode_select);
 
-    // Read status of bind button
+    radio.flags = 0;
+
     if(IS_BIND_BUTTON_PRESSED){
-        BIND_BUTTON_FLAG_on;    // If bind button pressed save the status
+        BIND_BUTTON_FLAG_on;     // If bind button pressed.
         BIND_IN_PROGRESS;        // Request bind
         DBG_MULTI_INF("Bind button pressed");
     }else{
@@ -309,7 +310,7 @@ static void protocol_init(void)
 
     if(IS_WAIT_BIND_off)
     {
-        radio.remote_callback = NULL;    // No protocol
+        radio.remote_callback = NULL;   // No protocol
         LED_OFF;                        // Led off during protocol init
         modules_reset();                // Reset all modules
 
@@ -328,8 +329,8 @@ static void protocol_init(void)
         {
             #if defined(CC2500_INSTALLED) && defined(FRSKYD_CC2500_INO)
             case PROTO_FRSKYD:
-                next_callback = initFrSky_2way(&radio);
-                radio.remote_callback = ReadFrSky_2way;
+                next_callback = FRSKYD_init(&radio);
+                radio.remote_callback = FRSKYD_callback;
                 DBG_MULTI_INF("CC2550 Active");
                 break;
             #endif

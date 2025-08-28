@@ -18,26 +18,20 @@
 #include "FrSkyDVX_Common.h"
 #include "iface_cc2500.h"
 
-static __attribute__((unused)) uint8_t frsky2way_init(radio_t *radio, uint8_t bind)
+static void __attribute__((unused)) FRSKYD_RF_init(radio_t *radio, uint8_t bind)
 {
-    uint8_t id = CC2500_ReadStatus(CC2500_30_PARTNUM);
-    if(id != 0x80){
-        DBG_FRSKY_ERR("Invalid cc2500 id: 0x%x", id);
-    }else{
-        FRSKY_init_cc2500(radio, FRSKYD_cc2500_conf);
+    FRSKY_init_cc2500(radio, FRSKYD_cc2500_conf);
 
-        CC2500_WriteReg(CC2500_09_ADDR, bind ? 0x03 : radio->rx_tx_addr[3]);
-        CC2500_WriteReg(CC2500_07_PKTCTRL1, 0x05);
-        CC2500_Strobe(CC2500_SIDLE);	// Go to idle...
-        //
-        CC2500_WriteReg(CC2500_0A_CHANNR, 0x00);
-        CC2500_WriteReg(CC2500_23_FSCAL3, 0x89);
-        CC2500_Strobe(CC2500_SFRX);
-    }
-    return id;
+    CC2500_WriteReg(CC2500_09_ADDR, bind ? 0x03 : radio->rx_tx_addr[3]);
+    CC2500_WriteReg(CC2500_07_PKTCTRL1, 0x05);
+    CC2500_Strobe(CC2500_SIDLE);	// Go to idle...
+    //
+    CC2500_WriteReg(CC2500_0A_CHANNR, 0x00);
+    CC2500_WriteReg(CC2500_23_FSCAL3, 0x89);
+    CC2500_Strobe(CC2500_SFRX);
 }
 
-static void __attribute__((unused)) frsky2way_build_bind_packet(radio_t *radio)
+static void __attribute__((unused)) FRSKYD_build_bind_packet(radio_t *radio)
 {
 	//11 03 01 d7 2d 00 00 1e 3c 5b 78 00 00 00 00 00 00 01
 	//11 03 01 19 3e 00 02 8e 2f bb 5c 00 00 00 00 00 00 01
@@ -62,7 +56,7 @@ static void __attribute__((unused)) frsky2way_build_bind_packet(radio_t *radio)
 	radio->packet[17] = 0x01;
 }
 
-static void __attribute__((unused)) frsky2way_data_frame(radio_t *radio)
+static void __attribute__((unused)) FRSKYD_data_frame(radio_t *radio)
 {//pachet[4] is telemetry user frame counter(hub)
 	//11 d7 2d 22 00 01 c9 c9 ca ca 88 88 ca ca c9 ca 88 88
 	//11 57 12 00 00 01 f2 f2 f2 f2 06 06 ca ca ca ca 18 18
@@ -104,19 +98,27 @@ static void __attribute__((unused)) frsky2way_data_frame(radio_t *radio)
  * @param radio
  * @return callback interval in ms
  */
-uint16_t initFrSky_2way(radio_t *radio)
+uint16_t FRSKYD_init(radio_t *radio)
 {
 	Frsky_init_hop(radio);
-	radio->packet_count = 0;
-	if((radio->flags & FLAG_BIND) == 0)
+
+    radio->packet_count = 0;
+
+	if(!(radio->flags & FLAG_BIND))
 	{
-		frsky2way_init(radio, 1);
-		radio->state = FRSKY_BIND;
+        uint8_t id = CC2500_ReadStatus(CC2500_30_PARTNUM);
+        if(id != 0x80){
+            DBG_FRSKY_ERR("Invalid cc2500 id: 0x%x", id);
+        }else{
+		    FRSKYD_RF_init(radio, 1);
+		    radio->state = FRSKY_BIND;
+        }
 	}
 	else
 	{
 		radio->state = FRSKY_BIND_DONE;
 	}
+
 	return CC2500_CALLBACK_INTERVAL;
 }
 
@@ -125,11 +127,11 @@ uint16_t initFrSky_2way(radio_t *radio)
  * @param radio
  * @return Interval for next call in ms
  */
-uint16_t ReadFrSky_2way(radio_t *radio)
+uint16_t FRSKYD_callback(radio_t *radio)
 {
 	if (radio->state < FRSKY_BIND_DONE)
 	{
-		frsky2way_build_bind_packet(radio);
+		FRSKYD_build_bind_packet(radio);
 		CC2500_Strobe(CC2500_SIDLE);
 		CC2500_WriteReg(CC2500_0A_CHANNR, 0x00);
 		CC2500_WriteReg(CC2500_23_FSCAL3, 0x89);
@@ -145,7 +147,7 @@ uint16_t ReadFrSky_2way(radio_t *radio)
 	if (radio->state == FRSKY_BIND_DONE)
 	{
 		radio->state = FRSKY_DATA2;
-		frsky2way_init(radio, 0);
+		FRSKYD_RF_init(radio, 0);
 		radio->counter = 0;
 		radio->flags |= FLAG_BIND;
 	}
@@ -217,8 +219,8 @@ uint16_t ReadFrSky_2way(radio_t *radio)
 
 		CC2500_WriteReg(CC2500_23_FSCAL3, 0x89);
 		CC2500_Strobe(CC2500_SFRX);
-		frsky2way_data_frame(radio);
-		CC2500_WriteData(radio->packet, radio->packet[0]+1);
+		FRSKYD_data_frame(radio);
+		CC2500_WriteData(radio->packet, radio->packet[0] + 1);
 		radio->state++;
 	}
 	return radio->state == FRSKY_DATA4 ? 7500 : 9000;
