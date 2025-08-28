@@ -277,11 +277,11 @@ uint16_t buzSetLevel(uint16_t level);
 void buzWaitEnd(void);
 #endif
 
-#ifdef ENABLE_ENCODER
+#ifdef ENABLE_AUX_ENCODER
 int16_t encGetDiff(void);
 #endif
 
-#ifdef ENABLE_AUX_CHANNELS
+#ifdef ENABLE_AUX_SWITCHES
 uint32_t readAuxSwitches(void);
 #endif
 

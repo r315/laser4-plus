@@ -77,7 +77,7 @@ static void i2cInit(i2cbus_t *i2cbus);
 static void spiInit(void);
 #endif
 
-#ifdef ENABLE_ENCODER
+#ifdef ENABLE_AUX_ENCODER
 static uint16_t enc_count;
 static uint16_t enc_speed;
 static void encInit(void);
@@ -126,7 +126,7 @@ static void laser4Init(void)
     adcInit();
 #endif
 
-#ifdef ENABLE_ENCODER
+#ifdef ENABLE_AUX_ENCODER
     encInit();
 #endif
 
@@ -816,7 +816,7 @@ uint32_t batteryReadVI(vires_t *dst){
 }
 #endif
 
-#ifdef ENABLE_ENCODER
+#ifdef ENABLE_AUX_ENCODER
 /**
  * @brief Rotary encorder init
  *  Configures a timer as pulse counter, the counter is incremented/decremented

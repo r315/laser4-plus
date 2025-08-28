@@ -385,7 +385,7 @@ void appCheckProtocolFlags(void)
 void appGetAuxChannels(uint16_t **channel_aux, uint8_t *nchannel)
 {
 
-    #ifdef ENABLE_AUX_CHANNELS
+    #ifdef ENABLE_AUX_SWITCHES
         uint8_t switches = readAuxSwitches();
 
         for(uint8_t i = 0; i < MAX_AUX_CHANNELS - 1; i++){
@@ -397,7 +397,7 @@ void appGetAuxChannels(uint16_t **channel_aux, uint8_t *nchannel)
         }
     #endif
 
-    #ifdef ENABLE_ENCODER
+    #ifdef ENABLE_AUX_ENCODER
         // Process encoder
         int16_t diff = encGetDiff();
         if(diff != 0){
@@ -588,10 +588,14 @@ extern "C" void setup(void)
     // Configure watchdog
     enableWatchDog(WATCHDOG_TIME);
 
-#ifdef TX35_MHZ_INSTALLED
+#if defined(TX35_MHZ_INSTALLED) && defined(CC2500_INSTALLED)
     multiprotocol_mode_set(IS_HW_SW_AUX3_PRESSED ? MODE_PPM : MODE_CC2500);
-#else
+#elif defined(CC2500_INSTALLED)
     multiprotocol_mode_set(MODE_CC2500);
+#elif defined(TX35_MHZ_INSTALLED)
+    multiprotocol_mode_set(MODE_PPM);
+#else
+    multiprotocol_mode_set(MODE_SERIAL);
 #endif
 
 }

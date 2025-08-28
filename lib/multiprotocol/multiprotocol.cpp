@@ -267,45 +267,39 @@ static uint8_t Update_All(void)
 
 static void update_led_status(void)
 {
-    if(IS_INPUT_SIGNAL_on)
-        if(millis() - radio.last_signal > 70)
-        {
+    if(IS_INPUT_SIGNAL_on){
+        if(millis() - radio.last_signal > 70){
             INPUT_SIGNAL_off;                            //no valid signal (PPM or Serial) received for 70ms
             DBG_MULTI_WRN("Lost input signal");
         }
-    if(radio.blink < millis())
-    {
-        if(IS_INPUT_SIGNAL_off)
-        {
+    }
+
+    if(radio.blink < millis()){
+        if(IS_INPUT_SIGNAL_off){
             if(radio.mode_select == MODE_SERIAL)
                 radio.blink += BLINK_SERIAL_TIME;                //blink slowly if no valid serial input
             else
                 radio.blink += BLINK_PPM_TIME;                    //blink more slowly if no valid PPM input
-        }
-        else
-            if(radio.remote_callback == NULL)
-            { // Invalid protocol
+        } else {
+            if(radio.remote_callback == NULL){
+                // Invalid protocol
                 if(IS_LED_on)                            //flash to indicate invalid protocol
                     radio.blink += BLINK_BAD_PROTO_TIME_LOW;
                 else
                     radio.blink += BLINK_BAD_PROTO_TIME_HIGH;
-            }
-            else
-            {
-                if(IS_WAIT_BIND_on)
-                {
+            } else {
+                if(IS_WAIT_BIND_on) {
                     if(IS_LED_on)                            //flash to indicate WAIT_BIND
                         radio.blink += BLINK_WAIT_BIND_TIME_LOW;
                     else
                         radio.blink += BLINK_WAIT_BIND_TIME_HIGH;
-                }
-                else
-                {
+                } else {
                     if(IS_BIND_DONE)
                         LED_OFF;                            //bind completed force led on
                     radio.blink += BLINK_BIND_TIME;                    //blink fastly during binding
                 }
             }
+        }
         LED_TOGGLE;
     }
 }
@@ -362,13 +356,13 @@ static void protocol_init(void)
         }
     }
 
-    #if defined(WAIT_FOR_BIND) && defined(ENABLE_BIND_CH)
-        if( IS_AUTOBIND_FLAG_on && IS_BIND_CH_PREV_off && (cur_protocol[1]&0x80)==0 && mode_select == MODE_SERIAL)
-        { // Autobind is active but no bind requested by either BIND_CH or BIND. But do not wait if in PPM mode...
-            WAIT_BIND_on;
-            return;
-        }
-    #endif
+#if defined(WAIT_FOR_BIND) && defined(ENABLE_BIND_CH)
+    if( IS_AUTOBIND_FLAG_on && IS_BIND_CH_PREV_off && (cur_protocol[1]&0x80)==0 && mode_select == MODE_SERIAL)
+    { // Autobind is active but no bind requested by either BIND_CH or BIND. But do not wait if in PPM mode...
+        WAIT_BIND_on;
+        return;
+    }
+#endif
 
     // Clear bind request flags
     WAIT_BIND_off;

@@ -111,11 +111,11 @@ uint32_t batteryGetCurrent(void);
 void ppmOut(uint16_t *data);
 #endif
 
-#ifdef ENABLE_ENCODER
+#ifdef ENABLE_AUX_ENCODER
 int16_t encGetDiff(void);
 #endif
 
-#ifdef ENABLE_AUX_CHANNELS
+#ifdef ENABLE_AUX_SWITCHES
 uint32_t readAuxSwitches(void);
 #endif
 
