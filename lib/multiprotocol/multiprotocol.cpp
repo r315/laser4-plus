@@ -81,7 +81,7 @@ void multiprotocol_setup(void)
         BIND_DONE;
     }
 
-    uint16_t channel_default = (eeprom_data[IDX_CHANNEL_MAX_100] - eeprom_data[IDX_CHANNEL_MIN_100]) >> 1;
+    uint16_t channel_default = (eeprom_data[IDX_CHANNEL_MAX_100] + eeprom_data[IDX_CHANNEL_MIN_100]) >> 1;
 
     for(uint8_t i = 0; i < MAX_CHN_NUM; i++){
         radio.channel_data[i] = channel_default;
