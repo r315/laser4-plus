@@ -176,6 +176,7 @@ int main(void)
 
 void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode) {
 
+    mode &= 0x0f;
 
     if(mode == GPI_PD){
         port->BRR = (1 << pin);
@@ -183,9 +184,8 @@ void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode) {
 
     if(mode == GPI_PU){
         port->BSRR = (1 << pin);
+        mode = GPIO_IOF_PD; // Clear CNF bit 0
     }
-
-    mode &= 0x0f;
 
     if(pin <  8){
         port->CRL = (port->CRL & ~(15 << (pin << 2))) | (mode << (pin << 2));

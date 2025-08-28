@@ -16,11 +16,11 @@ extern "C" {
 #include "font.h"
 #endif
 
-#define GPIO_ENABLE             RCC->APB2ENR |=      \
-                                RCC_APB2ENR_IOPCEN \
-                                | RCC_APB2ENR_IOPBEN \
-                                | RCC_APB2ENR_IOPAEN \
-                                | RCC_APB2ENR_AFIOEN;
+#define GPIO_ENABLE             RCC->APB2ENR |= \
+                                RCC_APB2ENR_IOPAEN |\
+                                RCC_APB2ENR_IOPBEN |\
+                                RCC_APB2ENR_IOPCEN |\
+                                RCC_APB2ENR_AFIOEN;
 
 #define GPO_INIT(_IO, _PIN)     gpioInit(_IO, _PIN, GPO_LS)
 #define GPO_SET(_IO, _PIN)      _IO->BSRR = (1 << _PIN)
