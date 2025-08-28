@@ -14,6 +14,7 @@ extern "C" {
 #include "spi.h"
 #include "gpio.h"
 #include "stdinout.h"
+#include "tone.h"
 
 #define SET_BIT(REG, BIT)       ((REG) |= (BIT))
 #define CLEAR_BIT(REG, BIT)     ((REG) &= ~(BIT))
@@ -112,11 +113,11 @@ void ppmOut(uint16_t *data);
 #endif
 
 #ifdef ENABLE_AUX_ENCODER
-int16_t encGetDiff(void);
+int16_t auxGetEncoder(void);
 #endif
 
 #ifdef ENABLE_AUX_SWITCHES
-uint32_t readAuxSwitches(void);
+uint32_t auxGetSwitches(void);
 #endif
 
 #ifdef ENABLE_BUZZER

@@ -27,7 +27,8 @@ extern "C" {
 #define PPM_MIN_100             (988 << 1)  // 0.5us
 
 #define PPM_DEFAULT_VALUE       0
-#define MAX_AUX_CHANNELS        4
+#define AUX_SWITCH_NUM          3
+#define AUX_ENC_NUM             1
 
 #define DEFAULT_VOLTAGE_DIV     0x3e27ef9e  // 0.164
 #define DEFAULT_SENSE_RESISTOR  0x3db851ec  // 0.09

@@ -79,8 +79,7 @@ static void spiInit(void);
 
 #ifdef ENABLE_AUX_ENCODER
 static uint16_t enc_count;
-static uint16_t enc_speed;
-static void encInit(void);
+static void auxEncoderInit(void);
 #endif
 
 #ifdef ENABLE_PPM_OUTPUT
@@ -127,7 +126,7 @@ static void laser4Init(void)
 #endif
 
 #ifdef ENABLE_AUX_ENCODER
-    encInit();
+    auxEncoderInit();
 #endif
 
 #ifdef ENABLE_PPM
@@ -824,26 +823,24 @@ uint32_t batteryReadVI(vires_t *dst){
  *
  * Using TIM2 CH1 and CH2 as TI1 and TI2, also filter is configured
  * */
-void encInit(void){
+void auxEncoderInit(void)
+{
     RCC->APB1ENR    |= RCC_APB1ENR_TIM2EN;
-    RCC->APB1RSTR   |= RCC_APB1RSTR_TIM2RST;
-    RCC->APB1RSTR   &= ~RCC_APB1RSTR_TIM2RST;
 
     gpioInit(GPIOB, 3, GPI_PU);
     gpioInit(GPIOA, 15, GPI_PU);
     AFIO->MAPR = (AFIO->MAPR & ~(3 << 8)) | (1 << 8);       // Partial remap for TIM2; PA15 -> CH1, PB3 -> CH2
 
     ENC_TIM->CR2 = 0;
-    ENC_TIM->SMCR = TIM_SMCR_SMS_1 | TIM_SMCR_SMS_0;        // External clock, Encoder mode 3
-    ENC_TIM->CCMR1 = (15 << 12) | (15 << 4)                 // Map TIxFP1 to TIx,
-                  | TIM_CCMR1_CC2S_0 | TIM_CCMR1_CC1S_0     // and max length if input filter
-                  | TIM_CCMR1_IC2PSC_1 | TIM_CCMR1_IC1PSC_1;
+    ENC_TIM->SMCR = TIM_SMCR_SMS_1;                         // Encoder mode 2, count only on TI1 edges
+    ENC_TIM->CCMR1 = (15 << 12) | (15 << 4) |               // Max length if input filter on TI1, TI2
+                  TIM_CCMR1_CC2S_0 | TIM_CCMR1_CC1S_0;      // Map TIxFP1 to TIx,
     ENC_TIM->CCER = 0;                                      // Falling polarity
-    ENC_TIM->CR1 = TIM_CR1_CEN;
     ENC_TIM->SR = 0;
+    ENC_TIM->CR1 = TIM_CR1_CEN;
 }
 
-uint16_t encGetCnt(void)
+uint16_t auxGetEncoderCount(void)
 {
     return ENC_TIM->CNT;
 }
@@ -854,11 +851,20 @@ uint16_t encGetCnt(void)
  * @param
  * @return delta from last time called
  */
-int16_t encGetDiff(void)
+int16_t auxGetEncoder(void)
 {
     int16_t diff = ENC_TIM->CNT - enc_count;
     enc_count += diff;
     return diff;
+}
+#endif
+
+#ifdef ENABLE_AUX_SWITCHES
+uint32_t auxGetSwitches(void)
+{
+    return (IS_HW_SW_AUX1_PRESSED << 0) |
+            (IS_HW_SW_AUX2_PRESSED << 1) |
+            (IS_HW_SW_AUX3_PRESSED << 2);
 }
 #endif
 

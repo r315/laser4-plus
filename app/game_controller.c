@@ -63,7 +63,7 @@ RAM_CODE void CONTROLLER_Process(void){
         update_channels_aux();
         laser4.aux2 = radio.channel_data[radio.channel_aux + MAX_AUX_CHANNELS - 1];
 #ifdef ENABLE_AUX_SWITCHES
-        laser4.buttons = readAuxSwitches();
+        laser4.buttons = auxGetSwitches();
 #else
         laser4.buttons = 0;
 #endif

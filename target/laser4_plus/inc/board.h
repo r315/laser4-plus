@@ -90,11 +90,12 @@ extern "C" {
                                 gpioInit(HW_SW_AUX2_PORT, HW_SW_AUX2_PIN, GPI_PU); \
                                 gpioInit(HW_SW_AUX3_PORT, HW_SW_AUX3_PIN, GPI_PU); \
 
-#define HW_SW_AUX1_VAL          ((HW_SW_AUX1_PORT->IDR & (1 << HW_SW_AUX1_PIN)) == 0)
-#define HW_SW_AUX2_VAL          ((HW_SW_AUX2_PORT->IDR & (1 << HW_SW_AUX2_PIN)) == 0)
-#define HW_SW_AUX3_VAL          ((HW_SW_AUX3_PORT->IDR & (1 << HW_SW_AUX3_PIN)) == 0)
-#define IS_HW_SW_AUX1_PRESSED   (HW_SW_AUX1_PORT->IDR & (1 << HW_SW_AUX1_PIN)) == 0
-#define IS_HW_SW_AUX3_PRESSED   (HW_SW_AUX3_PORT->IDR & (1 << HW_SW_AUX3_PIN)) == 0
+#define HW_SW_AUX1_VAL          (HW_SW_AUX1_PORT->IDR & (1 << HW_SW_AUX1_PIN))
+#define HW_SW_AUX2_VAL          (HW_SW_AUX2_PORT->IDR & (1 << HW_SW_AUX2_PIN))
+#define HW_SW_AUX3_VAL          (HW_SW_AUX3_PORT->IDR & (1 << HW_SW_AUX3_PIN))
+#define IS_HW_SW_AUX1_PRESSED   !HW_SW_AUX1_VAL
+#define IS_HW_SW_AUX2_PRESSED   !HW_SW_AUX2_VAL
+#define IS_HW_SW_AUX3_PRESSED   !HW_SW_AUX3_VAL
 #define IS_BIND_BUTTON_PRESSED  IS_HW_SW_AUX1_PRESSED
 
 /** RF enable for 35MHz transmiter */
@@ -278,11 +279,11 @@ void buzWaitEnd(void);
 #endif
 
 #ifdef ENABLE_AUX_ENCODER
-int16_t encGetDiff(void);
+int16_t auxGetEncoder(void);
 #endif
 
 #ifdef ENABLE_AUX_SWITCHES
-uint32_t readAuxSwitches(void);
+uint32_t auxGetSwitches(void);
 #endif
 
 #ifdef ENABLE_UART

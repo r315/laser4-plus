@@ -242,8 +242,7 @@ static uint8_t Update_All(void)
         }
     #endif //ENABLE_PPM
 
-        uint16_t *channel_aux = &radio.channel_data[radio.nchannels];
-        appGetAuxChannels(&channel_aux, &ch);
+        appGetAuxChannels(&radio.channel_data[radio.nchannels], &ch);
         if(radio.nchannels + ch < MAX_CHN_NUM){
             radio.nchannels += ch;
         }else{

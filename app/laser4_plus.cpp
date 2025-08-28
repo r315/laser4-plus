@@ -379,39 +379,54 @@ void appCheckProtocolFlags(void)
 
 
 /**
- * After ppm synchronization, this function is called every ~20mS
- * TODO: Move auxiliary channels to project application
- * */
-void appGetAuxChannels(uint16_t **channel_aux, uint8_t *nchannel)
+ * @brief Get auxiliary channels servo values available on board
+ *
+ * @param channel_aux Output pointer for servo data
+ * @param nchannel  Output number os channels
+ */
+void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel)
 {
+    uint8_t nch = 0;
 
-    #ifdef ENABLE_AUX_SWITCHES
-        uint8_t switches = readAuxSwitches();
+#ifdef ENABLE_AUX_SWITCHES
+    uint8_t switches = auxGetSwitches();
+    uint16_t channel_value;
 
-        for(uint8_t i = 0; i < MAX_AUX_CHANNELS - 1; i++){
-            if((switches & (1<<i)) == 0){
-                radio.channel_data[radio.nchannels + i] = eeprom_data[IDX_CHANNEL_MIN_100];
-            }else{
-                radio.channel_data[radio.nchannels + i] = eeprom_data[IDX_CHANNEL_SWITCH];
-            }
+    for(uint8_t i = 0; i < AUX_SWITCH_NUM; i++){
+        if((switches & (1 << i))){
+            channel_value = eeprom_data[IDX_CHANNEL_SWITCH];
+        }else{
+            channel_value = eeprom_data[IDX_CHANNEL_MIN_100];
         }
-    #endif
 
-    #ifdef ENABLE_AUX_ENCODER
-        // Process encoder
-        int16_t diff = encGetDiff();
-        if(diff != 0){
-            uint16_t tmp = radio.channel_data[radio.nchannels + MAX_AUX_CHANNELS - 1];
-            tmp += diff * 10; // speed
-            if(tmp > eeprom_data[IDX_CHANNEL_MAX_100]){
-                tmp = eeprom_data[IDX_CHANNEL_MAX_100];
-            }else if(tmp < eeprom_data[IDX_CHANNEL_MIN_100]){
-                tmp = eeprom_data[IDX_CHANNEL_MIN_100];
-            }
-            radio.channel_data[radio.nchannels + MAX_AUX_CHANNELS - 1] = tmp;
+        if(channel_value != channel_aux[i]){
+            channel_aux[i] = channel_value;
+            DBG_APP_INF("Aux channel %d changed", i + 1);
         }
-    #endif
     }
+
+    nch += AUX_SWITCH_NUM;
+#endif
+
+#ifdef ENABLE_AUX_ENCODER
+    int16_t diff = auxGetEncoder();
+    if(diff != 0){
+        uint16_t tmp = channel_aux[nch];        // Read current servo value
+        tmp += diff * 10;                       // increment/decrement
+        if(tmp > eeprom_data[IDX_CHANNEL_MAX_100]){
+            tmp = eeprom_data[IDX_CHANNEL_MAX_100];
+        }else if(tmp < eeprom_data[IDX_CHANNEL_MIN_100]){
+            tmp = eeprom_data[IDX_CHANNEL_MIN_100];
+        }
+        channel_aux[nch] = tmp;
+        DBG_APP_INF("Encoder %d", diff);
+    }
+
+    nch += AUX_ENC_NUM;
+#endif
+
+    *nchannel = nch;
+}
 
 static uint32_t eepromLoad(uint8_t *buf, uint16_t size)
 {
