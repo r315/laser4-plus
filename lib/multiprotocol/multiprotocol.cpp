@@ -149,7 +149,7 @@ void multiprotocol_loop(void)
         return;
     }
 
-    next_callback = radio.remote_callback(&radio) << 1; // Convert returned ms time to timer units
+    next_callback = radio.remote_callback(&radio) << 1; // Convert returned us time to timer units
 
     ticksSetInterval(next_callback);
     diff = ticksGetIntervalRemaining();

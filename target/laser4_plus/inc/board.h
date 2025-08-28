@@ -36,25 +36,25 @@ extern "C" {
 #define LED_INIT                GPIOB->CRL = (GPIOB->CRL & ~(15<<12)) | (2<<12) // assume swd is already enabled
 #define LED_SET                 GPIO_PIN_RESET
 #define LED_RESET               GPIO_PIN_SET
-#else// Blue pill LED
-#define LED_PORT                GPIOC
+#else
+#define LED_PORT                GPIOC   // Blue pill LED
 #define LED_PIN                 13
 #define LED_ON                  GPO_SET(LED_PORT, LED_PIN)
 #define LED_OFF                 GPO_CLR(LED_PORT, LED_PIN)
-#define LED_INIT                GPO_INIT(LED_PORT, LED_PIN); LED_OFF
+#define LED_INIT                GPO_INIT(LED_PORT, LED_PIN); LED_OFF; DBG_PIN_INIT; DBG_PIN_HIGH
 #define LED_TOGGLE              GPO_TOGGLE(LED_PORT, LED_PIN)
-#endif
 
-#define IS_LED_on               (LED_PORT->IDR & (1<<LED_PIN))
-
-#if 0
-#define DBG_PIN                 10
+#define DBG_PIN                 9
 #define DBG_PORT                GPIOB
 #define DBG_PIN_HIGH            GPO_SET(DBG_PORT, DBG_PIN)
 #define DBG_PIN_LOW             GPO_CLR(DBG_PORT, DBG_PIN)
 #define DBG_PIN_INIT            GPO_INIT(DBG_PORT, DBG_PIN); DBG_PIN_LOW
 #define DBG_PIN_TOGGLE          GPO_TOGGLE(DBG_PORT, DBG_PIN)
+
 #endif
+
+#define IS_LED_on               (LED_PORT->IDR & (1<<LED_PIN))
+
 
 /**
  * SPI2

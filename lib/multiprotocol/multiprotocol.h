@@ -34,7 +34,7 @@ extern "C" {
 #define RXBUFFER_SIZE               36    // 26 + 1 + 9
 #define MAX_CHN_NUM                 16
 #define TELEMETRY_BUFFER_SIZE       30
-#define PPM_TX_CALLBACK_INTERVAL    20000 /* ms */
+#define PPM_TX_CALLBACK_INTERVAL    20000 /* us */
 #define PROTOCOL_DEFAULT_INTERVAL   5000
 
 //********************

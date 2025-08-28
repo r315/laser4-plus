@@ -43,7 +43,7 @@ enum {
 
 #endif
 
-#define CC2500_CALLBACK_INTERVAL            10000 /* ms */
+#define CC2500_CALLBACK_INTERVAL            10000 /* us */
 
 extern const PROGMEM uint8_t FRSKYD_cc2500_conf[];
 
