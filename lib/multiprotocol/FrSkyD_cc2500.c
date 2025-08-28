@@ -18,18 +18,23 @@
 #include "FrSkyDVX_Common.h"
 #include "iface_cc2500.h"
 
-static void __attribute__((unused)) frsky2way_init(radio_t *radio, uint8_t bind)
+static __attribute__((unused)) uint8_t frsky2way_init(radio_t *radio, uint8_t bind)
 {
-	FRSKY_init_cc2500(radio, FRSKYD_cc2500_conf);
+    uint8_t id = CC2500_ReadStatus(CC2500_30_PARTNUM);
+    if(id != 0x80){
+        DBG_FRSKY_ERR("Invalid cc2500 id: 0x%x", id);
+    }else{
+        FRSKY_init_cc2500(radio, FRSKYD_cc2500_conf);
 
-	CC2500_WriteReg(CC2500_09_ADDR, bind ? 0x03 : radio->rx_tx_addr[3]);
-	CC2500_WriteReg(CC2500_07_PKTCTRL1, 0x05);
-	CC2500_Strobe(CC2500_SIDLE);	// Go to idle...
-	//
-	CC2500_WriteReg(CC2500_0A_CHANNR, 0x00);
-	CC2500_WriteReg(CC2500_23_FSCAL3, 0x89);
-	CC2500_Strobe(CC2500_SFRX);
-	//#######END INIT########
+        CC2500_WriteReg(CC2500_09_ADDR, bind ? 0x03 : radio->rx_tx_addr[3]);
+        CC2500_WriteReg(CC2500_07_PKTCTRL1, 0x05);
+        CC2500_Strobe(CC2500_SIDLE);	// Go to idle...
+        //
+        CC2500_WriteReg(CC2500_0A_CHANNR, 0x00);
+        CC2500_WriteReg(CC2500_23_FSCAL3, 0x89);
+        CC2500_Strobe(CC2500_SFRX);
+    }
+    return id;
 }
 
 static void __attribute__((unused)) frsky2way_build_bind_packet(radio_t *radio)
@@ -94,7 +99,11 @@ static void __attribute__((unused)) frsky2way_data_frame(radio_t *radio)
 	}
 }
 
-// TODO: Add retun value to inicate comunication with cc2500
+/**
+ * @brief
+ * @param radio
+ * @return callback interval in ms
+ */
 uint16_t initFrSky_2way(radio_t *radio)
 {
 	Frsky_init_hop(radio);
@@ -108,9 +117,14 @@ uint16_t initFrSky_2way(radio_t *radio)
 	{
 		radio->state = FRSKY_BIND_DONE;
 	}
-	return 10000;
+	return CC2500_CALLBACK_INTERVAL;
 }
-// callback
+
+/**
+ * @brief Callback from multiportocol to send data
+ * @param radio
+ * @return Interval for next call in ms
+ */
 uint16_t ReadFrSky_2way(radio_t *radio)
 {
 	if (radio->state < FRSKY_BIND_DONE)

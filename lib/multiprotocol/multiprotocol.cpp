@@ -337,7 +337,7 @@ static void protocol_init(void)
 
             #ifdef TX35_MHZ_INSTALLED
             case PROTO_PPM:
-                next_callback = PPM_TX_INTERVAL;
+                next_callback = PPM_TX_CALLBACK_INTERVAL;
                 radio.remote_callback = ppm_tx;
                 HW_TX_35MHZ_ON;
                 DBG_MULTI_INF("TX 35MHz enabled");

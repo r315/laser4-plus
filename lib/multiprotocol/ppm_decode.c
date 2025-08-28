@@ -25,7 +25,7 @@ uint16_t ppm_tx(struct radio *radio)
 #else
     (void)radio;
 #endif
-    return PPM_TX_INTERVAL;
+    return PPM_TX_CALLBACK_INTERVAL;
 }
 
 /**

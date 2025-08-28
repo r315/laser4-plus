@@ -77,8 +77,8 @@ void Frsky_init_hop(radio_t *radio)
     uint8_t channel = radio->rx_tx_addr[0] & 0x07;
     uint8_t channel_spacing = radio->rx_tx_addr[1];
 
-    FRSKYDVX_DBG_INF("Channel: %x\n", channel);
-    FRSKYDVX_DBG_INF("Channel spacing: %x\n", channel_spacing);
+    DBG_FRSKY_INF("Channel: %x\n", channel);
+    DBG_FRSKY_INF("Channel spacing: %x\n", channel_spacing);
 
     //Filter bad tables
     if(channel_spacing < 0x02) channel_spacing += 0x02;
@@ -96,10 +96,9 @@ void Frsky_init_hop(radio_t *radio)
         radio->hopping_frequency[i] = (i > 46) ? 0 : val;
     }
 
-    FRSKYDVX_DBG_INF("Hopping frequency: \r\n[");
-    FRSKYDVX_DBG(radio->hopping_frequency, 50, 0);
-    FRSKYDVX_DBG_INF("]\r\n");
-
+    DBG_FRSKY_INF("Hopping frequency: \r\n");
+    DBG_FRSKY_PRINT_BYTES(radio->hopping_frequency, sizeof(radio->hopping_frequency));
+    DBG_FRSKY_PRINT("\r\n");
 }
 #endif
 /******************************/

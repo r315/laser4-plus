@@ -8,15 +8,27 @@ extern "C" {
 
 #include <stdint.h>
 #include "multiprotocol.h"
+#include "debug.h"
 
+#ifdef ENABLE_DEBUG_FRSKY
+#define DBG_FRSKY_TAG       "FRSKY : "
+#define DBG_FRSKY_PRINT DBG_PRINT
+#define DBG_FRSKY_INF(...)  DBG_INF(DBG_FRSKY_TAG __VA_ARGS__)
+#define DBG_FRSKY_WRN(...)  DBG_WRN(DBG_FRSKY_TAG __VA_ARGS__)
+#define DBG_FRSKY_ERR(...)  DBG_ERR(DBG_FRSKY_TAG __VA_ARGS__)
+#define DBG_FRSKY_PRINT_BYTES(...) DBG_DUMP_MEM(__VA_ARGS__)
+#else
+#define DBG_FRSKY_PRINT(...)
+#define DBG_FRSKY_INF(...)
+#define DBG_FRSKY_WRN(...)
+#define DBG_FRSKY_ERR(...)
+#define DBG_FRSKY_PRINT_BYTES(...)
+#endif
 
 #ifndef PROGMEM
 #define PROGMEM
 #define pgm_read_byte_near(_X) (*(const unsigned char *)(_X))
 #endif
-
-#define FRSKYDVX_DBG(...)
-#define FRSKYDVX_DBG_INF(...)
 
 #if defined(FRSKYD_CC2500_INO) || defined(FRSKYX_CC2500_INO)
 enum {
@@ -30,6 +42,8 @@ enum {
 };
 
 #endif
+
+#define CC2500_CALLBACK_INTERVAL            10000 /* ms */
 
 extern const PROGMEM uint8_t FRSKYD_cc2500_conf[];
 
