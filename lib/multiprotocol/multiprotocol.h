@@ -52,12 +52,12 @@ extern "C" {
 /* *************System flags ******************* */
 #define _FLAGS_                     radio.flags
 #define FLAG_RX                     (1 << 0)    // When set indicates that a serial frame has been received
-#define FLAG_CHANGE_PROTOCOL        (1 << 1)    // When set indicates system to initialyze protocol
-#define FLAG_POWER                  (1 << 2)    // Together with CC2500_ENABLE_LOW_POWER, when cleared put CC2500 in low power
-#define FLAG_RANGE                  (1 << 3)    // Not used
-#define FLAG_AUTOBIND               (1 << 4)    // Used to wait for bind at startup
-#define FLAG_BIND_BUTTON            (1 << 5)    // When set forces current protocol initialization
-#define FLAG_PPM                    (1 << 6)    // When set idicates that a ppm frame has been received
+#define FLAG_PPM                    (1 << 1)    // When set idicates that a ppm frame has been received
+#define FLAG_CHANGE_PROTOCOL        (1 << 2)    // When set indicates system to initialyze protocol
+#define FLAG_POWER                  (1 << 3)    // Together with CC2500_ENABLE_LOW_POWER, when cleared put CC2500 in low power
+#define FLAG_RANGE                  (1 << 4)    // Not used
+#define FLAG_AUTOBIND               (1 << 5)    // Used to wait for bind at startup
+#define FLAG_BIND_BUTTON            (1 << 6)    // When set forces current protocol initialization
 #define FLAG_BIND                   (1 << 7)    // When set indicates system to start bind process
 #define FLAG_TX_PAUSE               (1 << 11)
 #define FLAG_INPUT_SIGNAL           (1 << 13)   // When set indicates that a valid input siganl is present

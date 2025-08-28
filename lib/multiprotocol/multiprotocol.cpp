@@ -70,6 +70,8 @@ uint8_t CH_EATR[]={ELEVATOR, AILERON, THROTTLE, RUDDER, CH5, CH6, CH7, CH8, CH9,
 void multiprotocol_setup(void)
 {
     DBG_MULTI_PRINT("\n***** Starting Multiprotocol *****\n");
+    DBG_MULTI_INF("Protocol selection index : %d", radio.mode_select);
+
     // Read status of bind button
     if(IS_BIND_BUTTON_PRESSED){
         BIND_BUTTON_FLAG_on;    // If bind button pressed save the status
@@ -78,8 +80,6 @@ void multiprotocol_setup(void)
     }else{
         BIND_DONE;
     }
-
-    DBG_MULTI_INF("Protocol selection index : %d", radio.mode_select);
 
     uint16_t channel_default = (eeprom_data[IDX_CHANNEL_MAX_100] - eeprom_data[IDX_CHANNEL_MIN_100]) >> 1;
 
@@ -196,7 +196,7 @@ static uint8_t Update_All(void)
 {
     uint8_t ch;
     uint32_t chan_or = radio.chan_order;
-    if(IS_RX_FLAG_on){
+    if(IS_RX_FLAG_on || IS_PPM_FLAG_on){
         #ifdef ENABLE_SERIAL
         if(radio.mode_select == MODE_SERIAL){       // Serial mode and something has been received
             update_serial_data();                   // Update protocol and data
@@ -235,7 +235,7 @@ static uint8_t Update_All(void)
                     radio.channel_data[i] = val;
                 }
             }
-            PPM_FLAG_off;                                    // wait for next frame before update
+            PPM_FLAG_off;                           // wait for next frame before update
         #ifdef ENABLE_FAILSAFE
             PPM_failsafe();
         #endif
@@ -250,7 +250,7 @@ static uint8_t Update_All(void)
             DBG_MULTI_WRN("Too many aux channels received");
             radio.nchannels = MAX_CHN_NUM;
         }
-        INPUT_SIGNAL_on;                                // valid signal received
+        INPUT_SIGNAL_on;                            // valid signal received
         radio.last_signal = millis();
     }
 
@@ -258,7 +258,7 @@ static uint8_t Update_All(void)
 
     if(IS_CHANGE_PROTOCOL_FLAG_on){
         // Protocol needs to be changed or relaunched for bind
-        protocol_init();                                    //init new protocol
+        protocol_init();                            //init new protocol
         return 1;
     }
 

@@ -182,7 +182,7 @@ public:
         uint8_t nchannels;
         multiprotocol_channel_data_get(&channel_data, &nchannels);
 		for(uint8_t i = 0; i < nchannels; i++){
-        	console->printf("CH[%u]            : %u\n", i, channel_data[i]);
+        	console->printf("CH[%u]\t         : %u\n", i, channel_data[i]);
     	}
 	}
 
@@ -509,8 +509,8 @@ public:
 	void help(void) {
 		console->println("usage: buz <-r|-v|-t>");
 		console->println(
-			"-v <volume>, set volume\n"
-			"-t <freq> <duration>"
+			"vol <volume>, set volume\n"
+			"freq <freq> <duration>"
 		);
 	}
 	char execute(int argc, char **argv) {
@@ -522,7 +522,7 @@ public:
 			return CMD_OK;
 		}
 
-		if((param = getOptValue("-v", argc, argv)) != NULL){
+		if((param = getOptValue("vol", argc, argv)) != NULL){
 			int32_t val;
 			if(nextInt(&param, &val)){
 				console->printf("Current level %u\n", buzSetLevel(val));
@@ -531,7 +531,7 @@ public:
 			}
 		}
 
-		if((param = getOptValue("-t",argc,argv)) != NULL){
+		if((param = getOptValue("freq",argc,argv)) != NULL){
 			int32_t freq, duration;
 			if(nextInt(&param, &freq)){
 				param++; // skip string terminator
