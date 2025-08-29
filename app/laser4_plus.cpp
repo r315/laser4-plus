@@ -637,17 +637,6 @@ extern "C" void setup(void)
 #endif
     // Configure watchdog
     enableWatchDog(WATCHDOG_TIME);
-
-#if defined(TX35_MHZ_INSTALLED) && defined(CC2500_INSTALLED)
-    multiprotocol_mode_set(IS_HW_SW_AUX3_PRESSED ? MODE_PPM : MODE_CC2500);
-#elif defined(CC2500_INSTALLED)
-    multiprotocol_mode_set(MODE_CC2500);
-#elif defined(TX35_MHZ_INSTALLED)
-    multiprotocol_mode_set(MODE_PPM);
-#else
-    multiprotocol_mode_set(MODE_SERIAL);
-#endif
-
 }
 
 /**
@@ -665,13 +654,22 @@ extern "C" void loop(void)
         case MODE_CHANGE_REQ:
             app_state = app_state >> MODE_BIT_POS;
             appChangeMode(app_state);
-#ifdef ENABLE_DISPLAY
+    #ifdef ENABLE_DISPLAY
             SET_LCD_UPDATE;
-#endif
+    #endif
             break;
 
         case MODE_NONE:
+        // Set based on hardware switch, usualy at startup
+    #if defined(TX35_MHZ_INSTALLED) && defined(CC2500_INSTALLED)
+            appChangeModeReq(app_state, IS_HW_SW_AUX3_PRESSED ? MODE_PPM : MODE_CC2500);
+    #elif defined(CC2500_INSTALLED)
             appChangeModeReq(app_state, MODE_CC2500);
+    #elif defined(TX35_MHZ_INSTALLED)
+            appChangeModeReq(app_state, MODE_PPM);
+    #else
+            appChangeModeReq(app_state, MODE_SERIAL);
+    #endif
             break;
 
         default:
