@@ -294,7 +294,7 @@ static void update_led_status(void)
 
 static void protocol_init(void)
 {
-    uint16_t next_callback;
+    uint16_t next_callback = PROTOCOL_DEFAULT_INTERVAL;
 
     if(IS_WAIT_BIND_off)
     {
@@ -341,7 +341,6 @@ static void protocol_init(void)
             #endif
 
             default:
-                next_callback = PROTOCOL_DEFAULT_INTERVAL;
                 radio.remote_callback = NULL;
                 DBG_MULTI_INF("No protocol configured");
                 break;

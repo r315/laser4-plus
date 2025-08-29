@@ -178,7 +178,7 @@ void appToggleLowBatIco(void);
  * EEPROM ram copy
  * */
 
-static const uint16_t eeprom_default_data[EEPROM_SIZE / 2] = {
+static const uint16_t eeprom_default_data[] = {
     (uint16_t)DEFAULT_ID, (uint16_t)(DEFAULT_ID>>16),
     (uint16_t)DEFAULT_VOLTAGE_DIV,(uint16_t)(DEFAULT_VOLTAGE_DIV>>16),
     (uint16_t)DEFAULT_SENSE_RESISTOR,(uint16_t)(DEFAULT_SENSE_RESISTOR>>16),
@@ -479,7 +479,9 @@ static uint32_t eepromLoad(uint8_t *buf, uint16_t size)
  */
 static void eepromDefault(uint8_t *buf, const uint8_t *defaults, uint16_t size)
 {
-    memcpy(buf, defaults, size);
+    while(size--){
+        *buf++ = *defaults++;
+    }
 }
 
 /**
@@ -551,7 +553,7 @@ void appSaveEEPROM(void)
  */
 void appDefaultEEPROM(void)
 {
-    eepromDefault((uint8_t*)eeprom_data, (const uint8_t*)eeprom_default_data, EEPROM_SIZE);
+    eepromDefault((uint8_t*)eeprom_data, (const uint8_t*)eeprom_default_data, sizeof(eeprom_default_data));
 }
 
 /**

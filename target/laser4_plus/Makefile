@@ -19,21 +19,21 @@ BOARD  =BOARD_BLUEPILL
 # Features
 ######################################
 FEATURES += USE_MY_CONFIG
-#FEATURES += CC2500_INSTALLED
+FEATURES += CC2500_INSTALLED
 FEATURES += TX35_MHZ_INSTALLED
-#FEATURES += FRSKYD_CC2500_INO
+FEATURES += FRSKYD_CC2500_INO
 #FEATURES += ENABLE_FAILSAFE
 FEATURES += ENABLE_PPM
-#FEATURES += ENABLE_PPM_OUTPUT
-#FEATURES += ENABLE_BATTERY_MONITOR
+FEATURES += ENABLE_PPM_OUTPUT
+FEATURES += ENABLE_BATTERY_MONITOR
 FEATURES += ENABLE_GAME_CONTROLLER
-#FEATURES += ENABLE_DISPLAY
+FEATURES += ENABLE_DISPLAY
 FEATURES += ENABLE_VCP
 FEATURES += ENABLE_AUX_ENCODER
 FEATURES += ENABLE_AUX_SWITCHES
 #FEATURES += ENABLE_UART
 FEATURES += ENABLE_CLI
-#FEATURES += ENABLE_BUZZER
+FEATURES += ENABLE_BUZZER
 FEATURES += ENABLE_DEBUG
 FEATURES += ENABLE_DEBUG_APP
 FEATURES += ENABLE_DEBUG_NVDATA
@@ -180,12 +180,10 @@ CORE =cortex-m3
 # mcu
 MCU = -mcpu=$(CORE) -mthumb
 
-ifeq ($(RELEASE), 1)
-DEBUG = 0
-OPT = -Os
+ifeq ($(RELEASE),1)
+OPT = -Os -Wall -Wextra
 else
-DEBUG = 1
-OPT = -O0
+OPT = -Og -g -gdwarf-2 -Wall -Wextra
 endif
 
 # macros for gcc
@@ -213,15 +211,10 @@ ifeq ($(ENABLE_DFU), 1)
 C_DEFS +=ENABLE_DFU
 endif
 
-ifeq ($(DEBUG), 1)
-DEBUGFLAGS =-Wall -g -gdwarf-2
-endif
-
-
 # compile gcc flags
-ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) $(DEBUGFLAGS) -fdata-sections -ffunction-sections
-CFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OPT) $(DEBUGFLAGS) -fdata-sections -ffunction-sections -std=gnu11
-CPPFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OPT) $(DEBUGFLAGS) -fdata-sections -ffunction-sections -fno-unwind-tables -fno-exceptions -fno-rtti
+ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -fdata-sections -ffunction-sections
+CFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OPT) -fdata-sections -ffunction-sections -std=gnu11
+CPPFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OPT) -fdata-sections -ffunction-sections -fno-unwind-tables -fno-exceptions -fno-rtti
 
 # Generate dependency information
 #CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst))
@@ -239,7 +232,7 @@ SPECS =--specs=nano.specs #--specs=nosys.specs
   #-lrdimon
 LIBS =-lstdc++
 LIBDIR =
-LDFLAGS = $(MCU) $(SPECS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref,--gc-sections
+LDFLAGS = $(MCU) $(SPECS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,-gc-sections,-cref
 
 #######################################
 # Rules

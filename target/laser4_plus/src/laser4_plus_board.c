@@ -300,6 +300,7 @@ uint32_t HAL_RCC_GetPCLK1Freq(void)
 */
 void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
 {
+    (void)hi2c;
     __HAL_RCC_GPIOB_CLK_ENABLE();
     gpioInit(GPIOB, 10, GPO_MS_AF_OD);
     gpioInit(GPIOB, 11, GPO_MS_AF_OD);
@@ -322,6 +323,7 @@ void I2C2_ER_IRQHandler(void)
 
 void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
 {
+    (void)hi2c;
     lcd_busy = 0;
 }
 
