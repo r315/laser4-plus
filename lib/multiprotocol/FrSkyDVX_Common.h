@@ -16,13 +16,13 @@ extern "C" {
 #define DBG_FRSKY_INF(...)  DBG_INF(DBG_FRSKY_TAG __VA_ARGS__)
 #define DBG_FRSKY_WRN(...)  DBG_WRN(DBG_FRSKY_TAG __VA_ARGS__)
 #define DBG_FRSKY_ERR(...)  DBG_ERR(DBG_FRSKY_TAG __VA_ARGS__)
-#define DBG_FRSKY_PRINT_BYTES(...) DBG_DUMP_MEM(__VA_ARGS__)
+#define DBG_FRSKY_HEXDUMP(...) DBG_HEXDUMP(__VA_ARGS__)
 #else
 #define DBG_FRSKY_PRINT(...)
 #define DBG_FRSKY_INF(...)
 #define DBG_FRSKY_WRN(...)
 #define DBG_FRSKY_ERR(...)
-#define DBG_FRSKY_PRINT_BYTES(...)
+#define DBG_FRSKY_HEXDUMP(...)
 #endif
 
 #ifndef PROGMEM

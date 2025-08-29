@@ -5,7 +5,6 @@
 #include "laser4_plus.h"
 #include "iface_cc2500.h"
 #include "multiprotocol.h"
-#include "debug.h"
 
 #ifdef ENABLE_CLI
 
@@ -395,7 +394,7 @@ public:
 		}
 
 		if(xstrcmp(argv[1],"dump") == 0){
-			DBG_DUMP_MEM_LINE((uint8_t*)eeprom_data, EEPROM_SIZE, 0);
+			console->hexdump((uint8_t*)eeprom_data, EEPROM_SIZE, 16, 1);
 			return CMD_OK;
 		}
 

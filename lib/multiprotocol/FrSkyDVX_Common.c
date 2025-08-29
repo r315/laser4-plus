@@ -96,7 +96,7 @@ void Frsky_init_hop(radio_t *radio)
     }
 
     DBG_FRSKY_INF("Hopping frequency:\n\r");
-    DBG_FRSKY_PRINT_BYTES(radio->hopping_frequency, sizeof(radio->hopping_frequency));
+    DBG_FRSKY_HEXDUMP(radio->hopping_frequency, sizeof(radio->hopping_frequency), 8, 1);
     DBG_FRSKY_PRINT("\r\n");
 }
 #endif
