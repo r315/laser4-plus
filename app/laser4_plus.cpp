@@ -22,7 +22,32 @@
 #define DBG_APP_ERR(...)
 #endif
 
+
+#define APP_FLAGS               app_flags
+#define IS_BAT_LOW              (APP_FLAGS & (1<<0))
+#define IS_BAT_ICO_ON           (APP_FLAGS & (1<<1))
+#define IS_ERROR_ICO_ON         (APP_FLAGS & (1<<2))
+#define IS_BIND_ICO_ON          (APP_FLAGS & (1<<3))
+#define IS_LCD_UPDATE           (APP_FLAGS & (1<<4))
+
+#define SET_BAT_LOW             APP_FLAGS = (APP_FLAGS | (1<<0))
+#define CLR_BAT_LOW             APP_FLAGS = APP_FLAGS & ~(1<<0)
+
+#define SET_BAT_ICO             APP_FLAGS = (APP_FLAGS | (1<<1))
+#define CLR_BAT_ICO             APP_FLAGS = APP_FLAGS & ~(1<<1)
+
+#define SET_ERROR_ICO           APP_FLAGS = (APP_FLAGS | (1<<2))
+#define CLR_ERROR_ICO           APP_FLAGS = APP_FLAGS & ~(1<<2)
+
+#define SET_BIND_ICO            APP_FLAGS = (APP_FLAGS | (1<<3))
+#define CLR_BIND_ICO            APP_FLAGS = APP_FLAGS & ~(1<<3)
+
+#define SET_LCD_UPDATE          APP_FLAGS = (APP_FLAGS | (1<<4))
+#define CLR_LCD_UPDATE          APP_FLAGS = APP_FLAGS & ~(1<<4)
+
+
 static volatile uint8_t app_state;
+static uint32_t app_flags;
 
 #ifdef ENABLE_BUZZER
 static tone_t chime[] = {
@@ -57,8 +82,6 @@ static Console con;
 
 #define APP_DRAW_ICON(ICO)      MPANEL_drawIcon(ICO.posx, ICO.posy, (const idata_t*)ICO.data)
 #define APP_ERASE_ICON(ICO)     LCD_FillRect(ICO.posx, ICO.posy, ICO.data->width, ICO.data->hight, BLACK);
-
-static uint32_t app_flags = 0;
 
 /**
  * Icons bitmaps
@@ -231,21 +254,23 @@ void appChangeModeReq(uint8_t prev_mode, uint8_t new_mode)
         }
     }
 
-    if(new_mode != MODE_SERIAL &&
-        new_mode != MODE_PPM &&
-        new_mode != MODE_CC2500 &&
-        new_mode != MODE_HID){
-        app_state = prev_mode;
-        return;
+    switch(new_mode){
+        default:
+            app_state = prev_mode;
+            // default to last mode on invalid new mode
+            return;
+        case MODE_HID:
+        case MODE_PPM:
+        case MODE_SERIAL:
+        case MODE_CC2500:
+            multiprotocol_mode_set(new_mode);
+        break;
     }
 
 #ifdef ENABLE_DISPLAY
+    // Erase mode icon
     LCD_FillRect(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
 #endif
-
-    if(new_mode == MODE_PPM || new_mode == MODE_CC2500){
-        multiprotocol_mode_set(new_mode);
-    }
 
     // set the requested mode by overwriting the previous
     app_state = (new_mode << MODE_BIT_POS) | MODE_CHANGE_REQ;
@@ -260,7 +285,6 @@ static void appChangeMode(uint8_t new_mode)
     switch(new_mode){
         case MODE_CC2500:
         case MODE_PPM:
-            multiprotocol_setup();
 #ifdef ENABLE_BUZZER
             buzPlayTone(400,150);
 #endif
@@ -275,17 +299,20 @@ static void appChangeMode(uint8_t new_mode)
         case MODE_HID:
 #ifdef ENABLE_GAME_CONTROLLER
             DBG_APP_INF("\n ***** Starting game controller *****");
-            CONTROLLER_Init();
+    #ifdef ENABLE_BUZZER
             buzPlayTone(2000,150);
-#ifdef ENABLE_DISPLAY
+    #endif
+    #ifdef ENABLE_DISPLAY
             APP_DRAW_ICON(ico_usb);
-#endif /* ENABLE_DISPLAY */
+    #endif /* ENABLE_DISPLAY */
 #endif /* ENABLE_GAME_CONTROLLER */
             LED_OFF;
             break;
         default:
             return;
     }
+
+    multiprotocol_setup();
 }
 
 #ifdef ENABLE_BATTERY_MONITOR
@@ -293,35 +320,45 @@ static void appChangeMode(uint8_t new_mode)
  * @brief Periodic called function to display battery voltage
  *
  * */
-void appCheckBattery(void){
-vires_t res;
-    if(batteryReadVI(&res)){
-        if(res.vbat < BATTERY_VOLTAGE_MIN && !(IS_BAT_LOW)){
+void appCheckBattery(void)
+{
+    vires_t res;
+    if (batteryReadVI(&res)) {
+        if (res.vbat < BATTERY_VOLTAGE_MIN && !IS_BAT_LOW) {
             SET_BAT_LOW;
-            DBG_APP_WRN(DBG_TAG"!!Low battery !! (%dmV)", res.vbat);
+            DBG_APP_WRN(DBG_TAG "!!Low battery !! (%dmV)", res.vbat);
 #ifdef ENABLE_DISPLAY
+            // Start blinking timer
             bat_low_tim = startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
-        }else{
-            if(IS_BAT_LOW){
+        } else {
+            // Vbat has recover, disable low battery icon
+            if(IS_BAT_LOW) {
                 CLR_BAT_LOW;
+
                 stopTimer(bat_low_tim);
-                if(IS_BAT_ICO_ON){
+                if (IS_BAT_ICO_ON) {
                     appToggleLowBatIco();
                 }
             }
         }
-        dro_bat.update(res.vbat/1000.0f);
+
+        // update battery voltage DRO
+        dro_bat.update(res.vbat / 1000.0f);
         // [Ah] are given by the periodic call
-        bat_consumed += (float)(res.cur/(float)(3600/(TIMER_BATTERY_TIME/1000)));   //1h/30s
+        bat_consumed += (float)(res.cur / (float)(3600 / (TIMER_BATTERY_TIME / 1000)));   //1h/30s
         dro_amph.update(bat_consumed / 1000.0f);
         dro_ma.update(res.cur);
         SET_LCD_UPDATE;
 #else
+        }else{
+            // Vbat has recover, clear flag
+            CLR_BAT_LOW;
         }
 #endif /* ENABLE_DISPLAY */
     }
 }
-#endif
+#endif /* ENABLE_BATTERY_MONITOR */
+
 
 #ifdef ENABLE_DISPLAY
 /**
@@ -388,26 +425,6 @@ void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel)
 {
     uint8_t nch = 0;
 
-#ifdef ENABLE_AUX_SWITCHES
-    uint8_t switches = auxGetSwitches();
-    uint16_t channel_value;
-
-    for(uint8_t i = 0; i < AUX_SWITCH_NUM; i++){
-        if((switches & (1 << i))){
-            channel_value = eeprom_data[IDX_CHANNEL_SWITCH];
-        }else{
-            channel_value = eeprom_data[IDX_CHANNEL_MIN_100];
-        }
-
-        if(channel_value != channel_aux[i]){
-            channel_aux[i] = channel_value;
-            DBG_APP_INF("Aux channel %d changed", i + 1);
-        }
-    }
-
-    nch += AUX_SWITCH_NUM;
-#endif
-
 #ifdef ENABLE_AUX_ENCODER
     int16_t diff = auxGetEncoder();
     if(diff != 0){
@@ -423,6 +440,27 @@ void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel)
     }
 
     nch += AUX_ENC_NUM;
+#endif
+
+#ifdef ENABLE_AUX_SWITCHES
+    uint8_t switches = auxGetSwitches();
+    uint16_t channel_value;
+
+    for(uint8_t i = 0; i < AUX_SWITCH_NUM; i++){
+        if((switches & (1 << i))){
+            channel_value = eeprom_data[IDX_CHANNEL_SWITCH];
+        }else{
+            channel_value = eeprom_data[IDX_CHANNEL_MIN_100];
+        }
+
+        if(channel_value != channel_aux[i + nch]){
+            channel_aux[i + nch] = channel_value;
+            // This will always print on first call due to default values
+            DBG_APP_INF("Aux channel %d changed", i + 1);
+        }
+    }
+
+    nch += AUX_SWITCH_NUM;
 #endif
 
     *nchannel = nch;
@@ -522,6 +560,7 @@ void appDefaultEEPROM(void)
 extern "C" void setup(void)
 {
     app_state = MODE_NONE;
+    app_flags = 0;
 
 #if defined(ENABLE_DEBUG)
     #if defined(ENABLE_VCP)
@@ -535,10 +574,6 @@ extern "C" void setup(void)
     USB_DEVICE_Init();
     USB_DEVICE_RegisterCallback(HAL_PCD_SUSPEND_CB_ID, usbDisconnectCB, NULL);
     USB_DEVICE_RegisterCallback(HAL_PCD_RESUME_CB_ID, usbConnectCB, NULL);
-#endif
-
-#ifdef ENABLE_GAME_CONTROLLER
-    CONTROLLER_Init();
 #endif
 
     DBG_PRINT("\n Laser4+ version: %d.%d.%d \n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
@@ -623,13 +658,8 @@ extern "C" void loop(void)
     switch(app_state & STATE_MASK){
         case MODE_CC2500:
         case MODE_PPM:
-            multiprotocol_loop();
-            break;
-
         case MODE_HID:
-#ifdef ENABLE_GAME_CONTROLLER
-            CONTROLLER_Process();
-#endif
+            multiprotocol_loop();
             break;
 
         case MODE_CHANGE_REQ:

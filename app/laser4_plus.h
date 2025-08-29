@@ -12,10 +12,6 @@ extern "C" {
 #include "usbd_cdc_if.h"
 #endif
 
-#ifdef ENABLE_GAME_CONTROLLER
-#include "game_controller.h"
-#endif
-
 //Channel MIN MAX values
 #define CHANNEL_MAX_100         1844    // 100%
 #define CHANNEL_MIN_100         844     // 100%
@@ -32,28 +28,6 @@ extern "C" {
 
 #define DEFAULT_VOLTAGE_DIV     0x3e27ef9e  // 0.164
 #define DEFAULT_SENSE_RESISTOR  0x3db851ec  // 0.09
-
-#define APP_FLAGS               app_flags
-#define IS_BAT_LOW              APP_FLAGS & (1<<0)
-#define IS_BAT_ICO_ON           APP_FLAGS & (1<<1)
-#define IS_ERROR_ICO_ON         APP_FLAGS & (1<<2)
-#define IS_BIND_ICO_ON          APP_FLAGS & (1<<3)
-#define IS_LCD_UPDATE           APP_FLAGS & (1<<4)
-
-#define SET_BAT_LOW             APP_FLAGS = (APP_FLAGS | (1<<0))
-#define CLR_BAT_LOW             APP_FLAGS = APP_FLAGS & ~(1<<0)
-
-#define SET_BAT_ICO             APP_FLAGS = (APP_FLAGS | (1<<1))
-#define CLR_BAT_ICO             APP_FLAGS = APP_FLAGS & ~(1<<1)
-
-#define SET_ERROR_ICO           APP_FLAGS = (APP_FLAGS | (1<<2))
-#define CLR_ERROR_ICO           APP_FLAGS = APP_FLAGS & ~(1<<2)
-
-#define SET_BIND_ICO            APP_FLAGS = (APP_FLAGS | (1<<3))
-#define CLR_BIND_ICO            APP_FLAGS = APP_FLAGS & ~(1<<3)
-
-#define SET_LCD_UPDATE          APP_FLAGS = (APP_FLAGS | (1<<4))
-#define CLR_LCD_UPDATE          APP_FLAGS = APP_FLAGS & ~(1<<4)
 
 #define EEPROM_SIZE             31
 
@@ -73,10 +47,12 @@ extern "C" {
 #define OFF                 1
 
 enum modes{
+#ifndef MODE_SERIAL
     MODE_SERIAL = 0,
+#endif
     MODE_CHANGE_REQ = 1,
     MODE_CC2500 = 10,
-    MODE_HID = 11,
+    MODE_HID = 13,
     MODE_PPM = 14,
     MODE_NONE = 15,
 };

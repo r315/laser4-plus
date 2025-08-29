@@ -1,109 +1,85 @@
 #include "board.h"
+#include "usb_device.h"
 #include "game_controller.h"
 #include "multiprotocol.h"
 #include "math.h"
 
-
 #ifdef ENABLE_GAME_CONTROLLER
-#include "usb_device.h"
 //#define TEST_CONTROLLER
 
 static controller_t laser4;
-volatile uint16_t *ppm_data, last_tim;
-volatile uint32_t gflags;
 static uint8_t *channel_map;
-static uint32_t lastppm;
 
 #ifdef TEST_CONTROLLER
-#undef ENABLE_PPM
 static float angle = 0;
-#else
-static int16_t map(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max){
-  return ((x - in_min) * (out_max - out_min) / (in_max - in_min)) + out_min;
-}
-
-static void setControllerPpmFlag(volatile uint16_t *buf, uint8_t chan){
-    SET_PPM_FRAME;
-    ppm_data = buf;
-    radio.channel_aux = chan;
-}
 #endif
 
-RAM_CODE void CONTROLLER_Process(void){
+RAM_CODE uint16_t USBHID_callback(radio_t *radio)
+{
 
 #if defined(TEST_CONTROLLER)
     static uint8_t count = 0;
     angle += 0.1;
-    SET_PPM_FRAME;
-    DelayMs(20);
 #endif
 
-    if(IS_PPM_FRAME_READY)
-    {
 #if !defined(TEST_CONTROLLER)
-        uint8_t i;
-        uint8_t *data = (uint8_t*)&laser4.pitch;
-        lastppm = GetTick();
+    uint8_t i;
+    uint8_t *data = (uint8_t*)&laser4.pitch; // 1st channel
 
-        for(i = 0; i < MIN_PPM_CHANNELS; i++){
-            //PAUSE_CAPTURE;
-            uint16_t val = ppm_data[i];
-            //RESUME_CAPTURE;
+    for(i = 0; i < REPORT_CHANNELS_SIZE; i++){
+        //PAUSE_CAPTURE;
+        uint16_t val = radio->channel_data[i];
+        //RESUME_CAPTURE;
 
-            if(val < laser4.min_pulse || val > laser4.max_pulse){
-                val = (laser4.max_pulse + laser4.min_pulse) / 2;
-            }
-            val = map(val, laser4.min_pulse, laser4.max_pulse, LOGICAL_MINIMUM, LOGICAL_MAXIMUM);
-            *(data + (channel_map[i] * 2)) = val;
-            *(data + 1 + (channel_map[i] * 2)) = val >> 8;
-            // Make data visible to status command
-            radio.channel_data[i] = val;
+        if(val < laser4.min_pulse || val > laser4.max_pulse){
+            // if out of pulse interval, center it
+            val = (laser4.max_pulse + laser4.min_pulse) >> 2;
         }
 
-        update_channels_aux();
-        laser4.aux2 = radio.channel_data[radio.channel_aux + MAX_AUX_CHANNELS - 1];
+        val = map16b(val, laser4.min_pulse, laser4.max_pulse, LOGICAL_MINIMUM, LOGICAL_MAXIMUM);
+
+        *(data + (channel_map[i] * 2)) = val;
+        *(data + 1 + (channel_map[i] * 2)) = val >> 8;
+    }
+
 #ifdef ENABLE_AUX_SWITCHES
         laser4.buttons = auxGetSwitches();
 #else
         laser4.buttons = 0;
 #endif
 
-#else
-        //float t = angle * 0.15915f; // Normalize t = x/2pi - floor(x/2pi)
-        //t = t - (int)t;
-        //float sine = 20.785f * (t - 0.0f) * (t - 0.5f) * (t - 1.0f);
-        //float cosine = 20.785f * (t + 0.25f) * (t - 0.25f) * (t - 0.75f);
+#else /* TEST_CONTROLLER */
+    //float t = angle * 0.15915f; // Normalize t = x/2pi - floor(x/2pi)
+    //t = t - (int)t;
+    //float sine = 20.785f * (t - 0.0f) * (t - 0.5f) * (t - 1.0f);
+    //float cosine = 20.785f * (t + 0.25f) * (t - 0.25f) * (t - 0.75f);
 
-        laser4.roll = (LOGICAL_MAXIMUM/2) + sin(angle) * (LOGICAL_MAXIMUM/2);
-        laser4.pitch = (LOGICAL_MAXIMUM/2) + cos(angle) * (LOGICAL_MAXIMUM/2);
+    laser4.roll = (LOGICAL_MAXIMUM/2) + sin(angle) * (LOGICAL_MAXIMUM/2);
+    laser4.pitch = (LOGICAL_MAXIMUM/2) + cos(angle) * (LOGICAL_MAXIMUM/2);
 
-        laser4.throttle = laser4.roll;
-        laser4.yaw = laser4.pitch;
+    laser4.throttle = laser4.roll;
+    laser4.yaw = laser4.pitch;
 
-        if( (count--) == 0){
-            uint8_t tmp = (uint8_t)laser4.buttons;
-            tmp = (tmp >> 1) | (tmp << 3);
-            laser4.buttons = tmp;
-            count = 20;
-        }
-
-#endif
-        CLR_PPM_FRAME;
-        USB_DEVICE_SendReport((uint8_t*)&laser4, REPORT_SIZE);
+    if( (count--) == 0){
+        uint8_t tmp = (uint8_t)laser4.buttons;
+        tmp = (tmp >> 1) | (tmp << 3);
+        laser4.buttons = tmp;
+        count = 20;
     }
 
-    if(GetTick() - lastppm > 70){
-        INPUT_SIGNAL_off;
-    }else{
-        INPUT_SIGNAL_on;
-    }
+#endif /* TEST_CONTROLLER */
+    USB_DEVICE_SendReport((uint8_t*)&laser4, REPORT_SIZE);
+
+    return PPM_TX_CALLBACK_INTERVAL;
 }
 
 
 /**
  *  Code for PPM input PB5, TIM3_CH1
  * */
-void CONTROLLER_Init(void){
+uint16_t USBHID_init(radio_t *radio)
+{
+    (void)radio;
 
     laser4.roll = LOGICAL_MAXIMUM;
     laser4.pitch = LOGICAL_MAXIMUM/2;
@@ -112,18 +88,12 @@ void CONTROLLER_Init(void){
     laser4.aux1 = LOGICAL_MAXIMUM/2;
     laser4.aux2 = LOGICAL_MAXIMUM/2;
     laser4.buttons = 0;
-    laser4.max_pulse = PPM_MAX_PERIOD;
-    laser4.min_pulse = PPM_MIN_PERIOD;
+    laser4.max_pulse = PPM_MAX_PERIOD; // TODO: when eeprom_data is replaced by structure
+    laser4.min_pulse = PPM_MIN_PERIOD; // change this to somethis like radio->eeprom->ppm_min
 
     channel_map = CH_AETR;
 
-    #if defined(TEST_CONTROLLER)
-    laser4.buttons = 1;
-    #endif
-
-#if defined(ENABLE_PPM)
-    ppm_setCallBack(setControllerPpmFlag);
-#elif defined(ENABLE_PWM)
+#if defined(ENABLE_PWM)
     RCC->APB1ENR |= (1 << 0);   // TIM2EN
 
     TIM2->CR1 = 0;              // Stop counter
@@ -137,7 +107,8 @@ void CONTROLLER_Init(void){
     NVIC_EnableIRQ(TIM2_IRQn);  // Enable timer 2 interupt
     TIM2->CR1 |= (1 << 0);      // Start counter
 #endif /* ENABLE_PPM */
-    BIND_DONE;
+
+    return PPM_TX_CALLBACK_INTERVAL;
 }
 
 #if defined(ENABLE_PWM)

@@ -1087,7 +1087,7 @@ uint32_t cpuGetId(void)
   * @retval None
   */
 void USB_LP_CAN1_RX0_IRQHandler(void){
-#ifdef ENABLE_VCP
+#if defined(ENABLE_VCP) || defined(ENABLE_GAME_CONTROLLER)
     HAL_PCD_IRQHandler(&hpcd_USB_FS);
 #endif
 }

@@ -113,17 +113,17 @@ extern "C" {
 // _BV(4)
 
 // _BV(5) Signal ok
-#define INPUT_SIGNAL_off             _FLAGS_ &= ~(1<<13)
-#define INPUT_SIGNAL_on              _FLAGS_ |= (1<<13)
-#define IS_INPUT_SIGNAL_on           ((_FLAGS_ & (1<<13)) != 0)
-#define IS_INPUT_SIGNAL_off          ((_FLAGS_ & (1<<13)) == 0)
+#define INPUT_SIGNAL_off             _FLAGS_ &= ~FLAG_INPUT_SIGNAL
+#define INPUT_SIGNAL_on              _FLAGS_ |= FLAG_INPUT_SIGNAL
+#define IS_INPUT_SIGNAL_on           ((_FLAGS_ & FLAG_INPUT_SIGNAL) != 0)
+#define IS_INPUT_SIGNAL_off          ((_FLAGS_ & FLAG_INPUT_SIGNAL) == 0)
 // _BV(6)
 
 // _BV(7)
-#define WAIT_BIND_off                _FLAGS_ &= ~(1<<15)
-#define WAIT_BIND_on                 _FLAGS_ |= (1<<15)
-#define IS_WAIT_BIND_on              ((_FLAGS_ & (1<<15)) != 0)
-#define IS_WAIT_BIND_off             ((_FLAGS_ & (1<<15)) == 0)
+#define WAIT_BIND_off                _FLAGS_ &= ~FLAG_WAIT_BIND
+#define WAIT_BIND_on                 _FLAGS_ |= FLAG_WAIT_BIND
+#define IS_WAIT_BIND_on              ((_FLAGS_ & FLAG_WAIT_BIND) != 0)
+#define IS_WAIT_BIND_off             ((_FLAGS_ & FLAG_WAIT_BIND) == 0)
 /* ****** flags3 ***** */
 // _BV(0)
 #define DATA_BUFFER_LOW_off            _FLAGS_ &= ~(1<<16)
@@ -203,7 +203,7 @@ enum protocols_e{
     PROTO_FRSKY_RX	= 55,	// =>CC2500
     PROTO_TEST      = 127,
     PROTO_PPM       = 128,
-    PROTO_USB       = 129
+    PROTO_USBHID    = 129
 };
 
 enum KN {
@@ -354,6 +354,8 @@ uint32_t multiprotocol_protocol_id_get(void);
 void multiprotocol_channel_data_get(uint16_t **, uint8_t *nchannels);
 void multiprotocol_channel_data_set(const uint16_t *buf, uint8_t chan);
 void multiprotocol_mode_set(uint8_t mode);
+
+int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max);
 
 void ppm_setCallBack(void(*cb)(const uint16_t*, uint8_t));
 uint16_t ppm_tx(struct radio *radio);

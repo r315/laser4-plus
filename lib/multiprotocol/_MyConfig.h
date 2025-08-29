@@ -73,7 +73,7 @@
 /*  10  */  {PROTO_FRSKYD,    NONE      ,  0  ,  P_HIGH  ,  NO_AUTOBIND  ,  40 ,  0x00000000 },  // option=fine freq tuning
 /*  11  */  {PROTO_FRSKYX,    CH_16     ,  0  ,  P_HIGH  ,  NO_AUTOBIND  ,  40 ,  0x00000000 },  // option=fine freq tuning
 /*  12  */  {PROTO_FRSKYX,    EU_16     ,  0  ,  P_HIGH  ,  NO_AUTOBIND  ,  40 ,  0x00000000 },  // option=fine freq tuning
-/*  13  */  {PROTO_DEVO,      NONE      ,  0  ,  P_HIGH  ,  NO_AUTOBIND  ,  0  ,  0x00000000 },
+/*  13  */  {PROTO_USBHID,    NONE      ,  0  ,  P_HIGH  ,  NO_AUTOBIND  ,  0  ,  0x00000000 },
 /*  14  */  {PROTO_PPM,       NONE      ,  0  ,  P_HIGH  ,  NO_AUTOBIND  ,  0  ,  0x00000000 }
 /* {PROTO_WK2x01,  WK2801    ,  0  ,  P_HIGH  ,  NO_AUTOBIND  ,  0  ,  0x00000000 }, */
   };

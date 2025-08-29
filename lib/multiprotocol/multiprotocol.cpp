@@ -24,6 +24,7 @@
 
 #include "multiprotocol.h"
 #include "FrSkyDVX_Common.h"
+#include "game_controller.h"
 #include "app.h"
 #include "board.h"
 #include "debug.h"
@@ -54,7 +55,6 @@ static void modules_reset(void);
 //static void update_serial_data(void);
 static void protocol_init(void);
 static void update_led_status(void);
-static int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max);
 static uint32_t random_id(uint8_t create_new);
 static void set_rx_tx_addr(uint8_t *dst, uint32_t id);
 
@@ -149,7 +149,10 @@ void multiprotocol_loop(void)
         return;
     }
 
+
+// TODO: Fix timming
     next_callback = radio.remote_callback(&radio) << 1; // Convert returned us time to timer units
+    DBG_PIN_TOGGLE;
 
     ticksSetInterval(next_callback);
     diff = ticksGetIntervalRemaining();
@@ -344,6 +347,14 @@ static void protocol_init(void)
                 break;
             #endif
 
+            #ifdef ENABLE_GAME_CONTROLLER
+            case PROTO_USBHID:
+                next_callback = USBHID_init(&radio);
+                radio.remote_callback = USBHID_callback;
+                DBG_MULTI_INF("USB hid device");
+                break;
+            #endif
+
             default:
                 next_callback = PROTOCOL_DEFAULT_INTERVAL;
                 break;
@@ -392,7 +403,7 @@ static void set_rx_tx_addr(uint8_t *dst, uint32_t id)
 /**
  *
  * */
-static int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max)
+int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max)
 {
 //  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
     long y ;
