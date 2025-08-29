@@ -109,7 +109,7 @@ uint32_t batteryGetCurrent(void);
 #endif
 
 #ifdef ENABLE_PPM_OUTPUT
-void ppmOut(uint16_t *data);
+void ppmOut(const uint16_t *data, uint8_t nch);
 #endif
 
 #ifdef ENABLE_AUX_ENCODER

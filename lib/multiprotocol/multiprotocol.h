@@ -36,6 +36,8 @@ extern "C" {
 #define TELEMETRY_BUFFER_SIZE       30
 #define PPM_TX_CALLBACK_INTERVAL    20000 /* us */
 #define PROTOCOL_DEFAULT_INTERVAL   5000
+#define US_TO_TICKS(_US)            ((_US) << 1)  /* One us takes two ticks */
+#define TICKS_1MS                   US_TO_TICKS(1000)
 
 //********************
 //*** Blink timing ***

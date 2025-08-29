@@ -53,11 +53,11 @@
   #define MULTI_TELEMETRY
 
 #elif defined Module_4
-  //Example of a module which will be PPM only with a different protocol table
-  #undef ENABLE_SERIAL
+
   #undef NBR_BANKS
   #define NBR_BANKS 1    // redefine the number of banks
   #define MY_PPM_PROT    // Use the bellow protocol list
+
   const PPM_Parameters My_PPM_prot[ 14 * NBR_BANKS ] = {
 //******************************       BANK 1       ******************************
 // Switch  Protocol        Sub protocol  RX_Num  Power       Auto Bind    Option  Chan Order

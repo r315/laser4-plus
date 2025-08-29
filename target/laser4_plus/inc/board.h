@@ -222,7 +222,7 @@ uint16_t ticksGet(void);
 uint16_t ticksGetElapsed(uint16_t start);
 void ticksSetInterval(uint16_t interval);
 void ticksResetInterval(void);
-uint16_t ticksGetIntervalRemaining(void);
+int16_t ticksGetIntervalRemaining(void);
 uint16_t ticksIsIntervalTimedout(void);
 
 /* Generic delay function */

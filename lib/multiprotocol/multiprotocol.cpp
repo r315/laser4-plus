@@ -139,9 +139,6 @@ void multiprotocol_setup(void)
  * */
 void multiprotocol_loop(void)
 {
-    uint16_t next_callback, diff;
-    uint8_t count = 0;
-
     while(radio.remote_callback == NULL || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off){
         if(!Update_All()){
             ticksResetInterval();
@@ -149,47 +146,35 @@ void multiprotocol_loop(void)
         return;
     }
 
+    if(ticksIsIntervalTimedout()){
+        // Time to do update, ticks is always negative here
+        int32_t ticks = ticksGetIntervalRemaining();
+        // Call protocol callback
+        DBG_PIN_HIGH;
+        int32_t next_callback = US_TO_TICKS(radio.remote_callback(&radio));
+        DBG_PIN_LOW;
 
-// TODO: Fix timming
-    next_callback = radio.remote_callback(&radio) << 1; // Convert returned us time to timer units
-    DBG_PIN_TOGGLE;
+        if(ticks < -TICKS_1MS){
+            // Call to to callback is late, system maybe unable to keep up
+            DBG_MULTI_WRN("Late callback: %d", ticks);
+        }
+        // Get how much ticks has passed since timeout
+        ticks = next_callback + ticksGetIntervalRemaining();
 
-    ticksSetInterval(next_callback);
-    diff = ticksGetIntervalRemaining();
-
-    if((diff & 0x8000) && !(next_callback & 0x8000)){
-        // Negative result=callback should already have been called...
-        DBG_MULTI_WRN("Short CB:%d", next_callback);
-    }else{
-        if(IS_RX_FLAG_on || IS_PPM_FLAG_on){
-            // Serial or PPM is waiting...
-            if(++count > 10){
-                //The protocol does not leave enough time for an update so forcing it
-                count = 0;
-                DBG_MULTI_WRN("Force update");
-                Update_All();
-            }
+        if(ticks < 0){
+            // Callback took too much time, next callback should already have been called...
+            DBG_MULTI_WRN("Long callback");
+            // Force update on next call
+            ticksResetInterval();
+            return;
         }
 
-        while(!ticksIsIntervalTimedout()){
-            if(diff > (900 << 1)){
-                //If at least 1ms is available update values
-                if((diff & 0x8000) && !(next_callback & 0x8000)){
-                    //Should never get here...
-                    DBG_MULTI_ERR("!!!BUG!!!");
-                    break;
-                }
-                count = 0;
-                Update_All();
-            #ifdef ENABLE_DEBUG
-                if(ticksIsIntervalTimedout())
-                    DBG_MULTI_WRN("Long update");
-            #endif
-                if(radio.remote_callback == NULL)
-                    break;
-                diff = ticksGetIntervalRemaining();
-            }
+        if(ticks > TICKS_1MS){
+            //At least 1ms is available, update values
+            Update_All();
         }
+        // set new timeout with subtracted time spent here
+        ticksSetInterval(ticks);
     }
 }
 /**
@@ -357,6 +342,8 @@ static void protocol_init(void)
 
             default:
                 next_callback = PROTOCOL_DEFAULT_INTERVAL;
+                radio.remote_callback = NULL;
+                DBG_MULTI_INF("No protocol configured");
                 break;
         }
 

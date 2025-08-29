@@ -37,9 +37,9 @@ RAM_CODE static void ppm_handler(void){
     // Get current ticks
     cur_tick = ticksGetElapsed(prev_tick);
 
-    if(cur_tick < PPM_MIN_PERIOD << 1){
+    if(cur_tick < US_TO_TICKS(PPM_MIN_PERIOD)){
         bad_frame = 1;					// bad frame
-    }else if(cur_tick > PPM_MAX_PERIOD << 1){
+    }else if(cur_tick > US_TO_TICKS(PPM_MAX_PERIOD)){
         //start of frame
         if(chan >= MIN_PPM_CHANNELS){
             //DBG_PIN_TOGGLE;

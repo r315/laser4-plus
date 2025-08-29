@@ -398,32 +398,63 @@ static void systicksInit(void)
     TIME_BASE->CR1 = TIM_CR1_CEN;                      // Enable counter
 }
 
+/**
+ * @brief Get current timer tick.
+ * @param
+ * @return Current timer tick
+ */
 uint16_t ticksGet(void)
 {
     return TIME_BASE->CNT;
 }
 
+/**
+ * @brief Get how many ticks has elapsed from a given start
+ * tick.
+ * @param start Start tick
+ * @return number of elapsed from given start
+ */
 uint16_t ticksGetElapsed(uint16_t start)
 {
     return TIME_BASE->CNT - start;
 }
 
+/**
+ * @brief Confgures timer to set a flag when
+ * given interval has passed.
+ * @param interval in timer ticks
+ */
 void ticksSetInterval(uint16_t interval)
 {
     TIME_BASE->CCR1 += interval;
     TIME_BASE->SR = 0;
 }
 
+/**
+ * @brief Resets configured interval.
+ * No flag is set/reset
+ *
+ */
 void ticksResetInterval(void)
 {
     TIME_BASE->CCR1 = TIME_BASE->CNT;
 }
 
-uint16_t ticksGetIntervalRemaining(void)
+/**
+ * @brief Get ticks remaining until timeout.
+ *
+ * @return  Return ticks to timeout, Negative value represents
+ * how many ticks have elapsed from timeout
+ */
+int16_t ticksGetIntervalRemaining(void)
 {
     return TIME_BASE->CCR1 - TIME_BASE->CNT;
 }
-
+/**
+ * @brief checks timer flags for interval time out.
+ * @param
+ * @return 1: if interval has timed out/expired, 0 otherwise
+ */
 uint16_t ticksIsIntervalTimedout(void)
 {
     return TIME_BASE->SR & TIM_SR_CC1IF;
@@ -884,10 +915,15 @@ static void ppmEotHandler(void)
  * it should be called every 20ms with new data.
  *
  * @param data : pointer to servo data in us unit
+ * @param nch : Number of channels in servo data,
+ * has a maximum of MAX_PPM_CHANNELS
  *
  * */
 void ppmOut(const uint16_t *data, uint8_t nch)
 {
+    if(nch > MAX_PPM_CHANNELS){
+        nch = MAX_PPM_CHANNELS;
+    }
     // Copy channel data to local buffer allows
     // application to change buffer right after this call
     for (uint16_t i = 0; i < nch; i++){
