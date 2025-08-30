@@ -275,10 +275,16 @@ public:
 	}
 }cmdbind;
 
-static const uint16_t ppm_sim_data[] = {3000, 3000, 2000, 3000};
+static uint16_t ppm_sim_values[] = {
+    US_TO_TICKS(1500),
+    US_TO_TICKS(1500),
+    US_TO_TICKS(1500),
+    US_TO_TICKS(1500),
+};
+
 static void ppm_sim(void)
 {
-	multiprotocol_channel_data_set(ppm_sim_data, 4);
+	multiprotocol_channel_data_set(ppm_sim_values, 4);
 }
 
 class CmdPpm : public ConsoleCommand {
@@ -289,12 +295,18 @@ public:
 	void init(void *params) { console = static_cast<Console*>(params); tim = -1;}
 	void help(void) {
         console->println("usage: ppm [sim]");
+        console->println("sim <0|1>,\t\tEnable/disable simulation");
+        console->println("set <channel> <value>,\t Set channel 0-3, value 900-2100");
     }
-	char execute(int argc, char **argv) {
-        (void) argc;
-        (void) argv;
 
-        if(!strcmp(argv[1], "sim")){
+	char execute(int argc, char **argv) {
+
+        if(argc == 1){
+            help();
+            return CMD_OK;
+        }
+
+        if(!xstrcmp(argv[1], "sim")){
             int32_t sim_enable;
             if(ia2i(argv[2], &sim_enable)){
                 if(sim_enable & 1 && tim == -1){
@@ -305,8 +317,24 @@ public:
                     stopTimer(tim);
                     tim = -1;
                 }
+            }else{
+                console->printf("ppm simulation is %s\n", tim < 0 ? "disabled":"enabled");
             }
             return CMD_OK;
+        }
+
+        if(!xstrcmp(argv[1], "set")){
+            int32_t channel;
+            int32_t value;
+            if(ia2i(argv[2], &channel)){
+                channel &= 3;
+                if(ia2i(argv[3], &value)){
+                    if(value > 2100)value = 2100;
+                    if (value < 900)value = 900;
+                    ppm_sim_values[channel] = US_TO_TICKS(value);
+                    return CMD_OK;
+                }
+            }
         }
 
 		return CMD_BAD_PARAM;

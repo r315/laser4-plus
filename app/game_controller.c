@@ -27,9 +27,7 @@ RAM_CODE uint16_t USBHID_callback(radio_t *radio)
     uint8_t *data = (uint8_t*)&laser4.pitch; // 1st channel
 
     for(i = 0; i < REPORT_CHANNELS_SIZE; i++){
-        //PAUSE_CAPTURE;
         uint16_t val = radio->channel_data[i];
-        //RESUME_CAPTURE;
 
         if(val < laser4.min_pulse || val > laser4.max_pulse){
             // if out of pulse interval, center it
@@ -112,8 +110,11 @@ uint16_t USBHID_init(radio_t *radio)
 }
 
 #if defined(ENABLE_PWM)
+#define PAUSE_CAPTURE           PPM_TIM->DIER &= ~(TIM_DIER_CC4IE)
+#define RESUME_CAPTURE          PPM_TIM->DIER |=  (TIM_DIER_CC4IE)
+
 /**
- * Handles a radio channel with the cirrespondent captured value from interrupt.
+ * Handles a radio channel with the correspondent captured value from interrupt.
  * Hw capture flag is cleared when the correspondent regiter is read.
  * This is a synchronous algorithm, since the ready flag is set only if all channels were
  * measured.

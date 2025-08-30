@@ -308,7 +308,7 @@ typedef struct radio{
     uint8_t packet_in[TELEMETRY_BUFFER_SIZE];  // Received packets buffer
     uint8_t prev_option;
     uint8_t prev_power;
-    uint16_t counter;
+    uint16_t counter;       // Packet counter
 
 #ifdef ENABLE_SERIAL
     // Serial RX

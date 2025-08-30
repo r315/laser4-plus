@@ -64,7 +64,7 @@ static void __attribute__((unused)) FRSKYD_data_frame(radio_t *radio)
     radio->packet[0] = 0x11;             //Length
     radio->packet[1] = radio->rx_tx_addr[3];
     radio->packet[2] = radio->rx_tx_addr[2];
-    radio->packet[3] = radio->counter;//
+    radio->packet[3] = radio->counter;
 #if defined TELEMETRY
     packet[4] = telemetry_counter;
 #else
@@ -145,7 +145,7 @@ uint16_t FRSKYD_callback(radio_t *radio)
         FRSKYD_RF_init(radio, 0);
         radio->counter = 0;
         radio->flags |= FLAG_BIND;
-        DBG_FRSKY_INF("Bind end");
+        DBG_FRSKY_INF("Bind done");
     }else{
         if (radio->state == FRSKY_DATA5){
             CC2500_Strobe(CC2500_SRX);//0x34 RX enable

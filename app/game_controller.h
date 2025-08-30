@@ -9,10 +9,6 @@ extern "C" {
 #include <stdint.h>
 #include "multiprotocol.h"
 
-#define SET_PPM_FRAME           (gflags |= (1<<1))
-#define CLR_PPM_FRAME           (gflags &= ~(1<<1))
-#define PAUSE_CAPTURE           PPM_TIM->DIER &= ~(TIM_DIER_CC4IE)
-#define RESUME_CAPTURE          PPM_TIM->DIER |=  (TIM_DIER_CC4IE)
 #define LOGICAL_MINIMUM         0
 #define LOGICAL_MAXIMUM         2047
 #define REPORT_SIZE             13
