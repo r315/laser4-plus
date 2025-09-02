@@ -11,7 +11,7 @@ static uint16_t prev_tick;
  * Because of this it makes sense for making ppm_data static here
  */
 static uint16_t ppm_data[MAX_CHN_NUM];
-static void (*ppm_frame_ready)(const uint16_t *, uint8_t);
+static void (*ppm_frame_ready)(void);
 
 /**
  * @brief
@@ -29,6 +29,18 @@ uint16_t ppm_tx(struct radio *radio)
 }
 
 /**
+ * @brief
+ *
+ * @param buf
+ * @param chan
+ */
+void ppm_channel_data_get(const uint16_t **buf, uint8_t *chan)
+{
+    *buf = ppm_data;
+    *chan = MIN_PPM_CHANNELS;
+}
+
+/**
  * @brief  Interrupt handler for falling edge of ppm input pin
  * Channel data is obtained by measuring time between falling edges
  * */
@@ -42,8 +54,7 @@ RAM_CODE static void ppm_handler(void){
     }else if(cur_tick > US_TO_TICKS(PPM_MAX_PERIOD)){
         //start of frame
         if(chan >= MIN_PPM_CHANNELS){
-            //DBG_PIN_TOGGLE;
-            ppm_frame_ready(ppm_data, chan);
+            ppm_frame_ready();
         }
         chan = 0;						// reset channel counter
         bad_frame = 0;
@@ -62,7 +73,7 @@ RAM_CODE static void ppm_handler(void){
  * @param cb : callback function
  *
  * */
-void ppm_setCallBack(void(*cb)(const uint16_t*, uint8_t)){
+void ppm_setCallBack(void(*cb)(void)){
     if(cb == NULL){
        return;
    }

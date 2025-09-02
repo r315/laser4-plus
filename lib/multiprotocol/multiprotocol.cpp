@@ -97,7 +97,7 @@ void multiprotocol_setup(void)
 
 #ifdef ENABLE_PPM
     // Setup callback for ppm frame ready
-    ppm_setCallBack(multiprotocol_channel_data_set);
+    ppm_setCallBack(multiprotocol_channel_data_ready);
 
     radio.chan_order = 0;
     uint8_t bank = HW_BANK_SWITCH;
@@ -155,8 +155,8 @@ void multiprotocol_loop(void)
         DBG_PIN_LOW;
 
         if(ticks < -TICKS_1MS){
-            // Call to to callback is late, system maybe unable to keep up
-            DBG_MULTI_WRN("Late callback: %d", ticks);
+            // Call to to callback is late at least by one ms, system maybe unable to keep up
+            DBG_MULTI_WRN("Late callback: %d ms", TICKS_TO_MS(-ticks));
         }
         // Get how much ticks has passed since timeout
         ticks = next_callback + ticksGetIntervalRemaining();
@@ -170,7 +170,7 @@ void multiprotocol_loop(void)
         }
 
         if(ticks > TICKS_1MS){
-            //At least 1ms is available, update values
+            //At least 1ms is available, update values for next call
             Update_All();
         }
         // set new timeout with subtracted time spent here
@@ -193,8 +193,10 @@ static uint8_t Update_All(void)
         #endif //ENABLE_SERIAL
 
         #ifdef ENABLE_PPM
-        if(radio.mode_select != MODE_SERIAL)        // PPM mode and a full frame has been received
-        {
+        if(radio.mode_select != MODE_SERIAL){
+            // PPM mode and a full frame has been received
+            ppm_channel_data_get(&radio.ppm_data, &radio.nchannels);
+            // Get data captured from ppm input
             for(uint8_t i = 0; i < radio.nchannels; i++){
                 // update servo data without interrupts to prevent bad read
                 uint16_t val;
@@ -232,12 +234,14 @@ static uint8_t Update_All(void)
     #endif //ENABLE_PPM
 
         appGetAuxChannels(&radio.channel_data[radio.nchannels], &ch);
+
         if(radio.nchannels + ch < MAX_CHN_NUM){
             radio.nchannels += ch;
         }else{
             DBG_MULTI_WRN("Too many aux channels received");
             radio.nchannels = MAX_CHN_NUM;
         }
+
         INPUT_SIGNAL_on;                            // valid signal received
         radio.last_signal = millis();
     }
@@ -459,15 +463,8 @@ uint32_t multiprotocol_protocol_id_get(void)
  * @param buf   Buffer with channel data in 0.5us resolution
  * @param chan  Number of channels
  */
-void multiprotocol_channel_data_set(const uint16_t *buf, uint8_t chan){
+void multiprotocol_channel_data_ready(void){
     PPM_FLAG_on;
-#ifdef ENABLE_PPM
-    radio.ppm_data = buf;
-    radio.nchannels = chan;
-#else
-    (void)buf;
-    (void)chan;
-#endif
 }
 
 void multiprotocol_channel_data_get(uint16_t **channel_data, uint8_t *nchannels)

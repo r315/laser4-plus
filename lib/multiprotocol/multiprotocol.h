@@ -37,6 +37,7 @@ extern "C" {
 #define PPM_TX_CALLBACK_INTERVAL    20000 /* us */
 #define PROTOCOL_DEFAULT_INTERVAL   5000
 #define US_TO_TICKS(_US)            ((_US) << 1)  /* One us takes two ticks */
+#define TICKS_TO_MS(_TICKS)         ((_TICKS) >> 1)
 #define TICKS_1MS                   US_TO_TICKS(1000)
 
 //********************
@@ -353,14 +354,15 @@ uint32_t multiprotocol_flags_get(void);
 void multiprotocol_flags_set(uint32_t flags);
 void multiprotocol_flags_clr(uint32_t flags);
 uint32_t multiprotocol_protocol_id_get(void);
-void multiprotocol_channel_data_get(uint16_t **, uint8_t *nchannels);
-void multiprotocol_channel_data_set(const uint16_t *buf, uint8_t chan);
+void multiprotocol_channel_data_ready(void);
+void multiprotocol_channel_data_get(uint16_t **buf, uint8_t *nchannels);
 void multiprotocol_mode_set(uint8_t mode);
 
-int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max);
+int16_t map16b(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max);
 
-void ppm_setCallBack(void(*cb)(const uint16_t*, uint8_t));
+void ppm_setCallBack(void(*cb)(void));
 uint16_t ppm_tx(struct radio *radio);
+void ppm_channel_data_get(const uint16_t **buf, uint8_t *chan);
 
 #ifdef __cplusplus
 }

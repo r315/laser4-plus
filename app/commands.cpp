@@ -275,21 +275,16 @@ public:
 	}
 }cmdbind;
 
-static uint16_t ppm_sim_values[] = {
-    US_TO_TICKS(1500),
-    US_TO_TICKS(1500),
-    US_TO_TICKS(1500),
-    US_TO_TICKS(1500),
-};
 
 static void ppm_sim(void)
 {
-	multiprotocol_channel_data_set(ppm_sim_values, 4);
+    multiprotocol_channel_data_ready();
 }
 
 class CmdPpm : public ConsoleCommand {
-	Console *console;
+    Console *console;
     int32_t tim;
+    uint16_t *ppm_sim_values;
 public:
     CmdPpm() : ConsoleCommand("ppm") {}
 	void init(void *params) { console = static_cast<Console*>(params); tim = -1;}
@@ -310,6 +305,11 @@ public:
             int32_t sim_enable;
             if(ia2i(argv[2], &sim_enable)){
                 if(sim_enable & 1 && tim == -1){
+                    uint8_t nch;
+                    ppm_channel_data_get((const uint16_t**)&ppm_sim_values, &nch); // Just get pointer
+                    while(nch--){
+                        ppm_sim_values[nch] = US_TO_TICKS(1500);
+                    }
                     console->println("Starting ppm simulation");
                     tim = startTimer(20, SWTIM_AUTO_RELOAD, ppm_sim);
                 }else{
