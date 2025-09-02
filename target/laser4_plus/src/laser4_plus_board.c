@@ -1007,6 +1007,90 @@ void ppmOutInit(void)
 }
 #endif
 
+#if defined(ENABLE_PWM)
+/* Not sure if I need this code, probably pwm output was more useful */
+void pwmOut(const uint16_t *data, uint8_t nch)
+{
+
+}
+
+void pwmOutInit(void)
+{
+    RCC->APB1ENR |= (1 << 0);      // TIM2EN
+
+    PWM_TIM->CR1 = 0;              // Stop counter
+
+    PWM_TIM->PSC = SystemCoreClock/1000000;      // 1Mhz
+    PWM_TIM->CCMR1 = 0x0101;       // CC1-2S = 01, ch1-2 mapped to TI1,TI2
+    PWM_TIM->CCMR2 = 0x0101;       // CC3-4S = 01, map to TI1
+    PWM_TIM->CCER  = 0x1111;       // CC1E, CC1; Configure all channels as input, Capture on rising edge
+
+    PWM_TIM->DIER = (0x0f << 1);   // Enable interrupt on capture for all channels
+    NVIC_EnableIRQ(TIM2_IRQn);     // Enable timer 2 interupt
+    PWM_TIM->CR1 |= (1 << 0);      // Start counter
+}
+
+/**
+ * Handles a radio channel with the correspondent captured value from interrupt.
+ * Hw capture flag is cleared when the correspondent regiter is read.
+ * This is a synchronous algorithm, since the ready flag is set only if all channels were
+ * measured.
+ * */
+RAM_CODE void HandleChannel(volatile uint16_t *dst, volatile uint16_t *ccr, uint8_t ch){
+
+    // check if overcapture occurred
+    if(PWM_TIM->SR & (1 << (8 + ch))){
+        // if set ignore capture and set capture for rising edge
+        PWM_TIM->CCER &= ~(TIM_CAP_POL(ch));
+        PWM_TIM->SR &= ~((1 << (8 + ch)) | (1 << ch));
+        return;
+    }
+
+    // If interrupt was from a rising edge, save capture value on the remote channel
+    // and change the polarity of the capturing edge for the give channel
+    if(!(PWM_TIM->CCER & TIM_CAP_POL(ch))){
+        // First capture, save it on buffer
+        *dst =  *ccr;
+        PWM_TIM->CCER |= TIM_CAP_POL(ch);
+        if(ch == 1) ready = 0;
+    }else{
+        // If caused by falling edge, calculate the pulse width and save it on the
+        // remote channel.
+        *dst =  (*ccr > *dst) ? *ccr - *dst : (0xFFFF - *dst) + *ccr;
+        PWM_TIM->CCER &= ~(TIM_CAP_POL(ch));
+        // The calculated pulse value is stored on the lower half of the buffer
+        *(dst-4) = *dst;
+        if(ch == 4) ready = 1;
+    }
+}
+
+/**
+ * Every capture of any channel will generate an interrupt on capture event (rising or falling edge),
+ * then the handler will evaluate which channel caused the interrupt and call the channel handler
+ * with the correspondent radio channel buffer.
+ * As each remote channel requires two captures we send the address of
+ * the position to store the first captured value, then tha handler decides were to store
+ * the pulse value
+ * */
+RAM_CODE void TIM2_IRQHandler(void){
+    if(TIM2->SR & (1 << 1)){
+        HandleChannel(&remote_channels[4], (uint16_t*)&TIM2->CCR1, 1);
+    }
+
+    if(TIM2->SR & (1 << 2)){
+        HandleChannel(&remote_channels[5], (uint16_t*)&TIM2->CCR2, 2);
+    }
+
+    if(TIM2->SR & (1 << 3)){
+        HandleChannel(&remote_channels[6], (uint16_t*)&TIM2->CCR3, 3);
+    }
+
+    if(TIM2->SR & (1 << 4)){
+        HandleChannel(&remote_channels[7], (uint16_t*)&TIM2->CCR4, 4);
+    }
+}
+#endif /* ENABLE_PWM */
+
 #ifdef ENABLE_BUZZER
 void buzPlayTone(uint16_t freq, uint16_t duration)
 {
