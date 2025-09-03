@@ -170,27 +170,38 @@ extern "C" {
 #define    THROTTLE   2
 #define    RUDDER     3
 
-#define BIND_FLAG_VALUE     0xF0
 
-/* Indexes of constants in eeprom */
-#define EEPROM_ID_OFFSET        0UL
-#define IDX_BUZ_VOLUME          28
-#define EEPROM_BIND_FLAG        29 //EEPROM_SIZE - 1
-// 32-bit indexes
-#define IDX_BAT_VOLTAGE_DIV     2
-#define IDX_SENSE_RESISTOR      4
-// 16-bit indexes
-#define IDX_CHANNEL_MAX_100     6
-#define IDX_CHANNEL_MIN_100     7
-#define IDX_CHANNEL_MAX_125     8
-#define IDX_CHANNEL_MIN_125	    9
-#define IDX_PPM_MAX_100         10
-#define IDX_PPM_MIN_100         11
-#define IDX_CHANNEL_SWITCH      12
-#define IDX_PPM_DEFAULT_VALUE   13
+#define DEFAULT_ID      0x2AD141A7
+#define MODE_SERIAL     0
 
-#define DEFAULT_ID              0x2AD141A7
-#define MODE_SERIAL             0
+
+#define NONE            0
+#define P_HIGH          1
+#define P_LOW           0
+#define AUTOBIND        1
+#define NO_AUTOBIND     0
+
+
+struct meep{
+    uint8_t bind;               // Not in use
+    uint8_t buz_vol;            // Buzzer volume
+    uint8_t rfu1;               // reserved for future use
+    uint8_t rfu2;               // reserved for future use
+    uint32_t uid;               // cpu unique identifier
+    uint32_t vdiv;              // Battery voltage divider racio
+    uint32_t rsense;            // Battery sence resistor in ohms
+    uint16_t servo_max_100;     // Maximum servo value in us
+    uint16_t servo_min_100;     // Minimum servo value in us
+    uint16_t servo_max_125;     // 125% maximum servo value in us
+    uint16_t servo_min_125;     // 125% minimum servo value in us
+    uint16_t switch_on;         // Servo value in us for active switch
+    uint16_t switch_off;        // Servo value in us for inactive switch
+    uint16_t ppm_max_100;       // Maximum ppm pulse period in timer tick units
+    uint16_t ppm_min_100;       // Minimum ppm pulse period in timer tick units
+    uint8_t cksum;
+} __attribute__((packed));
+
+typedef struct meep meep_t;
 
 enum protocols_e{
     PROTO_PROTOLIST	= 0,    // NO RF
@@ -258,13 +269,6 @@ enum WK2x01 {
         W6_HEL    = 4,
         W6_HEL_I= 5,
 };
-
-
-#define NONE         0
-#define P_HIGH        1
-#define P_LOW        0
-#define AUTOBIND    1
-#define NO_AUTOBIND    0
 
 struct PPM_Parameters
 {
@@ -347,6 +351,7 @@ typedef struct radio{
 extern uint8_t CH_AETR[];
 extern uint8_t CH_TAER[];
 extern uint8_t CH_EATR[];
+extern meep_t *eeprom;
 
 void multiprotocol_setup(void);
 void multiprotocol_loop(void);

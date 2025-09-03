@@ -86,8 +86,8 @@ uint16_t USBHID_init(radio_t *radio)
     laser4.aux1 = LOGICAL_MAXIMUM/2;
     laser4.aux2 = LOGICAL_MAXIMUM/2;
     laser4.buttons = 0;
-    laser4.max_pulse = PPM_MAX_PERIOD; // TODO: when eeprom_data is replaced by structure
-    laser4.min_pulse = PPM_MIN_PERIOD; // change this to somethis like radio->eeprom->ppm_min
+    laser4.max_pulse = eeprom->servo_max_100;
+    laser4.min_pulse = eeprom->servo_min_100;
 
     channel_map = CH_AETR;
 

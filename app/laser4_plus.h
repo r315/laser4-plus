@@ -29,8 +29,6 @@ extern "C" {
 #define DEFAULT_VOLTAGE_DIV     0x3e27ef9e  // 0.164
 #define DEFAULT_SENSE_RESISTOR  0x3db851ec  // 0.09
 
-#define EEPROM_SIZE             31
-
 #define MODE_BIT_POS            4
 #define STATE_BIT_POS           4
 #define MODE_MASK               (0xF0)
@@ -61,8 +59,6 @@ typedef union {
   float f;
   uint32_t u;
 }f2u_u;
-
-extern uint16_t *eeprom_data;
 
 void appChangeModeReq(uint8_t pre_mode, uint8_t new_mode);
 uint8_t appGetCurrentMode(void);

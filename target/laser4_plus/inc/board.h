@@ -48,9 +48,14 @@ extern "C" {
 #define DBG_PORT                GPIOB
 #define DBG_PIN_HIGH            GPO_SET(DBG_PORT, DBG_PIN)
 #define DBG_PIN_LOW             GPO_CLR(DBG_PORT, DBG_PIN)
-#define DBG_PIN_INIT            GPO_INIT(DBG_PORT, DBG_PIN); DBG_PIN_LOW
+#define DBG_PIN_INIT            GPO_INIT(DBG_PORT, DBG_PIN); DBG_PIN_LOW; \
+                                GPO_INIT(DBG_PORT, DBG2_PIN); DBG2_PIN_LOW
 #define DBG_PIN_TOGGLE          GPO_TOGGLE(DBG_PORT, DBG_PIN)
 
+#define DBG2_PIN                8
+#define DBG2_PIN_HIGH           GPO_SET(DBG_PORT, DBG2_PIN)
+#define DBG2_PIN_LOW            GPO_CLR(DBG_PORT, DBG2_PIN)
+#define DBG2_PIN_TOGGLE         GPO_TOGGLE(DBG_PORT, DBG2_PIN)
 #endif
 
 #define IS_LED_on               (LED_PORT->IDR & (1<<LED_PIN))
@@ -201,8 +206,9 @@ extern "C" {
 #define SWTIM_AUTO_RELOAD       (1 << 1)
 #define SWTIM_IN_USE            (1 << 2)
 
+#define L4P_EEPROM_SZ           40          // 4byte aligned
 #define EEPROM_Read             NV_Read
-#define EEPROM_Write(_A,_B,_C)  NV_Write(_A,_B,_C)
+#define EEPROM_Write(addr,data,len)  NV_Write(addr,data,len)
 #define EEPROM_Sync             NV_Sync
 #define EEPROM_Erase            NV_Erase
 

@@ -48,7 +48,7 @@
 #endif
 
 static radio_t radio;
-uint16_t *eeprom_data;
+meep_t *eeprom;
 
 static uint8_t Update_All(void);
 static void modules_reset(void);
@@ -82,13 +82,13 @@ void multiprotocol_setup(void)
         BIND_DONE;
     }
 
-    uint16_t channel_default = (eeprom_data[IDX_CHANNEL_MAX_100] + eeprom_data[IDX_CHANNEL_MIN_100]) >> 1;
+    uint16_t channel_default = (eeprom->servo_max_100 + eeprom->servo_min_100) >> 1;
 
     for(uint8_t i = 0; i < MAX_CHN_NUM; i++){
         radio.channel_data[i] = channel_default;
     }
 
-    radio.channel_data[THROTTLE] = eeprom_data[IDX_CHANNEL_MIN_125] ;
+    radio.channel_data[THROTTLE] = eeprom->servo_min_125;
 
     modules_reset();
 
@@ -204,15 +204,15 @@ static uint8_t Update_All(void)
                 val = radio.ppm_data[i];
                 sei();
                 val = map16b(val,
-                            eeprom_data[IDX_PPM_MIN_100],
-                            eeprom_data[IDX_PPM_MAX_100],
-                            eeprom_data[IDX_CHANNEL_MIN_100],
-                            eeprom_data[IDX_CHANNEL_MAX_100]);
+                            eeprom->ppm_min_100,
+                            eeprom->ppm_max_100,
+                            eeprom->servo_min_100,
+                            eeprom->servo_max_100);
 
                 if(val & 0x8000){
-                    val = eeprom_data[IDX_CHANNEL_MIN_125];
-                }else if(val > eeprom_data[IDX_CHANNEL_MAX_125]){
-                    val = eeprom_data[IDX_CHANNEL_MAX_125];
+                    val = eeprom->servo_min_125;
+                }else if(val > eeprom->servo_max_125){
+                    val = eeprom->servo_max_125;
                 }
 
                 if(chan_or){
@@ -423,7 +423,7 @@ static uint32_t random_id(uint8_t create_new)
 {
     uint32_t id = 0;
 
-    id = eeprom_data[EEPROM_ID_OFFSET + 1] << 16 | eeprom_data[EEPROM_ID_OFFSET];
+    id = eeprom->uid;
 
     if(!create_new){
         if(id != DEFAULT_ID){    //ID with seed=0
@@ -437,9 +437,7 @@ static uint32_t random_id(uint8_t create_new)
         id = xrand();
     }
 
-    eeprom_data[EEPROM_ID_OFFSET] = (uint16_t)id;
-    eeprom_data[EEPROM_ID_OFFSET + 1] = (uint16_t)(id >> 16);
-    *((uint8_t*)eeprom_data + EEPROM_BIND_FLAG) = BIND_FLAG_VALUE;
+    eeprom->uid  = id;
 
     appSaveEEPROM();
     return id;

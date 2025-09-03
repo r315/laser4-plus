@@ -379,11 +379,9 @@ public:
 	}
 
 	void id(void){
-		uint32_t *ptr = (uint32_t*)eeprom_data;
-
 		console->printf(
 			"ID          \t\t: 0x%X\n",
-			*(ptr + EEPROM_ID_OFFSET)
+			eeprom->uid
 		);
 	}
 
@@ -391,23 +389,29 @@ public:
 		console->printf(
 			"CH MAX      \t\t: %d us\n"
 			"CH MIN      \t\t: %d us\n"
-			"CH switch   \t\t: %d us\n"
+			"Switch ON   \t\t: %d us\n"
+            "Switch OFF  \t\t: %d us\n",
+            eeprom->servo_max_100,
+            eeprom->servo_min_100,
+            eeprom->switch_on,
+            eeprom->switch_off
+        );
+
+        console->printf(
 			"PPM MAX     \t\t: %d 1/2us\n"
 			"PPM MIN     \t\t: %d 1/2us\n",
-			eeprom_data[IDX_CHANNEL_MAX_100],
-			eeprom_data[IDX_CHANNEL_MIN_100],
-			eeprom_data[IDX_CHANNEL_SWITCH],
-			eeprom_data[IDX_PPM_MAX_100],
-			eeprom_data[IDX_PPM_MIN_100]
+			eeprom->ppm_max_100,
+            eeprom->ppm_min_100
 		);
 	}
 
 	char execute(int argc, char **argv) {
 		if(argc == 1){
-			console->println("----------------------------------------");
-			channelRanges();
+			console->println("========================================");
 			id();
-			console->println("----------------------------------------");
+			channelRanges();
+            console->printf("Buzzer vol   \t\t: %d\n", eeprom->buz_vol);
+			console->println("========================================");
 			return CMD_OK;
 		}
 
@@ -422,7 +426,7 @@ public:
 		}
 
 		if(xstrcmp(argv[1],"dump") == 0){
-			console->hexdump((uint8_t*)eeprom_data, EEPROM_SIZE, 16, 1);
+			console->hexdump((uint8_t*)eeprom, sizeof(meep_t), 16, 1);
 			return CMD_OK;
 		}
 
@@ -518,9 +522,9 @@ public:
 			return CMD_OK;
 		}
 
-		if(readFloatParameter("-div", argc, argv, &eeprom_data[IDX_BAT_VOLTAGE_DIV], adcSetVdivRacio) == CMD_OK)
+		if(readFloatParameter("-div", argc, argv, (uint16_t*)&eeprom->vdiv, adcSetVdivRacio) == CMD_OK)
 			return CMD_OK;
-		if(readFloatParameter("-rs", argc, argv, &eeprom_data[IDX_SENSE_RESISTOR], adcSetSenseResistor) == CMD_OK)
+		if(readFloatParameter("-rs", argc, argv, (uint16_t*)&eeprom->rsense, adcSetSenseResistor) == CMD_OK)
 			return CMD_OK;
 		return CMD_BAD_PARAM;
 	}
@@ -553,7 +557,7 @@ public:
 			int32_t val;
 			if(nextInt(&param, &val)){
 				console->printf("Current level %u\n", buzSetLevel(val));
-				*((uint8_t*)eeprom_data + IDX_BUZ_VOLUME) = val&255;
+				eeprom->buz_vol = val&255;
 				return CMD_OK;
 			}
 		}

@@ -177,23 +177,48 @@ void appToggleLowBatIco(void);
 /**
  * EEPROM ram copy
  * */
-
-static const uint16_t eeprom_default_data[] = {
-    (uint16_t)DEFAULT_ID, (uint16_t)(DEFAULT_ID>>16),
-    (uint16_t)DEFAULT_VOLTAGE_DIV,(uint16_t)(DEFAULT_VOLTAGE_DIV>>16),
-    (uint16_t)DEFAULT_SENSE_RESISTOR,(uint16_t)(DEFAULT_SENSE_RESISTOR>>16),
-    CHANNEL_MAX_100, CHANNEL_MIN_100,
-    CHANNEL_MAX_125, CHANNEL_MIN_125,
-    PPM_MAX_100, PPM_MIN_100,
-    CHANNEL_SWITCH, PPM_DEFAULT_VALUE,
-    BUZ_DEFAULT_VOLUME
+static const meep_t eeprom_default_data = {
+    .bind = 0,
+    .buz_vol = BUZ_DEFAULT_VOLUME,
+    .rfu1 = 0xFE,
+    .rfu2 = 0xFF,
+    .uid = DEFAULT_ID,
+    .vdiv = DEFAULT_VOLTAGE_DIV,
+    .rsense = DEFAULT_SENSE_RESISTOR,
+    .servo_max_100 = CHANNEL_MAX_100,
+    .servo_min_100 = CHANNEL_MIN_100,
+    .servo_max_125 = CHANNEL_MAX_125,
+    .servo_min_125 = CHANNEL_MIN_125,
+    .switch_on = CHANNEL_SWITCH,
+    .switch_off = CHANNEL_MIN_100,
+    .ppm_max_100 = PPM_MAX_100,
+    .ppm_min_100 = PPM_MIN_100,
+    .cksum = 0
 };
 
 /**
  * @brief
- * */
-uint8_t appGetCurrentMode(void){
-    return app_state & STATE_MASK;
+ *
+ * @param data
+ * @param len
+ * @return
+ */
+static uint8_t crc8(const uint8_t *data, uint8_t len)
+{
+    uint8_t crc = 0x00;   // initial value (can also be 0xFF depending on protocol)
+
+    for (uint8_t i = 0; i < len; i++) {
+        crc ^= data[i];   // XOR-in the next input byte
+
+        for (uint8_t j = 0; j < 8; j++) {
+            if (crc & 0x80) {
+                crc = (crc << 1) ^ 0x07;   // polynomial 0x07
+            } else {
+                crc <<= 1;
+            }
+        }
+    }
+    return crc;
 }
 
 /**
@@ -233,6 +258,13 @@ void usbDisconnectCB(void *ptr)
     // redirect cli to physical com port
     con.setOutput(&pcom);
 #endif
+}
+
+/**
+ * @brief
+ * */
+uint8_t appGetCurrentMode(void){
+    return app_state & STATE_MASK;
 }
 
 /**
@@ -430,10 +462,10 @@ void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel)
     if(diff != 0){
         uint16_t tmp = channel_aux[nch];        // Read current servo value
         tmp += diff * 10;                       // increment/decrement
-        if(tmp > eeprom_data[IDX_CHANNEL_MAX_100]){
-            tmp = eeprom_data[IDX_CHANNEL_MAX_100];
-        }else if(tmp < eeprom_data[IDX_CHANNEL_MIN_100]){
-            tmp = eeprom_data[IDX_CHANNEL_MIN_100];
+        if(tmp > eeprom->servo_max_100){
+            tmp = eeprom->servo_max_100;
+        }else if(tmp < eeprom->servo_min_100){
+            tmp = eeprom->servo_min_100;
         }
         channel_aux[nch] = tmp;
         DBG_APP_INF("Encoder %d", diff);
@@ -448,9 +480,9 @@ void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel)
 
     for(uint8_t i = 0; i < AUX_SWITCH_NUM; i++){
         if((switches & (1 << i))){
-            channel_value = eeprom_data[IDX_CHANNEL_SWITCH];
+            channel_value = eeprom->switch_on;
         }else{
-            channel_value = eeprom_data[IDX_CHANNEL_MIN_100];
+            channel_value = eeprom->switch_off;
         }
 
         if(channel_value != channel_aux[i + nch]){
@@ -466,54 +498,30 @@ void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel)
     *nchannel = nch;
 }
 
-static uint32_t eepromLoad(uint8_t *buf, uint16_t size)
-{
-    return EEPROM_Read(0, buf, size);
-}
-
-/**
- * @brief
- * @param buf
- * @param defaults
- * @param size
- */
-static void eepromDefault(uint8_t *buf, const uint8_t *defaults, uint16_t size)
-{
-    while(size--){
-        *buf++ = *defaults++;
-    }
-}
-
 /**
  * @brief
  *
- * */
-static uint8_t* eepromInit(const uint8_t *defaults, uint16_t size)
+ * @param defaults      Default values in case if eeprom failure
+ * @param size          Number of bytes on eeprom
+ * @return              Pointer to eeprom data bytes
+ */
+static uint32_t eepromInit(void)
 {
-    uint8_t bind_flag;
-    uint8_t *buf;
+    uint8_t crc;
 
-    buf = EEPROM_Init(size);
+    appLoadEEPROM();
 
-    if(EEPROM_Read(EEPROM_BIND_FLAG, &bind_flag, 1) != 1){
-        DBG_APP_ERR("Error reading EEPROM");
-        goto load_defaults;
-    }
+    crc = crc8((uint8_t*)eeprom, sizeof(meep_t) - 1);
 
-    if(bind_flag == BIND_FLAG_VALUE){
-        if(EEPROM_Read(0, buf, size) != size){
-            DBG_APP_ERR("Error reading EEPROM");
-            goto load_defaults;
-        }
+    if(eeprom->cksum == crc){
         DBG_APP_INF("Data loaded from EEPROM");
-        return buf;
+    }else{
+        DBG_APP_ERR("EEPROM checksum fail");
+        appDefaultEEPROM();
+        DBG_APP_INF("EEPROM defaults loaded");
     }
 
-load_defaults:
-    eepromDefault(buf, defaults, size);
-    DBG_APP_INF("EEPROM defaults loaded");
-
-    return buf;
+    return sizeof(meep_t);
 }
 
 /**
@@ -522,7 +530,9 @@ load_defaults:
  */
 void appLoadEEPROM(void)
 {
-    if(!eepromLoad((uint8_t*)eeprom_data, EEPROM_SIZE)){
+    eeprom = (meep_t*)EEPROM_Init(sizeof(meep_t));
+
+    if(!eeprom){
         DBG_APP_ERR("Error reading EEPROM");
     }
 }
@@ -534,10 +544,14 @@ void appLoadEEPROM(void)
  * */
 void appSaveEEPROM(void)
 {
-    // FIXME: Really should implement CRC
-    *((uint8_t*)eeprom_data + EEPROM_BIND_FLAG) = BIND_FLAG_VALUE;
+    if(!eeprom){
+        DBG_APP_WRN("EEPROM Not initialized");
+        return;
+    }
 
-    EEPROM_Write(EEPROM_ID_OFFSET, (uint8_t*)eeprom_data, EEPROM_SIZE);
+    uint8_t crc = crc8((uint8_t*)eeprom, sizeof(meep_t) - 1);
+
+    EEPROM_Write((uint16_t)((uint8_t*)&eeprom->cksum - (uint8_t*)eeprom), &crc, 1);
 
     if(!EEPROM_Sync()){
         DBG_APP_ERR("!! Fail to sync EEPROM !!");
@@ -553,7 +567,9 @@ void appSaveEEPROM(void)
  */
 void appDefaultEEPROM(void)
 {
-    eepromDefault((uint8_t*)eeprom_data, (const uint8_t*)eeprom_default_data, sizeof(eeprom_default_data));
+    for(uint32_t i = 0; i < sizeof(eeprom_default_data); i++){
+        ((uint8_t*)eeprom)[i] = ((uint8_t*)&eeprom_default_data)[i];
+    }
 }
 
 /**
@@ -593,10 +609,10 @@ extern "C" void setup(void)
     con.cls();
 #endif
     // Load eeprom data
-    eeprom_data = (uint16_t*)eepromInit((const uint8_t*)eeprom_default_data, EEPROM_SIZE);
+    eepromInit();
 #ifdef ENABLE_BUZZER
     // Set volume from stored value
-    buzSetLevel(*((uint8_t*)eeprom_data + IDX_BUZ_VOLUME));
+    buzSetLevel(eeprom->buz_vol);
     // Play som random tone
     buzPlay(chime);
 #endif
@@ -604,9 +620,9 @@ extern "C" void setup(void)
 #ifdef ENABLE_BATTERY_MONITOR
     // Configure adc calibration values
     f2u_u tmp;
-    tmp.u = (uint32_t)(eeprom_data[IDX_BAT_VOLTAGE_DIV] | (eeprom_data[IDX_BAT_VOLTAGE_DIV + 1] << 16));
+    tmp.u = eeprom->vdiv;
     adcSetVdivRacio(tmp.f);
-    tmp.u = (uint32_t)(eeprom_data[IDX_SENSE_RESISTOR] | (eeprom_data[IDX_SENSE_RESISTOR + 1] << 16));
+    tmp.u = eeprom->rsense;
     adcSetSenseResistor(tmp.f);
 
     /* Get battery voltage */

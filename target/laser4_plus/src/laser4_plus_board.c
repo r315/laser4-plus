@@ -521,7 +521,7 @@ void flashRead (uint32_t addr, uint8_t *dst, uint32_t len)
 }
 
 extern uint32_t _seeprom, _eeeprom;     //declared on linker script
-static uint8_t eep_buf[32];
+static uint8_t eep_buf[L4P_EEPROM_SZ];
 
 static nvdata_t laser4_plus_nvdata = {
     .sector = {
@@ -531,24 +531,31 @@ static nvdata_t laser4_plus_nvdata = {
         .read = flashRead,
         .write = flashWrite,
         .erase = flashPageErase
+    },
+    .nvb = {
+        .size = 0,
+        .next = NULL,
+        .data = NULL
     }
 };
 
+/**
+ * @brief Initializes eeprom data structures
+ *
+ * @param size  number of bytes requested by
+ *              application for eeprom
+ * @return      Pointer to eeprom data bytes
+ */
 uint8_t* EEPROM_Init(uint16_t size)
 {
     if(!laser4_plus_nvdata.nvb.size){
-        // For this data has to be aligned to 16bit
-        if(size & 1){
-            size++;
-        }
+        laser4_plus_nvdata.nvb.data = eep_buf;
+        laser4_plus_nvdata.nvb.size = NVDATA_BLK_SZ(size);
 
-        if (size > 32){
-            size = 32;
+        if (laser4_plus_nvdata.nvb.size > L4P_EEPROM_SZ){
+            laser4_plus_nvdata.nvb.size = L4P_EEPROM_SZ;
             DBG_BOARD_WRN("eep_buf should be bigger");
         }
-
-        laser4_plus_nvdata.nvb.data = eep_buf;
-        laser4_plus_nvdata.nvb.size = size;
 
         NV_Init(&laser4_plus_nvdata);
     }
