@@ -105,7 +105,7 @@ void MPANEL_print(uint16_t x, uint16_t y, const font_t *font, const char *fmt, .
     uint8_t i = 0;
 	va_list arp;
 	va_start(arp, fmt);
-	strformater(buf, fmt, arp, sizeof(buf));
+	strformater(buf, fmt, sizeof(buf), arp);
 	va_end(arp);
 
     while(buf[i] != '\0'){
