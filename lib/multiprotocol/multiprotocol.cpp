@@ -97,7 +97,7 @@ void multiprotocol_setup(void)
 
 #ifdef ENABLE_PPM
     // Setup callback for ppm frame ready
-    ppm_setCallBack(multiprotocol_channel_data_ready);
+    ppm_init(radio.channel_data, multiprotocol_channel_data_ready);
 
     radio.chan_order = 0;
     uint8_t bank = HW_BANK_SWITCH;
@@ -139,7 +139,7 @@ void multiprotocol_setup(void)
  * */
 void multiprotocol_loop(void)
 {
-    while(radio.remote_callback == NULL || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off){
+    if(radio.remote_callback == NULL || IS_WAIT_BIND_on || IS_INPUT_SIGNAL_off){
         if(!Update_All()){
             ticksResetInterval();
         }
@@ -156,7 +156,7 @@ void multiprotocol_loop(void)
 
         if(ticks < -TICKS_1MS){
             // Call to to callback is late at least by one ms, system maybe unable to keep up
-            DBG_MULTI_WRN("Late callback: %d ms", TICKS_TO_MS(-ticks));
+            DBG_MULTI_WRN("Late callback: %d us", TICKS_TO_US(-ticks));
         }
         // Get how much ticks has passed since timeout
         ticks = next_callback + ticksGetIntervalRemaining();
@@ -195,7 +195,7 @@ static uint8_t Update_All(void)
         #ifdef ENABLE_PPM
         if(radio.mode_select != MODE_SERIAL){
             // PPM mode and a full frame has been received
-            ppm_channel_data_get(&radio.ppm_data, &radio.nchannels);
+            radio.nchannels = ppm_nchannel_get();
             // Get data captured from ppm input
             for(uint8_t i = 0; i < radio.nchannels; i++){
                 // update servo data without interrupts to prevent bad read
@@ -231,7 +231,7 @@ static uint8_t Update_All(void)
             PPM_failsafe();
         #endif
         }
-    #endif //ENABLE_PPM
+        #endif //ENABLE_PPM
 
         appGetAuxChannels(&radio.channel_data[radio.nchannels], &ch);
 
@@ -463,9 +463,10 @@ uint32_t multiprotocol_protocol_id_get(void)
  */
 void multiprotocol_channel_data_ready(void){
     PPM_FLAG_on;
+    DBG2_PIN_TOGGLE;
 }
 
-void multiprotocol_channel_data_get(uint16_t **channel_data, uint8_t *nchannels)
+void multiprotocol_channel_data_get(const uint16_t **channel_data, uint8_t *nchannels)
 {
     *channel_data = radio.channel_data;
     *nchannels = radio.nchannels;

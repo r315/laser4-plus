@@ -2,7 +2,7 @@
 #include "board.h"
 
 #if defined(ENABLE_PPM)
-static int8_t chan = 0, bad_frame = 1;
+static uint8_t chan, bad_frame, nch;
 static uint16_t prev_tick;
 
 /**
@@ -10,7 +10,7 @@ static uint16_t prev_tick;
  * using 0.5us units give more precision when maping to servo data.
  * Because of this it makes sense for making ppm_data static here
  */
-static uint16_t ppm_data[MAX_CHN_NUM];
+static uint16_t *ppm_data;
 static void (*ppm_frame_ready)(void);
 
 /**
@@ -29,15 +29,12 @@ uint16_t ppm_tx(struct radio *radio)
 }
 
 /**
- * @brief
- *
- * @param buf
- * @param chan
+ * @brief Get number of channels of last
+ * captured ppm frame
  */
-void ppm_channel_data_get(const uint16_t **buf, uint8_t *chan)
+uint8_t ppm_nchannel_get(void)
 {
-    *buf = ppm_data;
-    *chan = MIN_PPM_CHANNELS;
+    return nch;
 }
 
 /**
@@ -54,6 +51,7 @@ RAM_CODE static void ppm_handler(void){
     }else if(cur_tick > US_TO_TICKS(PPM_MAX_PERIOD)){
         //start of frame
         if(chan >= MIN_PPM_CHANNELS){
+            nch = chan;
             ppm_frame_ready();
         }
         chan = 0;						// reset channel counter
@@ -73,12 +71,25 @@ RAM_CODE static void ppm_handler(void){
  * @param cb : callback function
  *
  * */
-void ppm_setCallBack(void(*cb)(void)){
-    if(cb == NULL){
-       return;
-   }
-   gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);
-   ppm_frame_ready = cb;
-   gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, ppm_handler);
+void ppm_init(uint16_t *ppmdata, void(*cb)(void)){
+    if(cb == NULL || ppmdata == NULL){
+        return;
+    }
+    gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);
+    ppm_frame_ready = cb;
+    ppm_data = ppm_data;
+    prev_tick = 0;
+    chan = 0;
+    nch = 0;
+    bad_frame = 1;
+    gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, ppm_handler);
+}
+
+void ppm_sim_handler(void)
+{
+    if(ppm_frame_ready){
+        nch = MIN_PPM_CHANNELS;
+        ppm_frame_ready();
+    }
 }
 #endif

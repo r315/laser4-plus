@@ -177,7 +177,7 @@ public:
 	}
 
 	void channelValues(void){
-        uint16_t *channel_data;
+        const uint16_t *channel_data;
         uint8_t nchannels;
         multiprotocol_channel_data_get(&channel_data, &nchannels);
 		for(uint8_t i = 0; i < nchannels; i++){
@@ -276,18 +276,13 @@ public:
 }cmdbind;
 
 
-static void ppm_sim(void)
-{
-    multiprotocol_channel_data_ready();
-}
-
 class CmdPpm : public ConsoleCommand {
     Console *console;
-    int32_t tim;
+    int32_t ppm_timer_id;
     uint16_t *ppm_sim_values;
 public:
     CmdPpm() : ConsoleCommand("ppm") {}
-	void init(void *params) { console = static_cast<Console*>(params); tim = -1;}
+	void init(void *params) { console = static_cast<Console*>(params); ppm_timer_id = -1;}
 	void help(void) {
         console->println("usage: ppm [sim]");
         console->println("sim <0|1>,\t\tEnable/disable simulation");
@@ -304,21 +299,21 @@ public:
         if(!xstrcmp(argv[1], "sim")){
             int32_t sim_enable;
             if(ia2i(argv[2], &sim_enable)){
-                if(sim_enable & 1 && tim == -1){
+                if((sim_enable & 1) && (ppm_timer_id == -1)){
                     uint8_t nch;
-                    ppm_channel_data_get((const uint16_t**)&ppm_sim_values, &nch); // Just get pointer
+                    multiprotocol_channel_data_get((const uint16_t**)&ppm_sim_values, &nch); // Just get pointer
                     while(nch--){
                         ppm_sim_values[nch] = US_TO_TICKS(1500);
                     }
                     console->println("Starting ppm simulation");
-                    tim = startTimer(20, SWTIM_AUTO_RELOAD, ppm_sim);
+                    ppm_timer_id = startTimer(20, SWTIM_AUTO_RELOAD, ppm_sim_handler);
                 }else{
                     console->println("Stoping ppm simulation");
-                    stopTimer(tim);
-                    tim = -1;
+                    stopTimer(ppm_timer_id);
+                    ppm_timer_id = -1;
                 }
             }else{
-                console->printf("ppm simulation is %s\n", tim < 0 ? "disabled":"enabled");
+                console->printf("ppm simulation is %s\n", ppm_timer_id < 0 ? "disabled":"enabled");
             }
             return CMD_OK;
         }

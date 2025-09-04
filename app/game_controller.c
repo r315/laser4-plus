@@ -41,9 +41,9 @@ RAM_CODE uint16_t USBHID_callback(radio_t *radio)
     }
 
 #ifdef ENABLE_AUX_SWITCHES
-        laser4.buttons = auxGetSwitches();
+    laser4.buttons = auxGetSwitches();
 #else
-        laser4.buttons = 0;
+    laser4.buttons = 0;
 #endif
 
 #else /* TEST_CONTROLLER */
