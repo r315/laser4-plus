@@ -463,7 +463,7 @@ uint32_t multiprotocol_protocol_id_get(void)
  */
 void multiprotocol_channel_data_ready(void){
     PPM_FLAG_on;
-    DBG2_PIN_TOGGLE;
+    DBG_PIN2_TOGGLE;
 }
 
 void multiprotocol_channel_data_get(const uint16_t **channel_data, uint8_t *nchannels)

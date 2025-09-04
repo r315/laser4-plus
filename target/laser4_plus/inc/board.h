@@ -34,9 +34,13 @@ extern "C" {
 #define LED_PORT                GPIOB
 #define LED_PIN                 GPIO_PIN_3
 #define LED_INIT                GPIOB->CRL = (GPIOB->CRL & ~(15<<12)) | (2<<12) // assume swd is already enabled
-#define LED_SET                 GPIO_PIN_RESET
-#define LED_RESET               GPIO_PIN_SET
-#else
+#define LED_ON                  GPO_CLR(LED_PORT, LED_PIN)
+#define LED_OFF                 GPO_SET(LED_PORT, LED_PIN)
+#define LED_TOGGLE              GPO_TOGGLE(LED_PORT, LED_PIN)
+#define DBG_PIN_HIGH
+#define DBG_PIN_LOW
+#define DBG_PIN2_TOGGLE
+#elif defined(BOARD_BLUEPILL)
 #define LED_PORT                GPIOC   // Blue pill LED
 #define LED_PIN                 13
 #define LED_ON                  GPO_SET(LED_PORT, LED_PIN)
@@ -49,13 +53,15 @@ extern "C" {
 #define DBG_PIN_HIGH            GPO_SET(DBG_PORT, DBG_PIN)
 #define DBG_PIN_LOW             GPO_CLR(DBG_PORT, DBG_PIN)
 #define DBG_PIN_INIT            GPO_INIT(DBG_PORT, DBG_PIN); DBG_PIN_LOW; \
-                                GPO_INIT(DBG_PORT, DBG2_PIN); DBG2_PIN_LOW
+                                GPO_INIT(DBG_PORT, DBG_PIN2); DBG_PIN2_LOW
 #define DBG_PIN_TOGGLE          GPO_TOGGLE(DBG_PORT, DBG_PIN)
 
-#define DBG2_PIN                8
-#define DBG2_PIN_HIGH           GPO_SET(DBG_PORT, DBG2_PIN)
-#define DBG2_PIN_LOW            GPO_CLR(DBG_PORT, DBG2_PIN)
-#define DBG2_PIN_TOGGLE         GPO_TOGGLE(DBG_PORT, DBG2_PIN)
+#define DBG_PIN2                8
+#define DBG_PIN2_HIGH           GPO_SET(DBG_PORT, DBG_PIN2)
+#define DBG_PIN2_LOW            GPO_CLR(DBG_PORT, DBG_PIN2)
+#define DBG_PIN2_TOGGLE         GPO_TOGGLE(DBG_PORT, DBG_PIN2)
+#else
+#error "No board defined"
 #endif
 
 #define IS_LED_on               (LED_PORT->IDR & (1<<LED_PIN))
