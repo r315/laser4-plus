@@ -89,7 +89,7 @@ void CC2500_WriteReg(uint8_t address, uint8_t data)
 }
 
 //------------------------
-void CC2500_SetTxRxMode(uint8_t mode)
+void CC2500_SetTxRxMode(enum TXRX_State mode)
 {
 	if(mode == TX_EN)
 	{

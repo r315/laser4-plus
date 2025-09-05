@@ -93,6 +93,50 @@ enum {
     CC2500_3F_RXFIFO           = 0x3F,
 };
 
+enum TXRX_State {
+	TXRX_OFF,
+	TX_EN,
+	RX_EN
+};
+
+// CC2500 power output from the chip itself
+// The numbers do not take into account any outside amplifier
+enum CC2500_POWER
+{
+	CC2500_POWER_0  = 0x00,	// -55dbm or less
+	CC2500_POWER_1  = 0x50,	// -30dbm
+	CC2500_POWER_2  = 0x44, // -28dbm
+	CC2500_POWER_3  = 0xC0, // -26dbm
+	CC2500_POWER_4  = 0x84, // -24dbm
+	CC2500_POWER_5  = 0x81, // -22dbm
+	CC2500_POWER_6  = 0x46, // -20dbm
+	CC2500_POWER_7  = 0x93, // -18dbm
+	CC2500_POWER_8  = 0x55, // -16dbm
+	CC2500_POWER_9  = 0x8D, // -14dbm
+	CC2500_POWER_10 = 0xC6,	// -12dbm
+	CC2500_POWER_11 = 0x97,	// -10dbm
+	CC2500_POWER_12 = 0x6E,	//  -8dbm
+	CC2500_POWER_13 = 0x7F,	//  -6dbm
+	CC2500_POWER_14 = 0xA9,	//  -4dbm
+	CC2500_POWER_15 = 0xBB,	//  -2dbm
+	CC2500_POWER_16 = 0xFE,	//   0dbm
+	CC2500_POWER_17 = 0xFF	//  +1dbm
+};
+
+//----------------------------------------------------------------------------------
+// GDO pins connected to RFX240 power amplifier, +22dBm
+//----------------------------------------------------------------------------------
+#define RFX240_TXEN         CC2500_00_IOCFG2    // TXEN overwrides RXEN
+#define RFX240_RXEN         CC2500_02_IOCFG0    // Don't care when TXEN = 1
+
+#define CC2500_HIGH_POWER	CC2500_POWER_17
+#define CC2500_LOW_POWER	CC2500_POWER_13
+#define CC2500_RANGE_POWER	CC2500_POWER_1
+#define CC2500_BIND_POWER	CC2500_POWER_1
+
+#define GDO_LOW             (0x2F | 0x00)
+#define GDO_HIGH            (0x2F | 0x40)
+
 // Definitions for burst/single access to registers
 #define CC2500_WRITE_SINGLE     0x00
 #define CC2500_WRITE_BURST      0x40
@@ -153,50 +197,10 @@ uint8_t CC2500_Reset(void);
 void CC2500_Strobe(uint8_t cmd);
 void CC2500_WriteData(uint8_t *dpbuffer, uint8_t len);
 void CC2500_ReadData(uint8_t *dpbuffer, uint8_t len);
-void CC2500_SetTxRxMode(uint8_t TXRX_State);
+void CC2500_SetTxRxMode(enum TXRX_State mode);
 void CC2500_SetPower(uint8_t power);
 uint8_t CC2500_ReadStatus(uint8_t sreg);
 
-// ---------------------------------------------------------------------------------
-// previouly defined on multiprotocol.h
-// ---------------------------------------------------------------------------------
-
-// CC2500 power output from the chip itself
-// The numbers do not take into account any outside amplifier
-enum CC2500_POWER
-{
-	CC2500_POWER_0  = 0x00,	// -55dbm or less
-	CC2500_POWER_1  = 0x50,	// -30dbm
-	CC2500_POWER_2  = 0x44, // -28dbm
-	CC2500_POWER_3  = 0xC0, // -26dbm
-	CC2500_POWER_4  = 0x84, // -24dbm
-	CC2500_POWER_5  = 0x81, // -22dbm
-	CC2500_POWER_6  = 0x46, // -20dbm
-	CC2500_POWER_7  = 0x93, // -18dbm
-	CC2500_POWER_8  = 0x55, // -16dbm
-	CC2500_POWER_9  = 0x8D, // -14dbm
-	CC2500_POWER_10 = 0xC6,	// -12dbm
-	CC2500_POWER_11 = 0x97,	// -10dbm
-	CC2500_POWER_12 = 0x6E,	//  -8dbm
-	CC2500_POWER_13 = 0x7F,	//  -6dbm
-	CC2500_POWER_14 = 0xA9,	//  -4dbm
-	CC2500_POWER_15 = 0xBB,	//  -2dbm
-	CC2500_POWER_16 = 0xFE,	//   0dbm
-	CC2500_POWER_17 = 0xFF	//  +1dbm
-};
-#define CC2500_HIGH_POWER	CC2500_POWER_17
-#define CC2500_LOW_POWER	CC2500_POWER_13
-#define CC2500_RANGE_POWER	CC2500_POWER_1
-#define CC2500_BIND_POWER	CC2500_POWER_1
-
-enum TXRX_State {
-	TXRX_OFF,
-	TX_EN,
-	RX_EN
-};
-
-#define GDO_LOW     0x2F
-#define GDO_HIGH    (0x2F | 0x40)
 // ---------------------------------------------------------------------------------
 
 

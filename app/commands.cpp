@@ -156,22 +156,22 @@ public:
 
 		console->printf(
 			"RX               : %d\n"
-			"Change protocol  : %d\n"
-			"Range            : %d\n"
 			"PPM              : %d\n"
+			"Change protocol  : %d\n"
+			//"Range            : %d\n"
 			"Bind done        : %d\n",
 			!!(flags & FLAG_RX),
-            !!(flags & FLAG_CHANGE_PROTOCOL),
-            !!(flags & FLAG_RANGE),
             !!(flags & FLAG_PPM),
+            !!(flags & FLAG_CHANGE_PROTOCOL),
+            //!!(flags & FLAG_RANGE),
             !!(flags & FLAG_BIND)
 		);
 		console->printf(
 			"Wait bind        : %d\n"
-			"Tx pause         : %d\n"
+			//"Tx pause         : %d\n"
 			"Input signal     : %d\n",
             !!(flags & FLAG_WAIT_BIND),
-			!!(flags & FLAG_TX_PAUSE),
+			//!!(flags & FLAG_TX_PAUSE),
             !!(flags & FLAG_INPUT_SIGNAL)
 		);
 	}
