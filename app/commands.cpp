@@ -583,12 +583,14 @@ public:
     void init(void *params) { console = static_cast<Console*>(params); }
     CmdDfu () : ConsoleCommand("dfu") { }
     char execute(int argc, char **argv){
+        (void)argc;
+        (void)argv;
 
     	console->print("Entering DFU mode\n");
     	//LCD_Fill(0, 0, LCD_W, LCD_H, BLACK);
     	//LCD_Update();
 
-		DFU_Enable();
+		reboot_into_dfu();
     	NVIC_SystemReset();
 
     	return CMD_OK;
