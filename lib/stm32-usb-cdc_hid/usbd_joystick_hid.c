@@ -7,10 +7,10 @@
   * @brief   This file provides the HID core functions.
   *
   * @verbatim
-  *      
-  *          ===================================================================      
+  *
+  *          ===================================================================
   *                                HID Class  Description
-  *          =================================================================== 
+  *          ===================================================================
   *           This module manages the HID class V1.11 following the "Device Class Definition
   *           for Human Interface Devices (HID) Version 1.11 Jun 27, 2001".
   *           This driver implements the following aspects of the specification:
@@ -18,12 +18,12 @@
   *             - The Mouse protocol
   *             - Usage Page : Generic Desktop
   *             - Usage : Joystick
-  *             - Collection : Application 
-  *      
+  *             - Collection : Application
+  *
   * @note     In HS mode and when the DMA is used, all variables and data structures
   *           dealing with the DMA during the transaction process should be 32-bit aligned.
-  *           
-  *      
+  *
+  *
   *  @endverbatim
   *
   ******************************************************************************
@@ -37,14 +37,14 @@
   *
   *        http://www.st.com/software_license_agreement_liberty_v2
   *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   * See the License for the specific language governing permissions and
   * limitations under the License.
   *
   ******************************************************************************
-  */ 
+  */
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_hid.h"
@@ -57,34 +57,34 @@
   */
 
 
-/** @defgroup USBD_HID 
+/** @defgroup USBD_HID
   * @brief usbd core module
   * @{
-  */ 
+  */
 
 /** @defgroup USBD_HID_Private_TypesDefinitions
   * @{
-  */ 
+  */
 /**
   * @}
-  */ 
+  */
 
 
 /** @defgroup USBD_HID_Private_Defines
   * @{
-  */ 
+  */
 
 /**
   * @}
-  */ 
+  */
 
 
 /** @defgroup USBD_HID_Private_Macros
   * @{
-  */ 
+  */
 /**
   * @}
-  */ 
+  */
 
 
 
@@ -109,7 +109,7 @@ static uint8_t *USBD_HID_GetDeviceQualifierDesc(uint16_t *length);
 static uint8_t USBD_HID_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum);
 /**
   * @}
-  */ 
+  */
 
 /** @defgroup USBD_HID_Private_Variables
   * @{
@@ -269,11 +269,11 @@ __ALIGN_BEGIN static uint8_t HID_MOUSE_ReportDesc[HID_MOUSE_REPORT_DESC_SIZE] __
   * @param  cfgidx: Configuration index
   * @retval status
   */
-static uint8_t  USBD_HID_Init (USBD_HandleTypeDef *pdev, 
+static uint8_t  USBD_HID_Init (USBD_HandleTypeDef *pdev,
                                uint8_t cfgidx)
 {
     uint8_t ret = 0;
-
+    (void)cfgidx;
     /* Open EP IN */
     USBD_LL_OpenEP(pdev,
                    HID_EPIN_ADDR,
@@ -304,6 +304,7 @@ static uint8_t  USBD_HID_Init (USBD_HandleTypeDef *pdev,
 static uint8_t USBD_HID_DeInit(USBD_HandleTypeDef *pdev,
                                uint8_t cfgidx)
 {
+    (void)cfgidx;
     /* Close HID EPs */
     USBD_LL_CloseEP(pdev,
                     HID_EPIN_ADDR);
@@ -401,7 +402,7 @@ static uint8_t USBD_HID_Setup(USBD_HandleTypeDef *pdev,
 }
 
 /**
-  * @brief  USBD_HID_GetCfgDesc 
+  * @brief  USBD_HID_GetCfgDesc
   *         return configuration descriptor
   * @param  speed : current device speed
   * @param  length : pointer data length
@@ -424,8 +425,8 @@ static uint8_t *USBD_HID_GetCfgDesc(uint16_t *length)
 static uint8_t USBD_HID_DataIn(USBD_HandleTypeDef *pdev,
                                uint8_t epnum)
 {
-
-    /* Ensure that the FIFO is empty before a new transfer, this condition could 
+    (void)epnum;
+    /* Ensure that the FIFO is empty before a new transfer, this condition could
   be caused by  a new transfer before the end of the previous transfer */
     ((USBD_HID_HandleTypeDef *)pdev->pClassData)->state = HID_IDLE;
     return USBD_OK;
@@ -433,7 +434,7 @@ static uint8_t USBD_HID_DataIn(USBD_HandleTypeDef *pdev,
 
 
 /**
-* @brief  DeviceQualifierDescriptor 
+* @brief  DeviceQualifierDescriptor
 *         return Device Qualifier descriptor
 * @param  length : pointer data length
 * @retval pointer to descriptor buffer
@@ -445,7 +446,7 @@ static uint8_t *USBD_HID_GetDeviceQualifierDesc(uint16_t *length)
 }
 
 /**
-  * @brief  USBD_HID_SendReport 
+  * @brief  USBD_HID_SendReport
   *         Send HID Report
   * @param  pdev: device instance
   * @param  buff: pointer to report
@@ -473,7 +474,7 @@ uint8_t USBD_HID_SendReport (USBD_HandleTypeDef *pdev,
 }
 
 /**
-  * @brief  USBD_HID_GetPollingInterval 
+  * @brief  USBD_HID_GetPollingInterval
   *         return polling interval from endpoint descriptor
   * @param  pdev: device instance
   * @retval polling interval
@@ -485,14 +486,14 @@ uint32_t USBD_HID_GetPollingInterval(USBD_HandleTypeDef *pdev)
     /* HIGH-speed endpoints */
     if (pdev->dev_speed == USBD_SPEED_HIGH)
     {
-        /* Sets the data transfer polling interval for high speed transfers. 
-    Values between 1..16 are allowed. Values correspond to interval 
+        /* Sets the data transfer polling interval for high speed transfers.
+    Values between 1..16 are allowed. Values correspond to interval
     of 2 ^ (bInterval-1). This option (8 ms, corresponds to HID_HS_BINTERVAL */
         polling_interval = (((1 << (HID_HS_BINTERVAL - 1))) / 8);
     }
     else /* LOW and FULL-speed endpoints */
     {
-        /* Sets the data transfer polling interval for low and full 
+        /* Sets the data transfer polling interval for low and full
     speed transfers */
         polling_interval = HID_FS_BINTERVAL;
     }

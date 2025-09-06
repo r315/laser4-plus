@@ -124,7 +124,12 @@ $(APP_PATH)/game_controller.c \
 C_SOURCES = \
 $(TARGET_SOURCES) \
 $(APP_SOURCES) \
-$(USB_DEVICE_SOURCES) \
+
+
+ifneq ($(filter ENABLE_VCP, $(FEATURES)),)
+C_SOURCES += \
+$(USB_DEVICE_SOURCES)
+endif
 
 # CPP sources
 CPP_SOURCES += \
@@ -202,8 +207,8 @@ endif
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -fdata-sections -ffunction-sections
-CFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OPT) -fdata-sections -ffunction-sections -std=gnu11
-CPPFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OPT) -fdata-sections -ffunction-sections -fno-unwind-tables -fno-exceptions -fno-rtti
+CFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OPT) -fdata-sections -ffunction-sections -fno-builtin -std=gnu11
+CPPFLAGS = $(MCU) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) $(OPT) -fdata-sections -ffunction-sections -fno-unwind-tables -fno-exceptions -fno-rtti -fno-builtin
 
 # Generate dependency information
 #CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst))
