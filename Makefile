@@ -20,7 +20,7 @@ l4p-program:
 	@"$(MAKE)" -C target/laser4_plus PROJECT_DIR=$(CURDIR) XTAL=HSE12MHZ program
 
 bp-program:
-	@"$(MAKE)" -C target/laser4_plus PROJECT_DIR=$(CURDIR) TARGET=bp BOARD=BOARD_BLUEPILL program
+	@"$(MAKE)" -C target/laser4_plus PROJECT_DIR=$(CURDIR) TARGET=bp BOARD=BOARD_BLUEPILL jlink-program
 
 l4p-release:
 	@"$(MAKE)" -C target/laser4_plus PROJECT_DIR=$(CURDIR) XTAL=HSE12MHZ dfu
@@ -29,7 +29,7 @@ bp-release:
 	@"$(MAKE)" -C target/laser4_plus PROJECT_DIR=$(CURDIR) TARGET=bp BOARD=BOARD_BLUEPILL dfu
 
 l4p-bootloader:
-	@$(MAKE) -B -C lib/stm32-dfu-bootloader CONFIG="-DENABLE_CUSTOM_DFU_BOOT -DENABLE_SAFEWRITE -DENABLE_CHECKSUM" HSE=HSE12MHZ bin
+	@$(MAKE) -B -C lib/stm32-dfu-bootloader CONFIG="-DENABLE_CUSTOM_DFU_BOOT -DENABLE_SAFEWRITE -DENABLE_CHECKSUM -DHSE12MHZ" bin
 
 bp-bootloader:
 	@$(MAKE) -B -C lib/stm32-dfu-bootloader bin
