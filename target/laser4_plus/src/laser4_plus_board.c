@@ -156,7 +156,10 @@ static void laser4Init(void)
 
 #ifdef ENABLE_DISPLAY
     i2cInit(&drvlcdi2c.i2cdev);
+    drvlcdi2c.w = DISPLAY_W;
+    drvlcdi2c.h = DISPLAY_H;
     drvlcd.init(&drvlcdi2c);
+    drvlcd.setOrientation(LCD_REVERSE_LANDSCAPE);
 #endif
 }
 

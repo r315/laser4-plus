@@ -301,7 +301,8 @@ extern stdinout_t pcom;
 #endif
 
 #ifdef ENABLE_DISPLAY
-
+#define DISPLAY_W       128
+#define DISPLAY_H       32
 void i2cWriteBlock(uint16_t address, uint8_t *data, uint16_t size);
 uint8_t requestLcdUpdate(void);
 #endif
