@@ -200,7 +200,10 @@ public:
 #ifdef ENABLE_BATTERY_MONITOR
         console->println("\n  Battery");
         console->println("----------------------------------------");
-        console->printf("Voltage          : %umV\n", batteryGetVoltage());
+        vires_t batsoc;
+        batteryReadVI(&batsoc);
+        console->printf("Voltage          : %umV\n", batsoc.vbat);
+        console->printf("Current          : %umA\n", batsoc.cur);
 #endif
 
         console->println("\n  Channel data");
