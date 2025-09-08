@@ -1,9 +1,11 @@
 
 norule:
-	@echo "specify board"
 	@echo "Available boards:"
-	@echo "	l4p - Laser4 plus"
-	@echo "	bp  - bluepill"
+	@echo "	l4p, Laser4 plus"
+	@echo "	bp,  bluepill"
+	@echo "Build options"
+	@echo "	<board>-bootloader, Build DFU bootloader "
+	@echo "	<board>-release, Build dfu image"
 
 all: lp4-release
 
@@ -24,9 +26,11 @@ bp-program:
 
 l4p-release:
 	@"$(MAKE)" -C target/laser4_plus PROJECT_DIR=$(CURDIR) XTAL=HSE12MHZ dfu
+	py lib/stm32-dfu-bootloader/bin2dfu.py build/l4p/l4p.dfu build/l4p/l4p.bin 0x8001000
 
 bp-release:
 	@"$(MAKE)" -C target/laser4_plus PROJECT_DIR=$(CURDIR) TARGET=bp BOARD=BOARD_BLUEPILL dfu
+	py lib/stm32-dfu-bootloader/bin2dfu.py build/bp/bp.dfu build/bp/bp.bin 0x8001000
 
 l4p-bootloader:
 	@$(MAKE) -B -C lib/stm32-dfu-bootloader CONFIG="-DENABLE_CUSTOM_DFU_BOOT -DENABLE_SAFEWRITE -DENABLE_CHECKSUM -DHSE12MHZ" bin
