@@ -96,18 +96,16 @@ void multiprotocol_setup(void)
     DBG_MULTI_INF("Module Id: %lx", radio.protocol_id_master);
 
 #ifdef ENABLE_PPM
-    // Setup callback for ppm frame ready
-    ppm_init(radio.channel_data, multiprotocol_channel_data_ready);
-
+    // Setup callback for ppm frame ready, and get pointer to ppm data
+    radio.ppm_data = ppm_init(multiprotocol_channel_data_ready);
     radio.chan_order = 0;
-    uint8_t bank = HW_BANK_SWITCH;
 
     if(radio.mode_select != MODE_SERIAL)
     { // PPM
         #ifdef MY_PPM_PROT
-            const PPM_Parameters *PPM_prot_line = &My_PPM_prot[ bank * 14 + radio.mode_select -1];
+            const PPM_Parameters *PPM_prot_line = &My_PPM_prot[HW_BANK_SWITCH * 14 + radio.mode_select -1];
         #else
-            const PPM_Parameters *PPM_prot_line = &PPM_prot[bank * 14 + radio.mode_select - 1];
+            const PPM_Parameters *PPM_prot_line = &PPM_prot[HW_BANK_SWITCH * 14 + radio.mode_select - 1];
         #endif
 
         radio.protocol          = PPM_prot_line->protocol;

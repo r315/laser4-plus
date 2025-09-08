@@ -273,9 +273,9 @@ enum WK2x01 {
 struct PPM_Parameters
 {
         uint8_t protocol;
-        uint8_t sub_proto    : 3;
-        uint8_t rx_num        : 6;
-        uint8_t power        : 1;
+        uint8_t sub_proto   : 3;
+        uint8_t rx_num      : 6;
+        uint8_t power       : 1;
         uint8_t autobind    : 1;
         int8_t option;
         uint32_t chan_order;
@@ -365,10 +365,11 @@ void multiprotocol_mode_set(uint8_t mode);
 
 int16_t map16b(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max);
 
-void ppm_init(uint16_t *ppmdata, void(*cb)(void));
+const uint16_t *ppm_init(void(*cb)(void));
 uint16_t ppm_tx(struct radio *radio);
 uint8_t ppm_nchannel_get(void);
 void ppm_sim_handler(void);
+void ppm_sim_set_channel_data(uint8_t ch, uint16_t data);
 
 #ifdef __cplusplus
 }

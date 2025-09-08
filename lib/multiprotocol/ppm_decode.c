@@ -10,7 +10,7 @@ static uint16_t prev_tick;
  * using 0.5us units give more precision when maping to servo data.
  * Because of this it makes sense for making ppm_data static here
  */
-static uint16_t *ppm_data;
+static uint16_t ppm_data[MIN_PPM_CHANNELS];
 static void (*ppm_frame_ready)(void);
 
 /**
@@ -70,19 +70,20 @@ RAM_CODE static void ppm_handler(void){
  *
  * @param cb : callback function
  *
+ * @return pointer to captured ppm ddata
  * */
-void ppm_init(uint16_t *ppmdata, void(*cb)(void)){
-    if(cb == NULL || ppmdata == NULL){
-        return;
+const uint16_t *ppm_init(void(*cb)(void))
+{
+    if(cb != NULL){
+        gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);
+        ppm_frame_ready = cb;
+        prev_tick = 0;
+        chan = 0;
+        nch = 0;
+        bad_frame = 1;
+        gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, ppm_handler);
     }
-    gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);
-    ppm_frame_ready = cb;
-    ppm_data = ppm_data;
-    prev_tick = 0;
-    chan = 0;
-    nch = 0;
-    bad_frame = 1;
-    gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, ppm_handler);
+    return ppm_data;
 }
 
 void ppm_sim_handler(void)
@@ -90,6 +91,13 @@ void ppm_sim_handler(void)
     if(ppm_frame_ready){
         nch = MIN_PPM_CHANNELS;
         ppm_frame_ready();
+    }
+}
+
+void ppm_sim_set_channel_data(uint8_t ch, uint16_t data)
+{
+    if(ch < MAX_PPM_CHANNELS){
+        ppm_data[ch] = data;
     }
 }
 #endif
