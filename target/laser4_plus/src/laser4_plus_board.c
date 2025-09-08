@@ -69,7 +69,6 @@ static I2C_HandleTypeDef hi2c2;
 static drvlcdi2c_t drvlcdi2c;
 static volatile uint8_t lcd_busy;
 const uint8_t APBPrescTable[8U] =  {0, 0, 0, 0, 1, 2, 3, 4};
-#define drvlcd ssd13xx_drv
 static void i2cInit(i2cbus_t *i2cbus);
 #endif
 
@@ -158,8 +157,9 @@ static void laser4Init(void)
     i2cInit(&drvlcdi2c.i2cdev);
     drvlcdi2c.w = DISPLAY_W;
     drvlcdi2c.h = DISPLAY_H;
-    drvlcd.init(&drvlcdi2c);
-    drvlcd.setOrientation(LCD_REVERSE_LANDSCAPE);
+    LCD_Init(&drvlcdi2c);
+    LCD_SetComPin(0);   // This display does not interleave rows
+    LCD_SetOrientation(LCD_REVERSE_LANDSCAPE);
 #endif
 }
 
@@ -840,7 +840,7 @@ uint32_t batteryReadCurrent(uint32_t *dst){
 }
 
 /**
- * @brief Read current consumption and vattery voltage, if measurement is ready, starts a new
+ * @brief Read current consumption and battery voltage, if measurement is ready, starts a new
  * conversion and return the last measured value. If a measurement is not available return
  *
  * @param dst : Pointer to place measured value
