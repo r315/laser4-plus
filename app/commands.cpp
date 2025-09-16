@@ -8,16 +8,6 @@
 
 #ifdef ENABLE_CLI
 
-static char *getOptValue(const char *opt, uint32_t argc, char **argv)
-{
-    for(uint32_t i = 0; i < argc; i++){
-        if(xstrcmp(opt, argv[i]) == 0){
-            return argv[i + 1];
-        }
-    }
-    return NULL;
-}
-
 static class CmdHelp : public ConsoleCommand {
 	Console *console;
 public:
@@ -88,7 +78,6 @@ public:
 	}
 
 	char execute(int argc, char **argv) {
-        char *param;
         uint32_t value;
 
 		if(argc == 1 || !xstrcmp(argv[1], "help")){
@@ -115,28 +104,25 @@ public:
 			return reset();
 		}
 
-		if((param = getOptValue("rr", argc, argv)) != NULL){
-			if(ha2u(param, &value)){
+		if(!xstrcmp(argv[1], "rr")){
+			if(ha2u(argv[2], &value)){
 				return readRegister(value & 255);
 			}
 		}
 
-		if((param = getOptValue("rs", argc, argv)) != NULL){
-			if(ha2u(param, &value)){
+		if(!xstrcmp(argv[1], "rs")){
+			if(ha2u(argv[2], &value)){
 				console->printf("Status [0x%02x] = %x\n", value, CC2500_ReadStatus(value & 255));
 				return CMD_OK;
 			}
 		}
 
-		if((param = getOptValue("wr", argc, argv)) != NULL){
+		if(!xstrcmp(argv[1], "wr")){
 			uint32_t reg, val;
-			if(nextHex(&param, &reg)){
-				param++; // skip string terminator
-				if(nextHex(&param, &val)){
-					CC2500_WriteReg(reg, val);
-					return CMD_OK;
-				}
-			}
+			if(ha2u(argv[2], &reg) && ha2u(argv[3], &val)){
+                CC2500_WriteReg(reg, val);
+                return CMD_OK;
+            }
 		}
 
         return CMD_BAD_PARAM;
@@ -450,77 +436,58 @@ class CmdAdc : public ConsoleCommand {
 public:
     CmdAdc() : ConsoleCommand("adc") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
+
 	void help(void) {
-		console->println("usage: adc [ calibrate | -div | -rs ]");
-		console->println("\t calibrate  Adc calibration based on internal voltage reference");
-        console->println("\t-div <racio> : Battery voltage divider racio");
-		console->println("\t-rs <resistor> Sense resistor");
-	}
-
-	int readFloatParameter(const char *opt, uint32_t argc, char **argv, uint16_t *dst, void (*func)(float)){
-		f2u_u t;
-		char *param = getOptValue(opt, argc, argv);
-		double d;
-
-		if(param == NULL){
-			return CMD_NOT_FOUND;
-		}
-
-		if(nextDouble(&param, &d) == 0){
-			return CMD_BAD_PARAM;
-		}
-
-		t.f = d;
-		*dst = (uint16_t)t.u;
-		*(dst + 1) = (uint16_t)(t.u>>16);
-		func(t.f);
-
-		return CMD_OK;
-	}
-
-	void batVoltageCalibration(void){
-		console->printf("Bat voltage divider \t%.3f\n", adcGetVdivRacio());
-	}
-
-	void adcResolution(void){
-		console->printf("Adc resolution  \t%.3fmV/step\n", adcGetResolution());
-	}
-
-	void current(void){
-		console->printf("Current  \t\t%umA\n", batteryGetCurrent());
-	}
-
-	void senseResistor(void){
-		console->printf("Sense resistor  \t%.3f Ohm\n", adcGetSenseResistor());
+		console->println("usage: adc [ calibrate | div | rs ]");
+		console->println("\tcalibrate,  Adc calibration based on internal voltage reference");
+        console->println("\tdiv <racio>, Battery voltage divider racio");
+		console->println("\trs <resistor>, Sense resistor");
 	}
 
 	char execute(int argc, char **argv) {
+        f2u_u t;
+        double d;
+
 		if(argc < 2){
-			batVoltageCalibration();
-			adcResolution();
-			current();
-			senseResistor();
+			console->printf("Bat voltage divider \t%.3f\n", adcGetVdivRacio());
+			console->printf("Adc resolution  \t%.3fmV/step\n", adcGetResolution());
+			console->printf("Current  \t\t%umA\n", batteryGetCurrent());
+			console->printf("Sense resistor  \t%.3f Ohm\n", adcGetSenseResistor());
 			return CMD_OK;
 		}
 
-		if(xstrcmp(argv[0],"help") == 0){
+		if(!xstrcmp(argv[1],"help")){
 			help();
 			return CMD_OK;
 		}
 
-		if(xstrcmp(argv[0],"calibrate") == 0){
+		if(!xstrcmp(argv[1],"calibrate")){
 			if(adcCalibrate()){
-				adcResolution();
+				console->printf("Adc resolution  \t%.3fmV/step\n", adcGetResolution());
 			}else{
 				console->print("Fail to calibrate adc\n");
 			}
 			return CMD_OK;
 		}
 
-		if(readFloatParameter("-div", argc, argv, (uint16_t*)&eeprom->vdiv, adcSetVdivRacio) == CMD_OK)
-			return CMD_OK;
-		if(readFloatParameter("-rs", argc, argv, (uint16_t*)&eeprom->rsense, adcSetSenseResistor) == CMD_OK)
-			return CMD_OK;
+        if(!xstrcmp(argv[1], "div")){
+            if(da2d(argv[2], &d)){
+		        t.f = d;
+                eeprom->vdiv = t.u;
+		        adcSetVdivRacio(t.f);
+                return CMD_OK;
+            }
+        }
+
+        if(!xstrcmp(argv[1], "rs")){
+            if(da2d(argv[2], &d)){
+		        t.f = d;
+                eeprom->rsense = t.u;
+		        adcSetSenseResistor(t.f);
+                return CMD_OK;
+            }
+        }
+
 		return CMD_BAD_PARAM;
 	}
 }cmdadc;
@@ -540,7 +507,7 @@ public:
 		);
 	}
 	char execute(int argc, char **argv) {
-		char *param;
+        int32_t val;
 
 		if(argc < 1){
 			help();
@@ -548,24 +515,20 @@ public:
 			return CMD_OK;
 		}
 
-		if((param = getOptValue("vol", argc, argv)) != NULL){
-			int32_t val;
-			if(nextInt(&param, &val)){
+		if(!xstrcmp(argv[1], "vol")){
+			if(ia2i(argv[2], &val)){
 				console->printf("Current level %u\n", buzSetLevel(val));
 				eeprom->buz_vol = val&255;
 				return CMD_OK;
 			}
 		}
 
-		if((param = getOptValue("freq",argc,argv)) != NULL){
+		if(!xstrcmp(argv[1], "freq")){
 			int32_t freq, duration;
-			if(nextInt(&param, &freq)){
-				param++; // skip string terminator
-				if(nextInt(&param, &duration)){
-					buzPlayTone(freq, duration);
-					return CMD_OK;
-				}
-			}
+			if(ia2i(argv[2], &freq) && ia2i(argv[3], &duration)){
+                buzPlayTone(freq, duration);
+                return CMD_OK;
+            }
 			return CMD_OK;
 		}
 
