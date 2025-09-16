@@ -431,7 +431,7 @@ public:
 		}
 
         if(xstrcmp(argv[1],"load") == 0){
-			appLoadEEPROM();
+			appInitEEPROM();
 			return CMD_OK;
 		}
 

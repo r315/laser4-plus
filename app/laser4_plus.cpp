@@ -499,17 +499,20 @@ void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel)
 }
 
 /**
- * @brief
+ * @brief Loads eeprom data from board eeprom/flash to
+ * application eeprom data structure and check if data
+ * is valid using crc.
  *
- * @param defaults      Default values in case if eeprom failure
- * @param size          Number of bytes on eeprom
- * @return              Pointer to eeprom data bytes
+ * If loaded data is somehow corrupted, default data is
+ * then loaded
+ *
  */
-static uint32_t eepromInit(void)
+void appInitEEPROM(void)
 {
     uint8_t crc;
-
-    appLoadEEPROM();
+    // Get pointer to eeprom bytes, EEPROM_Init
+    // always returns valid pointer
+    eeprom = (meep_t*)EEPROM_Init(sizeof(meep_t));
 
     crc = crc8((uint8_t*)eeprom, sizeof(meep_t) - 1);
 
@@ -520,27 +523,12 @@ static uint32_t eepromInit(void)
         appDefaultEEPROM();
         DBG_APP_INF("EEPROM defaults loaded");
     }
-
-    return sizeof(meep_t);
-}
-
-/**
- * @brief
- * @param
- */
-void appLoadEEPROM(void)
-{
-    eeprom = (meep_t*)EEPROM_Init(sizeof(meep_t));
-
-    if(!eeprom){
-        DBG_APP_ERR("Error reading EEPROM");
-    }
 }
 
 /**
  * @brief Save the ram eeprom content to flash memory
- * Note: In order to save eeprom
- *
+ * eeprom structure mustbe packed, CRC is added before
+ * saving eeprom
  * */
 void appSaveEEPROM(void)
 {
@@ -609,7 +597,7 @@ extern "C" void setup(void)
     con.cls();
 #endif
     // Load eeprom data
-    eepromInit();
+    appInitEEPROM();
 #ifdef ENABLE_BUZZER
     // Set volume from stored value
     buzSetLevel(eeprom->buz_vol);
