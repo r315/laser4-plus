@@ -96,8 +96,8 @@ void multiprotocol_setup(void)
     DBG_MULTI_INF("Module Id: %lx", radio.protocol_id_master);
 
 #ifdef ENABLE_PPM
-    // Setup callback for ppm frame ready, and get pointer to ppm data
-    radio.ppm_data = ppm_init(multiprotocol_channel_data_ready);
+    // Setup callback for ppm frame ready
+    ppm_init(multiprotocol_channel_data_ready);
     radio.chan_order = 0;
 
     if(radio.mode_select != MODE_SERIAL)
@@ -199,7 +199,7 @@ static uint8_t Update_All(void)
                 // update servo data without interrupts to prevent bad read
                 uint16_t val;
                 cli();
-                val = radio.ppm_data[i];
+                val = ppm_value_get(i);
                 sei();
                 val = map16b(val,
                             eeprom->ppm_min_100,

@@ -37,6 +37,11 @@ uint8_t ppm_nchannel_get(void)
     return nch;
 }
 
+uint16_t ppm_value_get(uint8_t ch)
+{
+    return (ch < nch) ? ppm_data[ch] : 0;
+}
+
 /**
  * @brief  Interrupt handler for falling edge of ppm input pin
  * Channel data is obtained by measuring time between falling edges
@@ -72,7 +77,7 @@ RAM_CODE static void ppm_handler(void){
  *
  * @return pointer to captured ppm ddata
  * */
-const uint16_t *ppm_init(void(*cb)(void))
+void ppm_init(void(*cb)(void))
 {
     if(cb != NULL){
         gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);
@@ -83,7 +88,6 @@ const uint16_t *ppm_init(void(*cb)(void))
         bad_frame = 1;
         gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, ppm_handler);
     }
-    return ppm_data;
 }
 
 void ppm_sim_handler(void)

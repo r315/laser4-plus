@@ -326,7 +326,6 @@ typedef struct radio{
 
 #ifdef ENABLE_PPM
     // PPM variable
-    const uint16_t *ppm_data;
     uint8_t chan_order;
 #endif
 
@@ -365,9 +364,10 @@ void multiprotocol_mode_set(uint8_t mode);
 
 int16_t map16b(int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int16_t out_max);
 
-const uint16_t *ppm_init(void(*cb)(void));
+void ppm_init(void(*cb)(void));
 uint16_t ppm_tx(struct radio *radio);
 uint8_t ppm_nchannel_get(void);
+uint16_t ppm_value_get(uint8_t ch);
 void ppm_sim_handler(void);
 void ppm_sim_set_channel_data(uint8_t ch, uint16_t data);
 
