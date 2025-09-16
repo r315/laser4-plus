@@ -1206,7 +1206,8 @@ uint32_t xrand(void)
  */
 uint32_t cpuGetId(void)
 {
-    return *(uint32_t*)UID_BASE;
+    uint32_t *cpuid = (uint32_t*)UID_BASE;
+    return cpuid[0] ^ cpuid[1] ^ cpuid[2];
 }
 
 
