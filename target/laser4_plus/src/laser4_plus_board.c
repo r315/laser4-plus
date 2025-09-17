@@ -477,24 +477,86 @@ uint32_t HAL_GetTick(void)
 }
 
 /**
+ * @brief Unlock the FLASH control register access
+ *
+ * @return 1: success, 0: otherwise
+ */
+static uint8_t flashUnlock(void)
+{
+    if(FLASH->CR & FLASH_CR_LOCK){
+        FLASH->KEYR = FLASH_KEY1;
+        FLASH->KEYR = FLASH_KEY2;
+    }
+    return !(FLASH->CR & FLASH_CR_LOCK);
+}
+
+/**
+ * @brief Lock the FLASH control register access
+ *
+ */
+static void flashLock(void)
+{
+    FLASH->CR = FLASH_CR_LOCK;
+}
+
+/**
+ * @brief Wait for flash operation to end
+ *
+ * @return 1: operation done, 0: timeout
+ */
+static uint8_t flashWaitBusy(void)
+{
+    uint32_t tickstart;
+    uint32_t Timeout = 50000;
+    tickstart = systicks;
+
+    while(FLASH->SR & FLASH_FLAG_BSY) {
+        if((systicks - tickstart) > Timeout) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+/**
+  * @brief  Program halfword (16-bit) at a specified address
+  * @note   The function flashUnlock() should be called before to unlock the FLASH interface
+  *         The function flashLock() should be called after to lock the FLASH interface
+  *
+  * @note   If an erase and a program operations are requested simultaneously,
+  *         the erase operation is performed before the program one.
+  *
+  * @note   FLASH should be previously erased before new programmation (only exception to this
+  *         is when 0x0000 is programmed)
+  *
+  * @param  Address:      Specifies the address to be programmed.
+  * @param  Data:         Specifies the data to be programmed
+  *
+  * @return 1: success, 0: timeout
+  */
+ static uint8_t flashProgramHalfWord(uint32_t Address, uint16_t Data)
+ {
+    FLASH->CR |= FLASH_CR_PG;
+    *(__IO uint16_t*)Address = Data;
+
+    return flashWaitBusy();
+ }
+/**
  * @brief Flash write functions for EEPROM emulation
  */
 static void flashWrite(uint32_t address, const uint8_t *data, uint32_t count)
 {
     uint16_t *psrc = (uint16_t*)data;
 
-    HAL_StatusTypeDef res = HAL_FLASH_Unlock();
-
-    if( res == HAL_OK){
+    if(flashUnlock()){
         for (uint16_t i = 0; i < count; i+= 2, psrc++){
-            res = HAL_FLASH_Program(FLASH_TYPEPROGRAM_HALFWORD, address + i, *psrc);
-            if(res != HAL_OK){
+            if(!flashProgramHalfWord(address + i, *psrc)){
                 break;
             }
         }
     }
 
-    HAL_FLASH_Lock();
+    flashLock();
 }
 
 /**
@@ -505,17 +567,18 @@ static void flashWrite(uint32_t address, const uint8_t *data, uint32_t count)
  * */
 void flashPageErase(uint32_t address)
 {
-    uint32_t res;
-    extern void FLASH_PageErase(uint32_t PageAddress);
-
-    res = HAL_FLASH_Unlock();
-
-    if( res == HAL_OK){
-        FLASH_PageErase(address);
+    if(flashUnlock()){
+        /* Proceed to erase the page */
+        FLASH->CR |= FLASH_CR_PER;
+        FLASH->AR = address;
+        FLASH->CR |= FLASH_CR_STRT;
     }
+
+    flashWaitBusy();
+
     FLASH->CR = 0;
 
-    HAL_FLASH_Lock();
+    flashLock();
 }
 
 void flashRead (uint32_t addr, uint8_t *dst, uint32_t len)
