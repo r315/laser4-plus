@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
-#include "stm32f1xx_hal.h"
+#include "stm32f1xx.h"
 #include "stdinout.h"
 #include "tone.h"
 #include "nvdata.h"
@@ -179,7 +179,6 @@ extern "C" {
 
 /* General symbols */
 #define RAM_CODE                __attribute__((section(".ram_code")))
-#define millis                  HAL_GetTick
 #define cli                     __disable_irq
 #define sei                     __enable_irq
 
@@ -237,6 +236,7 @@ uint16_t ticksIsIntervalTimedout(void);
 
 /* Generic delay function */
 void DelayMs(uint32_t ms);
+uint32_t millis(void);
 
 /* Software timers */
 uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void));
@@ -303,8 +303,6 @@ extern stdinout_t pcom;
 #ifdef ENABLE_DISPLAY
 #define DISPLAY_W       128
 #define DISPLAY_H       32
-void i2cWriteBlock(uint16_t address, uint8_t *data, uint16_t size);
-uint8_t requestLcdUpdate(void);
 #endif
 
 #ifdef __cplusplus

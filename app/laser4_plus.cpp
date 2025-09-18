@@ -689,12 +689,12 @@ extern "C" void loop(void)
     processTimer();
 
 #ifdef ENABLE_DISPLAY
-    if(IS_LCD_UPDATE){
-        if(requestLcdUpdate()){
-            CLR_LCD_UPDATE;
-        }
+   if(IS_LCD_UPDATE){
+        LCD_Update();
+        CLR_LCD_UPDATE;
     }
 #endif
+
     reloadWatchDog();
 }
 

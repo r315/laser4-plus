@@ -1,7 +1,7 @@
 
 #include "board.h"
 #include "nvdata.h"
-#include "stm32f1xx_hal.h"
+#include "stm32f1xx.h"
 #include "dma_stm32f1xx.h"
 #include "tone_stm32f1xx.h"
 #include "gpio_stm32f1xx.h"
@@ -63,15 +63,11 @@ static void adcInit(void);
 #endif
 
 #ifdef ENABLE_DISPLAY
-static I2C_HandleTypeDef hi2c2;
 static drvlcdi2c_t drvlcdi2c;
-static volatile uint8_t lcd_busy;
-static void i2cInit(i2cbus_t *i2cbus);
 #endif
 
 #ifdef CC2500_INSTALLED
 static spibus_t hspi;
-static void spiInit(void);
 #endif
 
 #ifdef ENABLE_AUX_ENCODER
@@ -115,7 +111,17 @@ static void laser4Init(void)
 
 #ifdef CC2500_INSTALLED
     CC25_CS_INIT;
-    spiInit();
+
+    hspi.bus = SPI_BUS1;
+    hspi.freq = 4000;
+    hspi.cfg = SPI_MODE0;
+
+    if (SPI_Init(&hspi) != SPI_OK){
+        DBG_BOARD_ERR("SPI Init fail");
+    }else{
+        SPI_PINS_INIT;
+    }
+
 #endif
 
 #ifdef ENABLE_BATTERY_MONITOR
@@ -152,12 +158,22 @@ static void laser4Init(void)
 #endif
 
 #ifdef ENABLE_DISPLAY
-    i2cInit(&drvlcdi2c.i2cdev);
-    drvlcdi2c.w = DISPLAY_W;
-    drvlcdi2c.h = DISPLAY_H;
-    LCD_Init(&drvlcdi2c);
-    LCD_SetComPin(0);   // This display does not interleave rows
-    LCD_SetOrientation(LCD_REVERSE_LANDSCAPE);
+    drvlcdi2c.i2cdev.addr = 0;
+    drvlcdi2c.i2cdev.speed = 100;
+    drvlcdi2c.i2cdev.bus_num = I2C_BUS1;
+
+    if (I2C_Init(&drvlcdi2c.i2cdev) != I2C_OK){
+        DBG_BOARD_ERR("I2C Init fail");
+    }else{
+        gpioInit(GPIOB, 10, GPO_MS_AF_OD);
+        gpioInit(GPIOB, 11, GPO_MS_AF_OD);
+
+        drvlcdi2c.w = DISPLAY_W;
+        drvlcdi2c.h = DISPLAY_H;
+        LCD_Init(&drvlcdi2c);
+        LCD_SetComPin(0);   // This display does not interleave rows
+        LCD_SetOrientation(LCD_REVERSE_LANDSCAPE);
+    }
 #endif
 }
 
@@ -230,141 +246,6 @@ uint8_t SPI_Read(void)
     uint8_t data = 0xFF;
     return SPI_Xchg(&hspi, &data);
 }
-/**
- *
- */
-static void spiInit()
-{
-    hspi.bus = SPI_BUS1;
-    hspi.freq = 4000;
-    hspi.cfg = SPI_MODE0;
-
-    if (SPI_Init(&hspi) != SPI_OK){
-        DBG_BOARD_ERR("SPI Init fail");
-        return;
-    }
-
-    SPI_PINS_INIT;
-}
-#endif
-
-#ifdef ENABLE_DISPLAY
-/**
-  * @brief I2C2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void i2cInit(i2cbus_t *i2cbus)
-{
-    hi2c2.Instance = I2C2;
-    hi2c2.Init.ClockSpeed = 100000;
-    hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
-    hi2c2.Init.OwnAddress1 = 0;
-    hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-    hi2c2.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-    hi2c2.Init.OwnAddress2 = 0;
-    hi2c2.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-    hi2c2.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-
-    if(HAL_I2C_Init(&hi2c2) != HAL_OK) {
-        DBG_BOARD_ERR("I2C Init fail");
-    }
-
-    i2cbus->addr = hi2c2.Init.OwnAddress1;
-    i2cbus->peripheral = &hi2c2;
-    i2cbus->speed = hi2c2.Init.ClockSpeed;
-    i2cbus->bus_num = I2C_BUS1;
-}
-
-// TODO: Remove
-uint32_t HAL_RCC_GetPCLK1Freq(void)
-{
-  return (SystemCoreClock >> APBPrescTable[(RCC->CFGR & RCC_CFGR_PPRE1) >> RCC_CFGR_PPRE1_Pos]);
-}
-
-/**
-* @brief I2C MSP Initialization
-* This function configures the hardware resources used in this example
-* PB10     ------> I2C2_SCL
-* PB11     ------> I2C2_SDA
-* @param hi2c: I2C handle pointer
-* @retval None
-*/
-void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
-{
-    (void)hi2c;
-    __HAL_RCC_GPIOB_CLK_ENABLE();
-    gpioInit(GPIOB, 10, GPO_MS_AF_OD);
-    gpioInit(GPIOB, 11, GPO_MS_AF_OD);
-    __HAL_RCC_I2C2_CLK_ENABLE();
-    NVIC_SetPriority(I2C2_EV_IRQn, 10);
-    NVIC_EnableIRQ(I2C2_EV_IRQn);
-    NVIC_SetPriority(I2C2_ER_IRQn, 10);
-    NVIC_EnableIRQ(I2C2_ER_IRQn);
-}
-
-void I2C2_EV_IRQHandler(void)
-{
-    HAL_I2C_EV_IRQHandler(&hi2c2);
-}
-
-void I2C2_ER_IRQHandler(void)
-{
-    HAL_I2C_ER_IRQHandler(&hi2c2);
-}
-
-void HAL_I2C_MasterTxCpltCallback(I2C_HandleTypeDef *hi2c)
-{
-    (void)hi2c;
-    lcd_busy = 0;
-}
-
-void i2cWriteBlock(uint16_t address, uint8_t *data, uint16_t size)
-{
-#if 0
-    uint32_t retry = 100;
-    while(retry--){
-        if(HAL_I2C_Master_Transmit_IT(&hi2c2, address << 1, data, size) == HAL_OK){
-            break;
-        }
-    }
-#else
-    if(lcd_busy == 0){
-        lcd_busy = 1;
-        HAL_I2C_Master_Transmit_IT(&hi2c2, address << 1, data, size);
-    }
-#endif
-}
-
-uint16_t I2C_Write(i2cbus_t *i2c, uint8_t addr, const uint8_t *data, uint16_t size)
-{
-    HAL_I2C_Master_Transmit((I2C_HandleTypeDef*)i2c->peripheral, addr << 1, (uint8_t*)data, size, 100);
-    return size;
-}
-
-uint16_t I2C_Read(i2cbus_t *i2c, uint8_t addr, uint8_t *data, uint16_t size)
-{
-    // Not used
-    (void)i2c;
-    (void)addr;
-    (void)data;
-
-    return size;
-}
-
-/**
- * @brief request lcd update
- * @return : 0 if lcd is busy, otherwise success
- * */
-uint8_t requestLcdUpdate(void)
-{
-    if(!lcd_busy){
-        LCD_Update();
-        return 1;
-    }
-    return 0;
-}
-
 #endif
 
 /**
@@ -460,7 +341,7 @@ void DelayMs(uint32_t ms)
     while(systicks < timeout){ }
 }
 
-uint32_t HAL_GetTick(void)
+uint32_t millis(void)
 {
     return systicks;
 }
@@ -499,7 +380,7 @@ static uint8_t flashWaitBusy(void)
     uint32_t Timeout = 50000;
     tickstart = systicks;
 
-    while(FLASH->SR & FLASH_FLAG_BSY) {
+    while(FLASH->SR & FLASH_SR_BSY) {
         if((systicks - tickstart) > Timeout) {
             return 0;
         }
@@ -1262,7 +1143,6 @@ uint32_t cpuGetId(void)
     return cpuid[0] ^ cpuid[1] ^ cpuid[2];
 }
 
-
 /**
  * @brief Interrupts handlers
  * */
@@ -1271,20 +1151,23 @@ uint32_t cpuGetId(void)
   * @param  none
   * @retval None
   */
-void USB_LP_CAN1_RX0_IRQHandler(void){
+void USB_LP_CAN1_RX0_IRQHandler(void)
+{
 #if defined(ENABLE_VCP) || defined(ENABLE_GAME_CONTROLLER)
-    HAL_PCD_IRQHandler(&hpcd_USB_FS);
+    //HAL_PCD_IRQHandler(&hpcd_USB_FS);
 #endif
 }
 
-void EXTI9_5_IRQHandler(void){
-uint32_t pr = EXTI->PR;
+void EXTI9_5_IRQHandler(void)
+{
+    uint32_t pr = EXTI->PR;
     if((pr & EXTI_PR_PR5) != 0){
         gpio_int_handler();
     }
     EXTI->PR = pr;
 }
 
-void SysTick_Handler(void){
+void SysTick_Handler(void)
+{
     systicks++;
 }
