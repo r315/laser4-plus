@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "stm32f1xx_hal.h"
+#include "stm32f1xx.h"
 
 #define WEAK __attribute__((weak))
 #define NAKED __attribute__((naked, aligned(8)))

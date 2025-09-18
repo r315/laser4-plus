@@ -10,6 +10,7 @@
 #include "dma.h"
 #include "tone.h"
 #include "serial.h"
+#include "spi.h"
 
 #ifdef ENABLE_DEBUG_BOARD
 #define DBG_TAG     "[BOARD]: "
@@ -54,9 +55,6 @@ extern void setup(void);
 extern void loop(void);
 
 // Optional private varables and function prototypes
-#ifdef CC2500_INSTALLED
-static SPI_HandleTypeDef hspi;
-#endif
 
 #ifdef ENABLE_BATTERY_MONITOR
 static adc_t hadc;
@@ -68,11 +66,11 @@ static void adcInit(void);
 static I2C_HandleTypeDef hi2c2;
 static drvlcdi2c_t drvlcdi2c;
 static volatile uint8_t lcd_busy;
-const uint8_t APBPrescTable[8U] =  {0, 0, 0, 0, 1, 2, 3, 4};
 static void i2cInit(i2cbus_t *i2cbus);
 #endif
 
 #ifdef CC2500_INSTALLED
+static spibus_t hspi;
 static void spiInit(void);
 #endif
 
@@ -224,36 +222,26 @@ void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin)
 #ifdef CC2500_INSTALLED
 void SPI_Write(uint8_t data)
 {
-    HAL_SPI_Transmit(&hspi, &data, 1, 10);
+    SPI_Xchg(&hspi, &data);
 }
 
 uint8_t SPI_Read(void)
 {
-    uint8_t data;
-    HAL_SPI_Receive(&hspi, &data, 1, 10);
-    return data;
+    uint8_t data = 0xFF;
+    return SPI_Xchg(&hspi, &data);
 }
 /**
  *
  */
 static void spiInit()
 {
-    __HAL_RCC_SPI2_CLK_ENABLE();
-    hspi.Instance = SPI2;
-    hspi.Init.Mode = SPI_MODE_MASTER;
-    hspi.Init.Direction = SPI_DIRECTION_2LINES;
-    hspi.Init.DataSize = SPI_DATASIZE_8BIT;
-    //hspi.Init.CLKPolarity = SPI_POLARITY_HIGH;
-    //hspi.Init.CLKPhase = SPI_PHASE_1EDGE;
-    hspi.Init.NSS = SPI_NSS_SOFT;
-    hspi.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
-    hspi.Init.FirstBit = SPI_FIRSTBIT_MSB;
-    hspi.Init.TIMode = SPI_TIMODE_DISABLE;
-    hspi.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
-    hspi.Init.CRCPolynomial = 10;
+    hspi.bus = SPI_BUS1;
+    hspi.freq = 4000;
+    hspi.cfg = SPI_MODE0;
 
-    if (HAL_SPI_Init(&hspi) != HAL_OK){
+    if (SPI_Init(&hspi) != SPI_OK){
         DBG_BOARD_ERR("SPI Init fail");
+        return;
     }
 
     SPI_PINS_INIT;
@@ -288,6 +276,7 @@ static void i2cInit(i2cbus_t *i2cbus)
     i2cbus->bus_num = I2C_BUS1;
 }
 
+// TODO: Remove
 uint32_t HAL_RCC_GetPCLK1Freq(void)
 {
   return (SystemCoreClock >> APBPrescTable[(RCC->CFGR & RCC_CFGR_PPRE1) >> RCC_CFGR_PPRE1_Pos]);
@@ -308,10 +297,10 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef *hi2c)
     gpioInit(GPIOB, 10, GPO_MS_AF_OD);
     gpioInit(GPIOB, 11, GPO_MS_AF_OD);
     __HAL_RCC_I2C2_CLK_ENABLE();
-    HAL_NVIC_SetPriority(I2C2_EV_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(I2C2_EV_IRQn);
-    HAL_NVIC_SetPriority(I2C2_ER_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(I2C2_ER_IRQn);
+    NVIC_SetPriority(I2C2_EV_IRQn, 10);
+    NVIC_EnableIRQ(I2C2_EV_IRQn);
+    NVIC_SetPriority(I2C2_ER_IRQn, 10);
+    NVIC_EnableIRQ(I2C2_ER_IRQn);
 }
 
 void I2C2_EV_IRQHandler(void)

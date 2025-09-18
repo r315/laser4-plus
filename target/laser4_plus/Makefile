@@ -78,7 +78,6 @@ $(REPOSITORY)Drivers/CMSIS/Device/ST/STM32F1xx/Include \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Inc \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
 $(LIB_MULTIPROTOCOL_PATH) \
-#$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/HID/Inc \
 
 ######################################
 # source files
@@ -87,11 +86,8 @@ $(LIB_MULTIPROTOCOL_PATH) \
 TARGET_SOURCES =  \
 $(TARGET_PATH)/startup/startup_stm32f103.c \
 $(TARGET_PATH)/src/laser4_plus_board.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_i2c.c \
 $(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_dma.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_cortex.c \
-
 
 USB_DEVICE_SOURCES += \
 $(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
@@ -116,6 +112,8 @@ $(LIBEMB_PATH)/drv/uart/uart_stm32f10x.c \
 $(LIBEMB_PATH)/drv/dma/dma_stm32f1xx.c \
 $(LIBEMB_PATH)/drv/tone/tone_stm32f1xx.c \
 $(LIBEMB_PATH)/drv/gpio/gpio_stm32f1xx.c \
+$(LIBEMB_PATH)/drv/clock/clock_stm32f1xx.c \
+$(LIBEMB_PATH)/drv/spi/spi_stm32f1xx.c \
 $(LIBEMB_PATH)/component/display/ssd1306.c \
 $(LIBEMB_PATH)/component/display/font.c \
 $(APP_PATH)/game_controller.c \
@@ -126,8 +124,7 @@ $(APP_SOURCES) \
 
 
 ifneq ($(filter ENABLE_VCP, $(FEATURES)),)
-C_SOURCES += \
-$(USB_DEVICE_SOURCES)
+C_SOURCES += $(USB_DEVICE_SOURCES)
 endif
 
 # CPP sources
