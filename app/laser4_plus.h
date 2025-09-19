@@ -8,10 +8,6 @@ extern "C" {
 #include <stdint.h>
 #include "console.h"
 
-#ifdef ENABLE_VCP
-#include "usbd_cdc_if.h"
-#endif
-
 //Channel MIN MAX values
 #define CHANNEL_MAX_100         1844    // 100%
 #define CHANNEL_MIN_100         844     // 100%

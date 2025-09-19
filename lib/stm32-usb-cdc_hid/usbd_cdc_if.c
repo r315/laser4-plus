@@ -127,12 +127,12 @@ static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static int8_t CDC_Receive_FS  (uint8_t* pbuf, uint32_t *Len);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
-static int vcp_available(void)
+int vcp_available(void)
 {
     return fifo_avail(&vcom_rx_fifo);
 }
 
-static int vcp_read(char* data, int len){
+int vcp_read(char* data, int len){
     uint32_t count = len;
 
     while(count--){
@@ -143,7 +143,7 @@ static int vcp_read(char* data, int len){
     return len;
 }
 
-static int vcp_write(const char *data, int len){
+int vcp_write(const char *data, int len){
 uint32_t retries = 1000;
 	while(retries--){
 		if(	CDC_Transmit_FS((uint8_t*)data, len) == USBD_OK)
@@ -152,11 +152,6 @@ uint32_t retries = 1000;
     return 0;
 }
 
-stdinout_t vcp = {
-    .available = vcp_available,
-    .read = vcp_read,
-    .write = vcp_write
-};
 /* USER CODE END PRIVATE_FUNCTIONS_DECLARATION */
 
 /**

@@ -108,7 +108,6 @@ uint8_t USB_DEVICE_SendReport(uint8_t *report, uint16_t len)
     return USBD_HID_SendReport(&hUsbDeviceFS, report, len);
 }
 
-
 void USB_DEVICE_RegisterCallback(HAL_PCD_CallbackIDTypeDef id, void(*cb)(void*), void *ptr){
     switch(id){
         case HAL_PCD_SUSPEND_CB_ID:
@@ -127,6 +126,35 @@ void USB_DEVICE_RegisterCallback(HAL_PCD_CallbackIDTypeDef id, void(*cb)(void*),
     }
 }
 
+void USB_DEVICE_RegisterSuspendCallback(void(*cb)(void*), void *ptr)
+{
+    USB_DEVICE_RegisterCallback(HAL_PCD_SUSPEND_CB_ID, cb, ptr);
+}
+
+void USB_DEVICE_RegisterResumeCallback(void(*cb)(void*), void *ptr)
+{
+    USB_DEVICE_RegisterCallback(HAL_PCD_RESUME_CB_ID, cb, ptr);
+}
+
+int USB_DEVICE_VcpWrite(const char *data, int len)
+{
+    return vcp_write(data, len);
+}
+
+int USB_DEVICE_VcpRead(char* data, int len)
+{
+    return vcp_read(data, len);
+}
+
+int USB_DEVICE_VcpAvailable(void)
+{
+    return vcp_available();
+}
+
+void USB_DEVICE_Handler(void)
+{
+    HAL_PCD_IRQHandler(&hpcd_USB_FS);
+}
 
 static void DEVICE_SuspendCallback(PCD_HandleTypeDef *hpcd){
     USBD_LL_Suspend((USBD_HandleTypeDef*)hpcd->pData);

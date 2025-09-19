@@ -300,6 +300,10 @@ uint32_t auxGetSwitches(void);
 extern stdinout_t pcom;
 #endif
 
+#ifdef ENABLE_VCP
+extern stdinout_t vcp;
+#endif
+
 #ifdef ENABLE_DISPLAY
 #define DISPLAY_W       128
 #define DISPLAY_H       32

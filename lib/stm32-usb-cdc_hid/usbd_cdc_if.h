@@ -51,7 +51,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc.h"
 /* USER CODE BEGIN INCLUDE */
-#include "stdinout.h"
+
 /* USER CODE END INCLUDE */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -99,7 +99,7 @@
 extern USBD_CDC_ItfTypeDef  USBD_Interface_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-extern stdinout_t vcp;
+
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -112,6 +112,9 @@ extern stdinout_t vcp;
 uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
+int vcp_write(const char *data, int len);
+int vcp_read(char* data, int len);
+int vcp_available(void);
 /* USER CODE END EXPORTED_FUNCTIONS */
 /**
   * @}

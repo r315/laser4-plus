@@ -39,19 +39,10 @@ APP_PATH  :=$(PROJECT_DIR)/app
 TARGET_PATH =$(CURDIR)
 LIBEMB_PATH =$(PROJECT_DIR)/lib/libemb
 
-LIB_USB_CDC_PATH :=$(PROJECT_DIR)/lib/stm32-usb-cdc
-LIB_USB_HID_PATH :=$(PROJECT_DIR)/lib/stm32-usb-cdc_hid
+LIB_USB_PATH :=$(PROJECT_DIR)/lib/stm32-usb-cdc_hid
 LIB_DFU_PATH :=$(PROJECT_DIR)/lib/stm32-dfu-bootloader
 LIB_SERIAL_PATH :=$(CURPROJECT_DIRDIR)/lib/stm32-serial
 LIB_MULTIPROTOCOL_PATH :=$(PROJECT_DIR)/lib/multiprotocol
-
-FW :=STM32Cube_FW_F1_V1.8.2/
-
-ifeq ($(shell uname -s), Linux)
-REPOSITORY :=$(HOME)/STM32Cube/Repository/$(FW)
-else
-REPOSITORY :=C:/Users/hmr/STM32Cube/Repository/$(FW)
-endif
 
 ######################################
 # Include
@@ -64,19 +55,14 @@ AS_INCLUDES =
 C_INCLUDES =  \
 $(APP_PATH) \
 $(TARGET_PATH)/inc \
-$(LIB_USB_CDC_PATH) \
-$(LIB_USB_HID_PATH) \
+$(LIB_USB_PATH) \
 $(LIB_SERIAL_PATH) \
 $(LIB_DFU_PATH) \
 $(LIBEMB_PATH)/lib/inc \
 $(LIBEMB_PATH)/drv/inc \
 $(LIBEMB_PATH)/component/display \
-$(LIBEMB_PATH)/CMSIS/Core/Include \
 $(LIBEMB_PATH)/CMSIS/Device/ST/STM32F10x/inc \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Inc \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Inc/Legacy \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Inc \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
+$(LIBEMB_PATH)/CMSIS/Core/Include \
 $(LIB_MULTIPROTOCOL_PATH) \
 
 ######################################
@@ -93,16 +79,6 @@ $(LIBEMB_PATH)/drv/gpio/gpio_stm32f1xx.c \
 $(LIBEMB_PATH)/drv/clock/clock_stm32f1xx.c \
 $(LIBEMB_PATH)/drv/spi/spi_stm32f1xx.c \
 $(LIBEMB_PATH)/drv/i2c/i2c_stm32f1xx.c \
-
-USB_DEVICE_SOURCES += \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ctlreq.c \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_core.c \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Core/Src/usbd_ioreq.c \
-$(REPOSITORY)Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Src/usbd_cdc.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_ll_usb.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd.c \
-$(REPOSITORY)Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_pcd_ex.c \
-$(wildcard $(LIB_USB_HID_PATH)/*.c) \
 
 APP_SOURCES = \
 $(LIB_MULTIPROTOCOL_PATH)/cc2500_spi.c \
@@ -184,7 +160,6 @@ AS_DEFS =
 
 # C defines
 C_DEFS = \
-USE_HAL_DRIVER \
 $(DEVICE) \
 $(BOARD) \
 $(FEATURES) \
@@ -219,8 +194,8 @@ SPECS =--specs=nano.specs #--specs=nosys.specs
 # libraries
 #-nostartfiles -nostdlib -lnosys -lm
   #-lrdimon
-LIBS =-lstdc++
-LIBDIR =
+LIBS =-lstdc++ -lcdchid
+LIBDIR =-L$(LIB_USB_PATH)
 LDFLAGS = $(MCU) $(SPECS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,-gc-sections,-cref
 
 #######################################

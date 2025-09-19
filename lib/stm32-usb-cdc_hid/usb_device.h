@@ -48,17 +48,19 @@
  extern "C" {
 #endif
 
-/* Includes ------------------------------------------------------------------*/
-#include "stm32f1xx.h"
-#include "stm32f1xx.h"
-#include "usbd_def.h"
+#include <stdint.h>
 
-extern USBD_HandleTypeDef hUsbDeviceFS;
 
-/* USB_Device init function */
 void USB_DEVICE_Init(void);
+void USB_DEVICE_Handler(void);
+void USB_DEVICE_RegisterSuspendCallback(void(*cb)(void*), void *ptr);
+void USB_DEVICE_RegisterResumeCallback(void(*cb)(void*), void *ptr);
+
 uint8_t USB_DEVICE_SendReport(uint8_t *report, uint16_t len);
-void USB_DEVICE_RegisterCallback(HAL_PCD_CallbackIDTypeDef id, void(*cb)(void*), void *ptr);
+int USB_DEVICE_VcpWrite(const char *data, int len);
+int USB_DEVICE_VcpRead(char* data, int len);
+int USB_DEVICE_VcpAvailable(void);
+
 
 #ifdef __cplusplus
 }

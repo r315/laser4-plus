@@ -1,11 +1,13 @@
 
+#include <stddef.h>
+#include <string.h>
 #include "board.h"
 #include "nvdata.h"
 #include "stm32f1xx.h"
 #include "dma_stm32f1xx.h"
 #include "tone_stm32f1xx.h"
 #include "gpio_stm32f1xx.h"
-#include "usbd_conf.h"
+#include "usb_device.h"
 #include "debug.h"
 #include "dma.h"
 #include "tone.h"
@@ -96,6 +98,13 @@ stdinout_t pcom = {
 
 #endif
 
+#ifdef ENABLE_VCP
+stdinout_t vcp = {
+    .available = USB_DEVICE_VcpAvailable,
+    .read = USB_DEVICE_VcpRead,
+    .write = USB_DEVICE_VcpWrite
+};
+#endif
 
 // Functions implemenation
 
@@ -1154,7 +1163,7 @@ uint32_t cpuGetId(void)
 void USB_LP_CAN1_RX0_IRQHandler(void)
 {
 #if defined(ENABLE_VCP) || defined(ENABLE_GAME_CONTROLLER)
-    //HAL_PCD_IRQHandler(&hpcd_USB_FS);
+    USB_DEVICE_Handler();
 #endif
 }
 

@@ -8,7 +8,6 @@
 
 #if defined(ENABLE_VCP) || defined(ENABLE_GAME_CONTROLLER)
 #include "usb_device.h"
-#include "usbd_cdc_if.h"
 #endif
 
 #ifdef ENABLE_DEBUG_APP
@@ -578,8 +577,8 @@ extern "C" void setup(void)
 
 #if defined(ENABLE_VCP) || defined(ENABLE_GAME_CONTROLLER)
     USB_DEVICE_Init();
-    USB_DEVICE_RegisterCallback(HAL_PCD_SUSPEND_CB_ID, usbDisconnectCB, NULL);
-    USB_DEVICE_RegisterCallback(HAL_PCD_RESUME_CB_ID, usbConnectCB, NULL);
+    USB_DEVICE_RegisterSuspendCallback(usbDisconnectCB, NULL);
+    USB_DEVICE_RegisterResumeCallback(usbConnectCB, NULL);
 #endif
 
     DBG_PRINT("\n Laser4+ version: %d.%d.%d \n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
