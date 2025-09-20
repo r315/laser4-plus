@@ -70,8 +70,7 @@ $(LIB_MULTIPROTOCOL_PATH) \
 ######################################
 
 TARGET_SOURCES =  \
-$(TARGET_PATH)/startup/startup_stm32f103.c \
-$(TARGET_PATH)/src/laser4_plus_board.c \
+$(LIBEMB_PATH)/CMSIS/Device/ST/STM32F10x/src/startup_stm32f103xb.c \
 $(LIBEMB_PATH)/drv/uart/uart_stm32f10x.c \
 $(LIBEMB_PATH)/drv/dma/dma_stm32f1xx.c \
 $(LIBEMB_PATH)/drv/tone/tone_stm32f1xx.c \
@@ -79,6 +78,7 @@ $(LIBEMB_PATH)/drv/gpio/gpio_stm32f1xx.c \
 $(LIBEMB_PATH)/drv/clock/clock_stm32f1xx.c \
 $(LIBEMB_PATH)/drv/spi/spi_stm32f1xx.c \
 $(LIBEMB_PATH)/drv/i2c/i2c_stm32f1xx.c \
+$(TARGET_PATH)/src/laser4_plus_board.c \
 
 APP_SOURCES = \
 $(LIB_MULTIPROTOCOL_PATH)/cc2500_spi.c \
