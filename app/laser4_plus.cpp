@@ -23,26 +23,38 @@
 
 
 #define APP_FLAGS               app_flags
-#define IS_BAT_LOW              (APP_FLAGS & (1<<0))
-#define IS_BAT_ICO_ON           (APP_FLAGS & (1<<1))
-#define IS_ERROR_ICO_ON         (APP_FLAGS & (1<<2))
-#define IS_BIND_ICO_ON          (APP_FLAGS & (1<<3))
-#define IS_LCD_UPDATE           (APP_FLAGS & (1<<4))
+#define APP_FLAG_BATLOW         (1 << 0)
+#define APP_FLAG_BATICON        (1 << 1)
+#define APP_FLAG_ERR            (1 << 2)
+#define APP_FLAG_BINDICON       (1 << 3)
+#define APP_FLAG_DISPLAY        (1 << 4)
+#define APP_FLAG_DISPLAY_UP     (1 << 5)
 
-#define SET_BAT_LOW             APP_FLAGS = (APP_FLAGS | (1<<0))
-#define CLR_BAT_LOW             APP_FLAGS = APP_FLAGS & ~(1<<0)
+#define APP_FLAG_CHECK(_F)      (APP_FLAGS & (_F))
+#define IS_BAT_LOW              APP_FLAG_CHECK(APP_FLAG_BATLOW)
+#define IS_BAT_ICO_VISIBLE      APP_FLAG_CHECK(APP_FLAG_BATICON)
+#define IS_ERR_ICO_VISIBLE      APP_FLAG_CHECK(APP_FLAG_ERR)
+#define IS_BIND_ICO_ON          APP_FLAG_CHECK(APP_FLAG_BINDICON)
+#define IS_DISPLAY_ENABLED      APP_FLAG_CHECK(APP_FLAG_DISPLAY)
+#define IS_DISPLAY_UP_PENDING   APP_FLAG_CHECK(APP_FLAG_DISPLAY_UP)
 
-#define SET_BAT_ICO             APP_FLAGS = (APP_FLAGS | (1<<1))
-#define CLR_BAT_ICO             APP_FLAGS = APP_FLAGS & ~(1<<1)
+#define APP_FLAG_BAT_LOW_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_BATLOW)
+#define APP_FLAG_BAT_LOW_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_BATLOW)
 
-#define SET_ERROR_ICO           APP_FLAGS = (APP_FLAGS | (1<<2))
-#define CLR_ERROR_ICO           APP_FLAGS = APP_FLAGS & ~(1<<2)
+#define APP_FLAG_BAT_ICO_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_BATICON)
+#define APP_FLAG_BAT_ICO_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_BATICON)
 
-#define SET_BIND_ICO            APP_FLAGS = (APP_FLAGS | (1<<3))
-#define CLR_BIND_ICO            APP_FLAGS = APP_FLAGS & ~(1<<3)
+#define APP_FLAG_ERR_ICO_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_ERR)
+#define APP_FLAG_ERR_ICO_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_ERR)
 
-#define SET_LCD_UPDATE          APP_FLAGS = (APP_FLAGS | (1<<4))
-#define CLR_LCD_UPDATE          APP_FLAGS = APP_FLAGS & ~(1<<4)
+#define APP_FLAG_BIND_ICO_SET   APP_FLAGS = (APP_FLAGS | APP_FLAG_BINDICON)
+#define APP_FLAG_BIND_ICO_CLR   APP_FLAGS = (APP_FLAGS & ~APP_FLAG_BINDICON)
+
+#define APP_FLAG_DISPLAY_UP_SET APP_FLAGS = (APP_FLAGS | APP_FLAG_DISPLAY_UP)
+#define APP_FLAG_DISPLAY_UP_CLR APP_FLAGS = (APP_FLAGS & ~APP_FLAG_DISPLAY_UP)
+
+#define APP_FLAG_DISPLAY_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_DISPLAY)
+#define APP_FLAG_DISPLAY_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_DISPLAY)
 
 
 static volatile uint8_t app_state;
@@ -356,7 +368,7 @@ void appCheckBattery(void)
     vires_t res;
     if (batteryReadVI(&res)) {
         if (res.vbat < BATTERY_VOLTAGE_MIN && !IS_BAT_LOW) {
-            SET_BAT_LOW;
+            APP_FLAG_BAT_LOW_SET;
             DBG_APP_WRN(DBG_TAG "!!Low battery !! (%dmV)", res.vbat);
 #ifdef ENABLE_DISPLAY
             // Start blinking timer
@@ -364,10 +376,10 @@ void appCheckBattery(void)
         } else {
             // Vbat has recover, disable low battery icon
             if(IS_BAT_LOW) {
-                CLR_BAT_LOW;
+                APP_FLAG_BAT_LOW_CLR;
 
                 stopTimer(bat_low_tim);
-                if (IS_BAT_ICO_ON) {
+                if (IS_BAT_ICO_VISIBLE) {
                     appToggleLowBatIco();
                 }
             }
@@ -379,11 +391,11 @@ void appCheckBattery(void)
         bat_consumed += (float)(res.cur / (float)(3600 / (TIMER_BATTERY_TIME / 1000)));   //1h/30s
         dro_amph.update(bat_consumed / 1000.0f);
         dro_ma.update(res.cur);
-        SET_LCD_UPDATE;
+        APP_FLAG_DISPLAY_UP_SET;
 #else
         }else{
             // Vbat has recover, clear flag
-            CLR_BAT_LOW;
+            APP_FLAG_BAT_LOW_CLR;
         }
 #endif /* ENABLE_DISPLAY */
     }
@@ -396,14 +408,14 @@ void appCheckBattery(void)
  * @brief blink low battery icon
  * */
 void appToggleLowBatIco(void){
-    if(!(IS_BAT_ICO_ON)){
-        SET_BAT_ICO;
+    if(!(IS_BAT_ICO_VISIBLE)){
+        APP_FLAG_BAT_ICO_SET;
         APP_DRAW_ICON(ico_low_bat);
     }else{
-        CLR_BAT_ICO;
+        APP_FLAG_BAT_ICO_CLR;
         APP_ERASE_ICON(ico_low_bat);
     }
-    SET_LCD_UPDATE;
+    APP_FLAG_DISPLAY_UP_SET;
 }
 
 /**
@@ -415,30 +427,30 @@ void appCheckProtocolFlags(void)
     uint32_t flags = multiprotocol_flags_get();
 
     if(!(flags & FLAG_INPUT_SIGNAL)){
-        if(!(IS_ERROR_ICO_ON)){
-            SET_ERROR_ICO;
+        if(!(IS_ERR_ICO_VISIBLE)){
+            APP_FLAG_ERR_ICO_SET;
             APP_DRAW_ICON(ico_error);
-            SET_LCD_UPDATE;
+            APP_FLAG_DISPLAY_UP_SET;
         }
     }else{
-         if(IS_ERROR_ICO_ON){
-            CLR_ERROR_ICO;
+         if(IS_ERR_ICO_VISIBLE){
+            APP_FLAG_ERR_ICO_CLR;
             APP_ERASE_ICON(ico_error);
-            SET_LCD_UPDATE;
+            APP_FLAG_DISPLAY_UP_SET;
         }
     }
 
     if(!(flags & FLAG_BIND)){
          if(!(IS_BIND_ICO_ON)){
-            SET_BIND_ICO;
+            APP_FLAG_BIND_ICO_SET;
             APP_DRAW_ICON(ico_bind);
-            SET_LCD_UPDATE;
+            APP_FLAG_DISPLAY_UP_SET;
         }
     }else{
          if(IS_BIND_ICO_ON){
-            CLR_BIND_ICO;
+            APP_FLAG_BIND_ICO_CLR;
             APP_ERASE_ICON(ico_bind);
-            SET_LCD_UPDATE;
+            APP_FLAG_DISPLAY_UP_SET;
         }
     }
 }
@@ -633,7 +645,7 @@ extern "C" void setup(void)
     appCheckBattery();
 
     startTimer(TIMER_PPM_TIME, SWTIM_AUTO_RELOAD, appCheckProtocolFlags);
-    SET_LCD_UPDATE;
+    APP_FLAG_DISPLAY_UP_SET;
 #endif
 
 #ifdef ENABLE_BUZZER
@@ -660,7 +672,7 @@ extern "C" void loop(void)
             app_state = app_state >> MODE_BIT_POS;
             appChangeMode(app_state);
     #ifdef ENABLE_DISPLAY
-            SET_LCD_UPDATE;
+            APP_FLAG_DISPLAY_UP_SET;
     #endif
             break;
 
@@ -688,9 +700,9 @@ extern "C" void loop(void)
     processTimer();
 
 #ifdef ENABLE_DISPLAY
-   if(IS_LCD_UPDATE){
+   if(IS_DISPLAY_UP_PENDING){
         LCD_Update();
-        CLR_LCD_UPDATE;
+        APP_FLAG_DISPLAY_UP_CLR;
     }
 #endif
 
