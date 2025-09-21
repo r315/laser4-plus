@@ -13,6 +13,7 @@
 #include "tone.h"
 #include "serial.h"
 #include "spi.h"
+#include "i2c.h"
 
 #ifdef ENABLE_DEBUG_BOARD
 #define DBG_TAG     "[BOARD]: "
@@ -62,6 +63,10 @@ extern void loop(void);
 static adc_t hadc;
 static dmatype_t adcdma;
 static void adcInit(void);
+#endif
+
+#ifdef ENABLE_I2C
+i2cbus_t i2cbus;
 #endif
 
 #ifdef ENABLE_DISPLAY
@@ -166,22 +171,17 @@ static void laser4Init(void)
     UART_Init(&uartbus);
 #endif
 
-#ifdef ENABLE_DISPLAY
-    drvlcdi2c.i2cdev.addr = 0;
-    drvlcdi2c.i2cdev.speed = 100;
-    drvlcdi2c.i2cdev.bus_num = I2C_BUS1;
+#ifdef ENABLE_I2C
+    i2cbus.addr = 0;
+    i2cbus.speed = 100;
+    i2cbus.bus_num = I2C_BUS1;
 
-    if (I2C_Init(&drvlcdi2c.i2cdev) != I2C_OK){
-        DBG_BOARD_ERR("I2C Init fail");
-    }else{
+
+    if (I2C_Init(&i2cbus) == I2C_OK){
         gpioInit(GPIOB, 10, GPO_MS_AF_OD);
         gpioInit(GPIOB, 11, GPO_MS_AF_OD);
-
-        drvlcdi2c.w = DISPLAY_W;
-        drvlcdi2c.h = DISPLAY_H;
-        LCD_Init(&drvlcdi2c);
-        LCD_SetComPin(0);   // This display does not interleave rows
-        LCD_SetOrientation(LCD_REVERSE_LANDSCAPE);
+    }else{
+        DBG_BOARD_ERR("I2C Init fail");
     }
 #endif
 }
@@ -1151,6 +1151,32 @@ uint32_t cpuGetId(void)
     uint32_t *cpuid = (uint32_t*)UID_BASE;
     return cpuid[0] ^ cpuid[1] ^ cpuid[2];
 }
+
+#ifdef ENABLE_DISPLAY
+/**
+ * @brief Initializes display
+ *
+ * @param
+ * @return 1: on success
+ */
+uint32_t displayInit(void)
+{
+    drvlcdi2c.i2cdev = &i2cbus;
+    drvlcdi2c.w = DISPLAY_W;
+    drvlcdi2c.h = DISPLAY_H;
+
+    if(!LCD_Init(&drvlcdi2c)){
+        DBG_BOARD_ERR("Display Init fail");
+        return 0;
+    }
+
+    LCD_SetComPin(0);   // This display does not interleave rows
+    LCD_SetOrientation(LCD_REVERSE_LANDSCAPE);
+
+    return 1;
+}
+#endif
+
 
 /**
  * @brief Interrupts handlers

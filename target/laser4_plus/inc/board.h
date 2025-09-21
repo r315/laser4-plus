@@ -32,7 +32,7 @@ extern "C" {
  * */
 #ifdef BOARD_LASER4PLUS
 #define LED_PORT                GPIOB
-#define LED_PIN                 GPIO_PIN_3
+#define LED_PIN                 3
 #define LED_INIT                GPIOB->CRL = (GPIOB->CRL & ~(15<<12)) | (2<<12) // assume swd is already enabled
 #define LED_ON                  GPO_CLR(LED_PORT, LED_PIN)
 #define LED_OFF                 GPO_SET(LED_PORT, LED_PIN)
@@ -307,6 +307,7 @@ extern stdinout_t vcp;
 #ifdef ENABLE_DISPLAY
 #define DISPLAY_W       128
 #define DISPLAY_H       32
+uint32_t displayInit(void);
 #endif
 
 #ifdef __cplusplus
