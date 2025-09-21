@@ -182,6 +182,10 @@ public:
         console->println("\n  System Flags");
         console->println("----------------------------------------");
         systemFlags();
+        console->println("\n  Up Time");
+        console->println("----------------------------------------");
+        uint32_t uptime = appGetUpTime();
+        console->printf(" %02u:%02u\n",  uptime/3600, (uptime%3600) / 60);
 
 #ifdef ENABLE_BATTERY_MONITOR
         console->println("\n  Battery");
@@ -190,6 +194,7 @@ public:
         batteryReadVI(&batsoc);
         console->printf("Voltage          : %umV\n", batsoc.vbat);
         console->printf("Current          : %umA\n", batsoc.cur);
+        console->printf("Consumed         : %umAh\n", appGetBatConsumed());
 #endif
 
         console->println("\n  Channel data");

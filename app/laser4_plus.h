@@ -58,6 +58,8 @@ typedef union {
 
 void appChangeModeReq(uint8_t pre_mode, uint8_t new_mode);
 uint8_t appGetCurrentMode(void);
+uint32_t appGetBatConsumed(void);
+uint32_t appGetUpTime(void);
 
 #ifdef __cplusplus
 #if defined(ENABLE_CLI)

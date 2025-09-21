@@ -179,10 +179,15 @@ static MpanelDro dro_bat(DRO_BAT_POS, "%.2f",&font_seven_seg);
 static MpanelDro dro_amph(DRO_AMPH_POS, "%.2f",&font_seven_seg);
 static MpanelDro dro_ma(DRO_MA_POS, "%3uMA", &pixelDustFont);
 
+#ifdef ENABLE_BATTERY_MONITOR
 static uint8_t bat_low_tim;
-static float bat_consumed = 0;  //mAh
+#endif
 
 void appToggleLowBatIco(void);
+#endif
+
+#ifdef ENABLE_BATTERY_MONITOR
+static float bat_consumed;
 #endif
 
 /**
@@ -272,10 +277,27 @@ void usbDisconnectCB(void *ptr)
 }
 
 /**
- * @brief
+ * @brief Get current operation mode
+ * @return  MODE_CHANGE_REQ
+ *          MODE_CC2500
+ *          MODE_HID
+ *          MODE_PPM
+ *          MODE_NONE
+ *
  * */
-uint8_t appGetCurrentMode(void){
+uint8_t appGetCurrentMode(void)
+{
     return app_state & STATE_MASK;
+}
+
+/**
+ * @brief Get number of seconds elapsed sinse powerup
+ * @param
+ * @return
+ */
+uint32_t appGetUpTime(void)
+{
+    return millis() / 1000UL;
 }
 
 /**
@@ -310,11 +332,6 @@ void appChangeModeReq(uint8_t prev_mode, uint8_t new_mode)
         break;
     }
 
-#ifdef ENABLE_DISPLAY
-    // Erase mode icon
-    LCD_FillRect(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
-#endif
-
     // set the requested mode by overwriting the previous
     app_state = (new_mode << MODE_BIT_POS) | MODE_CHANGE_REQ;
 }
@@ -332,10 +349,14 @@ static void appChangeMode(uint8_t new_mode)
             buzPlayTone(400,150);
 #endif
 #ifdef ENABLE_DISPLAY
-            if(new_mode == MODE_PPM){
-                APP_DRAW_ICON(ico_35mhz);
-            }else{
-                APP_DRAW_ICON(ico_2_4ghz);
+            if(IS_DISPLAY_ENABLED){
+                LCD_FillRect(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
+
+                if(new_mode == MODE_PPM){
+                    APP_DRAW_ICON(ico_35mhz);
+                }else{
+                    APP_DRAW_ICON(ico_2_4ghz);
+                }
             }
 #endif
             break;
@@ -346,8 +367,10 @@ static void appChangeMode(uint8_t new_mode)
             buzPlayTone(2000,150);
     #endif
     #ifdef ENABLE_DISPLAY
-            APP_DRAW_ICON(ico_usb);
-    #endif /* ENABLE_DISPLAY */
+            if(IS_DISPLAY_ENABLED){
+                APP_DRAW_ICON(ico_usb);
+            }
+    #endif
 #endif /* ENABLE_GAME_CONTROLLER */
             LED_OFF;
             break;
@@ -360,38 +383,52 @@ static void appChangeMode(uint8_t new_mode)
 
 #ifdef ENABLE_BATTERY_MONITOR
 /**
- * @brief Periodic called function to display battery voltage
+ * @brief Get battery consumed in mA/h
+ * @return mA/h
+ */
+uint32_t appGetBatConsumed(void)
+{
+    return bat_consumed;
+}
+
+/**
+ * @brief Called every 10s to update battery consumption.
+ * If display feature is enabled and display is detected
+ * display it.
  *
  * */
 void appCheckBattery(void)
 {
     vires_t res;
     if (batteryReadVI(&res)) {
+#ifdef ENABLE_BATTERY_MONITOR
+        bat_consumed += (float)(res.cur / (float)(3600 / (TIMER_BATTERY_TIME / 1000)));
+#endif
         if (res.vbat < BATTERY_VOLTAGE_MIN && !IS_BAT_LOW) {
             APP_FLAG_BAT_LOW_SET;
             DBG_APP_WRN(DBG_TAG "!!Low battery !! (%dmV)", res.vbat);
 #ifdef ENABLE_DISPLAY
             // Start blinking timer
-            bat_low_tim = startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
-        } else {
+            if(IS_DISPLAY_ENABLED){
+                bat_low_tim = startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
+            }
+        } else if(APP_FLAG_CHECK(APP_FLAG_DISPLAY | APP_FLAG_BATLOW)){
             // Vbat has recover, disable low battery icon
-            if(IS_BAT_LOW) {
-                APP_FLAG_BAT_LOW_CLR;
-
-                stopTimer(bat_low_tim);
-                if (IS_BAT_ICO_VISIBLE) {
-                    appToggleLowBatIco();
-                }
+            APP_FLAG_BAT_LOW_CLR;
+            stopTimer(bat_low_tim);
+            if (IS_BAT_ICO_VISIBLE) {
+                appToggleLowBatIco();
             }
         }
 
-        // update battery voltage DRO
-        dro_bat.update(res.vbat / 1000.0f);
-        // [Ah] are given by the periodic call
-        bat_consumed += (float)(res.cur / (float)(3600 / (TIMER_BATTERY_TIME / 1000)));   //1h/30s
-        dro_amph.update(bat_consumed / 1000.0f);
-        dro_ma.update(res.cur);
-        APP_FLAG_DISPLAY_UP_SET;
+        if(IS_DISPLAY_ENABLED){
+            // update battery voltage DRO
+            dro_bat.update(res.vbat / 1000.0f);
+            // [Ah] are given by the periodic call
+            dro_amph.update(bat_consumed / 1000.0f);
+            dro_ma.update(res.cur);
+            APP_FLAG_DISPLAY_UP_SET;
+        }
 #else
         }else{
             // Vbat has recover, clear flag
@@ -406,6 +443,8 @@ void appCheckBattery(void)
 #ifdef ENABLE_DISPLAY
 /**
  * @brief blink low battery icon
+ * called from timer and only if
+ * display is enabled
  * */
 void appToggleLowBatIco(void){
     if(!(IS_BAT_ICO_VISIBLE)){
@@ -624,28 +663,32 @@ extern "C" void setup(void)
     tmp.u = eeprom->rsense;
     adcSetSenseResistor(tmp.f);
 
+    bat_consumed = 0;  //mAh
+
     /* Get battery voltage */
     DBG_APP_INF("Battery voltage: %dmV", batteryGetVoltage());
+
+    startTimer(TIMER_BATTERY_TIME, SWTIM_AUTO_RELOAD, appCheckBattery);
+    appCheckBattery();
 #endif
 
 #ifdef ENABLE_DISPLAY
+    if(displayInit()){
+        APP_FLAG_DISPLAY_SET;
+        MPANEL_print(VERSION_POS, &pixelDustFont, "V%u.%u.%u", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+        LCD_Update();
+        DelayMs(1000);
+        LCD_FillRect(VERSION_POS, 64, pixelDustFont.h, BLACK); // Erase version from display
 
-    MPANEL_print(VERSION_POS, &pixelDustFont, "V%u.%u.%u", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
-    LCD_Update();
-    DelayMs(1000);
-    LCD_FillRect(VERSION_POS, 64, pixelDustFont.h, BLACK); // Erase version from display
+        dro_bat.setIcon(&ico_volt);
+        dro_amph.setIcon(&ico_amph);
+        dro_bat.draw();
+        dro_amph.draw();
+        dro_ma.draw();
 
-    dro_bat.setIcon(&ico_volt);
-    dro_amph.setIcon(&ico_amph);
-    dro_bat.draw();
-    dro_amph.draw();
-    dro_ma.draw();
-    startTimer(TIMER_BATTERY_TIME, SWTIM_AUTO_RELOAD, appCheckBattery);
-
-    appCheckBattery();
-
-    startTimer(TIMER_PPM_TIME, SWTIM_AUTO_RELOAD, appCheckProtocolFlags);
-    APP_FLAG_DISPLAY_UP_SET;
+        startTimer(TIMER_PPM_TIME, SWTIM_AUTO_RELOAD, appCheckProtocolFlags);
+        APP_FLAG_DISPLAY_UP_SET;
+    }
 #endif
 
 #ifdef ENABLE_BUZZER
@@ -672,7 +715,9 @@ extern "C" void loop(void)
             app_state = app_state >> MODE_BIT_POS;
             appChangeMode(app_state);
     #ifdef ENABLE_DISPLAY
-            APP_FLAG_DISPLAY_UP_SET;
+            if(IS_DISPLAY_ENABLED){
+                APP_FLAG_DISPLAY_UP_SET;
+            }
     #endif
             break;
 
@@ -700,7 +745,7 @@ extern "C" void loop(void)
     processTimer();
 
 #ifdef ENABLE_DISPLAY
-   if(IS_DISPLAY_UP_PENDING){
+   if(APP_FLAG_CHECK(APP_FLAG_DISPLAY | APP_FLAG_DISPLAY_UP)){
         LCD_Update();
         APP_FLAG_DISPLAY_UP_CLR;
     }
