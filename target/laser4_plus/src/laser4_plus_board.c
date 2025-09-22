@@ -1169,7 +1169,7 @@ uint32_t displayInit(void)
         return 0;
     }
 
-    //LCD_SetComPin(0);   // This display does not interleave rows
+    LCD_SetComPin(0);   // This display does not interleave rows
     LCD_SetOrientation(LCD_REVERSE_LANDSCAPE);
 
     return 1;
