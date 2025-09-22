@@ -15,7 +15,7 @@ typedef struct idata{
 typedef struct mpanelicon{
     uint16_t posx;
     uint16_t posy;
-    idata_t *data;
+    const idata_t *data;
 }mpanelicon_t;
 
 class MpanelItem{

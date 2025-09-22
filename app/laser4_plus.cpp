@@ -76,20 +76,25 @@ static Console con;
 
 #ifdef ENABLE_DISPLAY
 
+#define ICO_LOWBAT_POS_X    1
+#define ICO_35MHZ_POS_X     (ICO_LOWBAT_POS_X + 29 + 2)
+#define ICO_2_4GHZ_POS_X    (ICO_35MHZ_POS_X + 15 + 2)
+#define ICO_USB_POS_X       (ICO_2_4GHZ_POS_X + 15 + 2)
+
 #define DRO_BAT_POS     4, 10
 #define DRO_AMPH_POS    74, 10
-#define ICO_LOWBAT_POS  1, 1  // 29x7
-#define ICO_ERROR_POS   31, 1 // 7x7
-#define ICO_BIND_POS    55, 9 // 7x7
-#define ICO_35MHZ_POS   38, 1 // 15x7
-#define ICO_2_4GHZ_POS  53, 1 // 17x7
-#define ICO_USB_POS     70, 1 // 13x7
 #define DRO_MA_POS      88, 1
+#define ICO_LOWBAT_POS  ICO_LOWBAT_POS_X, 1
+#define ICO_35MHZ_POS   ICO_35MHZ_POS_X, 1
+#define ICO_2_4GHZ_POS  ICO_2_4GHZ_POS_X, 1
+#define ICO_USB_POS     ICO_USB_POS_X, 1
+#define ICO_ERROR_POS   62, 11
+#define ICO_BIND_POS    62, 20
 
 #define VERSION_POS     8,8
 
 #define ICO_CLR_START   ICO_35MHZ_POS
-#define ICO_CLR_SIZE    15+17+13, 8
+#define ICO_CLR_SIZE    15+15+13+4, 8
 
 #define APP_DRAW_ICON(ICO)      MPANEL_drawIcon(ICO.posx, ICO.posy, (const idata_t*)ICO.data)
 #define APP_ERASE_ICON(ICO)     LCD_FillRect(ICO.posx, ICO.posy, ICO.data->width, ICO.data->hight, BLACK);
@@ -97,37 +102,41 @@ static Console con;
 /**
  * Icons bitmaps
  * */
-const uint8_t ico_volt_data[] = {7,8,
+static const uint8_t ico_volt_data[] = {7, 8,
     0x7f,0x5d,0x5d,0x5d,0x5d,0x6b,0x77,0x7f
 };
 
-const uint8_t ico_amph_data[] = {10, 8,
+static const uint8_t ico_amph_data[] = {10, 8,
     0x03,0xff,0x03,0x3f,0x02,0xd7,0x02,0xd7,0x02,0x13,0x02,0xd5,0x02,0xd5,0x03,0xff
 };
 
-const uint8_t ico_lowbat_data[] = {29, 7,
+static const uint8_t ico_lowbat_data[] = {29, 7,
     0x1f,0xff,0xff,0xff,0x17,0xff,0xff,0xff,0x17,0x9b,0xb7,0xb1,0x17,0x6b,
     0xb3,0x5b,0x17,0x6a,0xb5,0x1b,0x11,0x9d,0x71,0x5b,0x1f,0xff,0xff,0xff
 };
 
-const uint8_t ico_35mhz_data[] = {15, 7,
+static const uint8_t ico_35mhz_data[] = {15, 7,
     0x7f,0xff,0x44,0x5d,0x75,0xc9,0x44,0x55,0x77,0x5d,0x44,0x5d,0x7f,0xff
 };
 
-const uint8_t ico_2_4ghz_data[] = {15, 7,
+static const uint8_t ico_2_4ghz_data[] = {15, 7,
     0x7f,0xff,0x46,0xb3,0x76,0xaf,0x46,0x29,0x5f,0xad,0x45,0xb1,0x7f,0xff
 };
 
-const uint8_t ico_usb_data[] = {13, 7,
+static const uint8_t ico_usb_data[] = {13, 7,
     0x1f,0xff,0x15,0x13,0x15,0x75,0x15,0x13,0x15,0xd5,0x11,0x13,0x1f,0xff
 };
 
-const uint8_t ico_error_data[] = {7, 7,
+static const uint8_t ico_error_data[] = {7, 7,
     0x08,0x14,0x1c,0x2a,0x22,0x49,0x7f,
 };
 
-const uint8_t ico_bind_data[] = {7,7,
+static const uint8_t ico_bind_data[] = {7,7,
     0x04,0x0a,0x01,0x2a,0x40,0x28,0x10,
+};
+
+static const uint8_t ico_ma_data[] = {12,5,
+    0x00,0x3f,0x00,0x21,0x0d,0xbf,0x0a,0xa1,0x0a,0xa1
 };
 
 /**
@@ -136,48 +145,53 @@ const uint8_t ico_bind_data[] = {7,7,
 static mpanelicon_t ico_volt = {
     (uint16_t)(font_seven_seg.w * 3 + 7),
     (uint16_t)(font_seven_seg.h/2),
-    (idata_t*)ico_volt_data
+    (const idata_t*)ico_volt_data
 };
 
 static mpanelicon_t ico_amph = {
     (uint16_t)(font_seven_seg.w * 3 + 7),
     (uint16_t)(font_seven_seg.h/2),
-    (idata_t*)ico_amph_data
+    (const idata_t*)ico_amph_data
 };
 
-static mpanelicon_t ico_35mhz = {
+static const mpanelicon_t ico_35mhz = {
     ICO_35MHZ_POS,
-    (idata_t*)ico_35mhz_data
+    (const idata_t*)ico_35mhz_data
 };
 
 static mpanelicon_t ico_2_4ghz = {
     ICO_2_4GHZ_POS,
-    (idata_t*)ico_2_4ghz_data
+    (const idata_t*)ico_2_4ghz_data
 };
 
 static mpanelicon_t ico_usb = {
     ICO_USB_POS,
-    (idata_t*)ico_usb_data
+    (const idata_t*)ico_usb_data
 };
 
 static mpanelicon_t ico_low_bat = {
     ICO_LOWBAT_POS,
-    (idata_t*)ico_lowbat_data
+    (const idata_t*)ico_lowbat_data
 };
 
 static mpanelicon_t ico_error = {
     ICO_ERROR_POS,
-    (idata_t*)ico_error_data
+    (const idata_t*)ico_error_data
 };
 
 static mpanelicon_t ico_bind = {
     ICO_BIND_POS,
-    (idata_t*)ico_bind_data
+    (const idata_t*)ico_bind_data
+};
+
+static mpanelicon_t ico_ma = {
+    24, 1, // offset in relation to dro_ma position
+    (const idata_t*)ico_ma_data
 };
 
 static MpanelDro dro_bat(DRO_BAT_POS, "%.2f",&font_seven_seg);
 static MpanelDro dro_amph(DRO_AMPH_POS, "%.2f",&font_seven_seg);
-static MpanelDro dro_ma(DRO_MA_POS, "%3uMA", &pixelDustFont);
+static MpanelDro dro_ma(DRO_MA_POS, "%3u", &pixelDustFont);
 
 #ifdef ENABLE_BATTERY_MONITOR
 static uint8_t bat_low_tim;
@@ -342,6 +356,13 @@ void appChangeModeReq(uint8_t prev_mode, uint8_t new_mode)
  * */
 static void appChangeMode(uint8_t new_mode)
 {
+#ifdef ENABLE_DISPLAY
+    if(IS_DISPLAY_ENABLED){
+        LCD_FillRect(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
+        APP_FLAG_DISPLAY_UP_SET;
+    }
+#endif
+
     switch(new_mode){
         case MODE_CC2500:
         case MODE_PPM:
@@ -350,8 +371,6 @@ static void appChangeMode(uint8_t new_mode)
 #endif
 #ifdef ENABLE_DISPLAY
             if(IS_DISPLAY_ENABLED){
-                LCD_FillRect(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
-
                 if(new_mode == MODE_PPM){
                     APP_DRAW_ICON(ico_35mhz);
                 }else{
@@ -404,20 +423,22 @@ void appCheckBattery(void)
 #ifdef ENABLE_BATTERY_MONITOR
         bat_consumed += (float)(res.cur / (float)(3600 / (TIMER_BATTERY_TIME / 1000)));
 #endif
-        if (res.vbat < BATTERY_VOLTAGE_MIN && !IS_BAT_LOW) {
-            APP_FLAG_BAT_LOW_SET;
-            DBG_APP_WRN(DBG_TAG "!!Low battery !! (%dmV)", res.vbat);
+        if (res.vbat < BATTERY_VOLTAGE_MIN) {
+            if(!IS_BAT_LOW){
+                APP_FLAG_BAT_LOW_SET;
+                DBG_APP_WRN("!! Battery Low (%dmV) !!", res.vbat);
 #ifdef ENABLE_DISPLAY
-            // Start blinking timer
-            if(IS_DISPLAY_ENABLED){
+                // Start blinking timer
                 bat_low_tim = startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
             }
-        } else if(APP_FLAG_CHECK(APP_FLAG_DISPLAY | APP_FLAG_BATLOW)){
+        } else if(IS_BAT_LOW){
             // Vbat has recover, disable low battery icon
             APP_FLAG_BAT_LOW_CLR;
-            stopTimer(bat_low_tim);
-            if (IS_BAT_ICO_VISIBLE) {
-                appToggleLowBatIco();
+            if(IS_DISPLAY_ENABLED){
+                stopTimer(bat_low_tim);
+                if (IS_BAT_ICO_VISIBLE) {
+                    appToggleLowBatIco();
+                }
             }
         }
 
@@ -430,6 +451,7 @@ void appCheckBattery(void)
             APP_FLAG_DISPLAY_UP_SET;
         }
 #else
+            }
         }else{
             // Vbat has recover, clear flag
             APP_FLAG_BAT_LOW_CLR;
@@ -447,6 +469,10 @@ void appCheckBattery(void)
  * display is enabled
  * */
 void appToggleLowBatIco(void){
+    if(!IS_DISPLAY_ENABLED){
+        return;
+    }
+
     if(!(IS_BAT_ICO_VISIBLE)){
         APP_FLAG_BAT_ICO_SET;
         APP_DRAW_ICON(ico_low_bat);
@@ -454,6 +480,7 @@ void appToggleLowBatIco(void){
         APP_FLAG_BAT_ICO_CLR;
         APP_ERASE_ICON(ico_low_bat);
     }
+
     APP_FLAG_DISPLAY_UP_SET;
 }
 
@@ -684,6 +711,7 @@ extern "C" void setup(void)
         dro_amph.setIcon(&ico_amph);
         dro_bat.draw();
         dro_amph.draw();
+        dro_ma.setIcon(&ico_ma);
         dro_ma.draw();
 
         startTimer(TIMER_PPM_TIME, SWTIM_AUTO_RELOAD, appCheckProtocolFlags);
@@ -714,11 +742,6 @@ extern "C" void loop(void)
         case MODE_CHANGE_REQ:
             app_state = app_state >> MODE_BIT_POS;
             appChangeMode(app_state);
-    #ifdef ENABLE_DISPLAY
-            if(IS_DISPLAY_ENABLED){
-                APP_FLAG_DISPLAY_UP_SET;
-            }
-    #endif
             break;
 
         case MODE_NONE:
@@ -745,9 +768,11 @@ extern "C" void loop(void)
     processTimer();
 
 #ifdef ENABLE_DISPLAY
-   if(APP_FLAG_CHECK(APP_FLAG_DISPLAY | APP_FLAG_DISPLAY_UP)){
-        LCD_Update();
-        APP_FLAG_DISPLAY_UP_CLR;
+   if(IS_DISPLAY_ENABLED){
+        if(IS_DISPLAY_UP_PENDING){
+            LCD_Update();
+            APP_FLAG_DISPLAY_UP_CLR;
+        }
     }
 #endif
 

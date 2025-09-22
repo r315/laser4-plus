@@ -176,7 +176,6 @@ static void laser4Init(void)
     i2cbus.speed = 100;
     i2cbus.bus_num = I2C_BUS1;
 
-
     if (I2C_Init(&i2cbus) == I2C_OK){
         gpioInit(GPIOB, 10, GPO_MS_AF_OD);
         gpioInit(GPIOB, 11, GPO_MS_AF_OD);
@@ -1170,7 +1169,7 @@ uint32_t displayInit(void)
         return 0;
     }
 
-    LCD_SetComPin(0);   // This display does not interleave rows
+    //LCD_SetComPin(0);   // This display does not interleave rows
     LCD_SetOrientation(LCD_REVERSE_LANDSCAPE);
 
     return 1;
