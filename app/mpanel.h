@@ -29,10 +29,11 @@ public:
 };
 
 class MpanelDro : public MpanelItem{
+private:
     const font_t *font;
-    float value;
     mpanelicon_t *icon;
     const char *fmt;
+    float value;
 public:
     void draw(void) override;
     void update(float value);

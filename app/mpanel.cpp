@@ -114,10 +114,12 @@ void MPANEL_print(uint16_t x, uint16_t y, const font_t *font, const char *fmt, .
 }
 
 MpanelDro::MpanelDro(uint16_t posx, uint16_t posy, const char *fmt, const font_t *font)
-                : font(font), value(0.0f), icon(nullptr), fmt(fmt)
+                : value(0.0f), icon(nullptr)
 {
     this->posx = posx;
     this->posy = posy;
+    this->font = font;
+    this->fmt = fmt;
 }
 
 void MpanelDro::update(float value){
