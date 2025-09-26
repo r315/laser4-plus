@@ -348,7 +348,10 @@ static void protocol_init(void)
                 break;
         }
 
-        DBG_MULTI_INF("Protocol selected: %d, sub proto %d, rxnum %d, option %d", radio.protocol, radio.sub_protocol, radio.rx_num, radio.option);
+        DBG_MULTI_INF("Protocol selected: %d", radio.protocol);
+        DBG_MULTI_INF("Sub proto        : %d", radio.sub_protocol);
+        DBG_MULTI_INF("RX num           : %d", radio.rx_num);
+        DBG_MULTI_INF("Option           : %d", radio.option);
 
         if(IS_BIND_IN_PROGRESS){
             DBG_MULTI_INF("Bind started");
