@@ -175,6 +175,7 @@ static void laser4Init(void)
     i2cbus.addr = 0;
     i2cbus.speed = 100;
     i2cbus.bus_num = I2C_BUS1;
+    i2cbus.cfg = I2C_CFG_DMA;
 
     if (I2C_Init(&i2cbus) == I2C_OK){
         gpioInit(GPIOB, 10, GPO_MS_AF_OD);
