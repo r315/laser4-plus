@@ -1172,8 +1172,9 @@ uint32_t displayInit(void)
         DBG_BOARD_ERR("Display Init fail");
         return 0;
     }
-
+#ifdef BOARD_LASER4PLUS
     LCD_SetComPin(0);   // This display does not interleave rows
+#endif
     LCD_SetOrientation(LCD_REVERSE_LANDSCAPE);
 
     return 1;
