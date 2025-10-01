@@ -152,7 +152,7 @@ MCU = -mcpu=$(CORE) -mthumb
 ifeq ($(RELEASE),1)
 OPT = -Os -Wall -Wextra
 else
-OPT = -Og -g -gdwarf-2 -Wall -Wextra
+OPT = -O0 -g -gdwarf-2 -Wall -Wextra
 endif
 
 # macros for gcc

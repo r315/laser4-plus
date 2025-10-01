@@ -752,7 +752,7 @@ extern "C" void loop(void)
     /* Display update interfeeres with timming,
     any access to display or display buffer must be done here */
     if(IS_DISPLAY_ENABLED && IS_DISPLAY_UP_PENDING){
-        bool shouldUpdate = true;
+        bool shouldUpdate = !LCD_Busy();
         // If there is no input signal, update must occur
         if(multiprotocol_flags_get() & FLAG_INPUT_SIGNAL){
             // input signal is present, check if there is time for update
