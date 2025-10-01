@@ -120,6 +120,9 @@ static void laser4Init(void)
     LED_INIT;
     HW_SW_INIT;
     HW_TX_35MHZ_EN_INIT;
+#ifdef ENABLE_DEBUG
+    DBG_PIN_INIT;
+#endif
 
     systicksInit();
 
@@ -1068,7 +1071,7 @@ void buzWaitEnd(void)
 /**
  * @brief Start a software timer
  *
- * @param time : Timer duration
+ * @param time : Timer duration in ms
  * @param flags : Extra flags for continuous mode, 0 for single time
  * @param cb : callback function when timer expires
  *

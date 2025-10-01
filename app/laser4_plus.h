@@ -25,11 +25,6 @@ extern "C" {
 #define DEFAULT_VOLTAGE_DIV     0x3e27ef9e  // 0.164
 #define DEFAULT_SENSE_RESISTOR  0x3db851ec  // 0.09
 
-#define MODE_BIT_POS            4
-#define STATE_BIT_POS           4
-#define MODE_MASK               (0xF0)
-#define STATE_MASK              (0x0F)
-
 #define TIMER_BATTERY_TIME  10000U  // ms
 #define TIMER_LOWBAT_TIME   500U    // ms
 #define WATCHDOG_TIME       3000U   // ms
@@ -40,7 +35,7 @@ extern "C" {
 #define ON                  0
 #define OFF                 1
 
-enum modes{
+typedef enum app_mode{
 #ifndef MODE_SERIAL
     MODE_SERIAL = 0,
 #endif
@@ -49,15 +44,21 @@ enum modes{
     MODE_HID = 13,
     MODE_PPM = 14,
     MODE_NONE = 15,
-};
+}app_mode_t;
+
+typedef enum app_state{
+    APP_STATE_INIT,
+    APP_STATE_LOOP,
+    APP_STATE_MODE_REQ
+}app_state_t;
 
 typedef union {
   float f;
   uint32_t u;
 }f2u_u;
 
-void appChangeModeReq(uint8_t pre_mode, uint8_t new_mode);
-uint8_t appGetCurrentMode(void);
+void appModeRequest(app_mode_t new_mode);
+app_mode_t appGetCurrentMode(void);
 uint32_t appGetBatConsumed(void);
 uint32_t appGetUpTime(void);
 

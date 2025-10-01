@@ -134,6 +134,18 @@ void multiprotocol_setup(void)
 }
 /**
  * @brief main loop for multiprotocol mode
+ *
+ * + Timeout                     + Exit
+ * |      + loop call            |
+ * v      v                      V
+ * |------|--------------|-------|
+ *  <-T0-> <--callback--> <--+-->
+ *                           | Check T0 > 1ms for late callback message
+ *                           | Check if there is time for next callback
+ *                           | Call Update if next_callback is > 1ms
+ *                           | Configure new timeout subtracting TO and callback time
+ *
+ *
  * */
 void multiprotocol_loop(void)
 {
@@ -141,38 +153,33 @@ void multiprotocol_loop(void)
         if(!Update_All()){
             ticksResetInterval();
         }
-        return;
-    }
-
-    if(ticksIsIntervalTimedout()){
+    }else if(ticksIsIntervalTimedout()){
         // Time to do update, ticks is always negative here
         int32_t ticks = ticksGetIntervalRemaining();
         // Call protocol callback
-        DBG_PIN_HIGH;
         int32_t next_callback = US_TO_TICKS(radio.remote_callback(&radio));
-        DBG_PIN_LOW;
 
         if(ticks < -TICKS_1MS){
             // Call to to callback is late at least by one ms, system maybe unable to keep up
             DBG_MULTI_WRN("Late callback: %d us", TICKS_TO_US(-ticks));
         }
-        // Get how much ticks has passed since timeout
-        ticks = next_callback + ticksGetIntervalRemaining();
+        // Calculate how many ticks remain to next callback,
+        // this takes in to account how long has elapsed from timeout
+        next_callback = next_callback + ticksGetIntervalRemaining();
 
-        if(ticks < 0){
+        if(next_callback < 0){
             // Callback took too much time, next callback should already have been called...
             DBG_MULTI_WRN("Long callback");
             // Force update on next call
             ticksResetInterval();
-            return;
+        }else{
+            if(next_callback > TICKS_1MS){
+                //At least 1ms is available, update values for next call
+                Update_All();
+            }
+            // set new timeout with subtracted time spent here
+            ticksSetInterval(next_callback);
         }
-
-        if(ticks > TICKS_1MS){
-            //At least 1ms is available, update values for next call
-            Update_All();
-        }
-        // set new timeout with subtracted time spent here
-        ticksSetInterval(ticks);
     }
 }
 /**
@@ -245,7 +252,7 @@ static uint8_t Update_All(void)
     }
 
     update_led_status();
-
+    // TODO: This flag is never set, fix it or remove
     if(IS_CHANGE_PROTOCOL_FLAG_on){
         // Protocol needs to be changed or relaunched for bind
         protocol_init();                            //init new protocol
@@ -464,7 +471,6 @@ uint32_t multiprotocol_protocol_id_get(void)
  */
 void multiprotocol_channel_data_ready(void){
     PPM_FLAG_on;
-    DBG_PIN2_TOGGLE;
 }
 
 void multiprotocol_channel_data_get(const uint16_t **channel_data, uint8_t *nchannels)

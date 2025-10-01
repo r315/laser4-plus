@@ -37,6 +37,7 @@ extern "C" {
 #define LED_ON                  GPO_CLR(LED_PORT, LED_PIN)
 #define LED_OFF                 GPO_SET(LED_PORT, LED_PIN)
 #define LED_TOGGLE              GPO_TOGGLE(LED_PORT, LED_PIN)
+#define DBG_PIN_INIT
 #define DBG_PIN_HIGH
 #define DBG_PIN_LOW
 #define DBG_PIN2_TOGGLE
@@ -52,14 +53,16 @@ extern "C" {
 #define DBG_PORT                GPIOB
 #define DBG_PIN_HIGH            GPO_SET(DBG_PORT, DBG_PIN)
 #define DBG_PIN_LOW             GPO_CLR(DBG_PORT, DBG_PIN)
-#define DBG_PIN_INIT            GPO_INIT(DBG_PORT, DBG_PIN); DBG_PIN_LOW; \
-                                GPO_INIT(DBG_PORT, DBG_PIN2); DBG_PIN2_LOW
 #define DBG_PIN_TOGGLE          GPO_TOGGLE(DBG_PORT, DBG_PIN)
 
+#define DBG_PIN_INIT            GPO_INIT(DBG_PORT, DBG_PIN); DBG_PIN_LOW; \
+                                GPO_INIT(DBG_PIN2_PORT, DBG_PIN2); \
+
 #define DBG_PIN2                8
-#define DBG_PIN2_HIGH           GPO_SET(DBG_PORT, DBG_PIN2)
-#define DBG_PIN2_LOW            GPO_CLR(DBG_PORT, DBG_PIN2)
-#define DBG_PIN2_TOGGLE         GPO_TOGGLE(DBG_PORT, DBG_PIN2)
+#define DBG_PIN2_PORT           GPIOB
+#define DBG_PIN2_HIGH           GPO_SET(DBG_PIN2_PORT, DBG_PIN2)
+#define DBG_PIN2_LOW            GPO_CLR(DBG_PIN2_PORT, DBG_PIN2)
+#define DBG_PIN2_TOGGLE         GPO_TOGGLE(DBG_PIN2_PORT, DBG_PIN2)
 #else
 #error "No board defined"
 #endif

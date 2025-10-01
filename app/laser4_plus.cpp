@@ -21,28 +21,37 @@
 #define DBG_APP_ERR(...)
 #endif
 
+#define DISPLAY_MIN_UPDATE_TIME 6000   /* Minimum time required for display buffer update and display transfer using DMA in us*/
 
-#define APP_FLAGS               app_flags
+#define APP_FLAGS               app.flags
 #define APP_FLAG_BATLOW         (1 << 0)
-#define APP_FLAG_BATICON        (1 << 1)
-#define APP_FLAG_ERR            (1 << 2)
-#define APP_FLAG_BINDICON       (1 << 3)
-#define APP_FLAG_DISPLAY        (1 << 4)
-#define APP_FLAG_DISPLAY_UP     (1 << 5)
+#define APP_FLAG_ERR            (1 << 1)
+#define APP_FLAG_BINDICON       (1 << 2)
+#define APP_FLAG_DISPLAY        (1 << 3)    // Set if display is initialized
+#define APP_FLAG_DISPLAY_UP     (1 << 4)    // Set to request display update
+#define APP_FLAG_BAT_STATE_UP   (1 << 5)
+#define APP_FLAG_BAT_LOW_ICON   (1 << 6)
+#define APP_FLAG_BAT_LOW_ICO_ON (1 << 7)
+#define APP_FLAG_BAT_LOW_ICO_OFF (1 << 8)
+#define APP_FLAG_MODE_UP        (1 << 9)
 
 #define APP_FLAG_CHECK(_F)      (APP_FLAGS & (_F))
 #define IS_BAT_LOW              APP_FLAG_CHECK(APP_FLAG_BATLOW)
-#define IS_BAT_ICO_VISIBLE      APP_FLAG_CHECK(APP_FLAG_BATICON)
+#define IS_BAT_LOW_ICO_VISIBLE  APP_FLAG_CHECK(APP_FLAG_BAT_LOW_ICON)
 #define IS_ERR_ICO_VISIBLE      APP_FLAG_CHECK(APP_FLAG_ERR)
 #define IS_BIND_ICO_ON          APP_FLAG_CHECK(APP_FLAG_BINDICON)
 #define IS_DISPLAY_ENABLED      APP_FLAG_CHECK(APP_FLAG_DISPLAY)
 #define IS_DISPLAY_UP_PENDING   APP_FLAG_CHECK(APP_FLAG_DISPLAY_UP)
+#define IS_BAT_STATE_UP_PENDING APP_FLAG_CHECK(APP_FLAG_BAT_STATE_UP)
+#define IS_BAT_LOW_ICO_ON_PENDING   APP_FLAG_CHECK(APP_FLAG_BAT_LOW_ICO_ON)
+#define IS_BAT_LOW_ICO_OFF_PENDING  APP_FLAG_CHECK(APP_FLAG_BAT_LOW_ICO_OFF)
+#define IS_MODE_UP_PENDING      APP_FLAG_CHECK(APP_FLAG_MODE_UP)
 
 #define APP_FLAG_BAT_LOW_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_BATLOW)
 #define APP_FLAG_BAT_LOW_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_BATLOW)
 
-#define APP_FLAG_BAT_ICO_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_BATICON)
-#define APP_FLAG_BAT_ICO_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_BATICON)
+#define APP_FLAG_MODE_UP_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_MODE_UP)
+#define APP_FLAG_MODE_UP_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_MODE_UP)
 
 #define APP_FLAG_ERR_ICO_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_ERR)
 #define APP_FLAG_ERR_ICO_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_ERR)
@@ -56,9 +65,24 @@
 #define APP_FLAG_DISPLAY_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_DISPLAY)
 #define APP_FLAG_DISPLAY_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_DISPLAY)
 
+#define APP_FLAG_BAT_STATE_UP_SET APP_FLAGS = (APP_FLAGS | APP_FLAG_BAT_STATE_UP)
+#define APP_FLAG_BAT_STATE_UP_CLR APP_FLAGS = (APP_FLAGS & ~APP_FLAG_BAT_STATE_UP)
 
-static volatile uint8_t app_state;
-static uint32_t app_flags;
+#define APP_FLAG_BAT_ICO_SET            APP_FLAGS = (APP_FLAGS | APP_FLAG_BAT_LOW_ICON)
+#define APP_FLAG_BAT_ICO_CLR            APP_FLAGS = (APP_FLAGS & ~APP_FLAG_BAT_LOW_ICON)
+#define APP_FLAG_BAT_LOW_ICO_ON_SET     APP_FLAGS = (APP_FLAGS | APP_FLAG_BAT_LOW_ICO_ON)
+#define APP_FLAG_BAT_LOW_ICO_ON_CLR     APP_FLAGS = (APP_FLAGS & ~APP_FLAG_BAT_LOW_ICO_ON)
+#define APP_FLAG_BAT_LOW_ICO_OFF_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_BAT_LOW_ICO_OFF)
+#define APP_FLAG_BAT_LOW_ICO_OFF_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_BAT_LOW_ICO_OFF)
+
+typedef struct app_s{
+    uint32_t flags;
+    app_state_t state : 8;
+    app_mode_t mode : 8;
+    app_mode_t new_mode : 8;
+}app_t;
+
+static app_t app;
 
 #ifdef ENABLE_BUZZER
 static tone_t chime[] = {
@@ -193,15 +217,17 @@ static MpanelDro dro_bat(DRO_BAT_POS, "%.2f",&font_seven_seg);
 static MpanelDro dro_amph(DRO_AMPH_POS, "%.2f",&font_seven_seg);
 static MpanelDro dro_ma(DRO_MA_POS, "%3u", &pixelDustFont);
 
-#ifdef ENABLE_BATTERY_MONITOR
-static uint8_t bat_low_tim;
-#endif
-
 void appToggleLowBatIco(void);
 #endif
 
 #ifdef ENABLE_BATTERY_MONITOR
-static float bat_consumed;
+typedef struct batsoc{
+    float consumed;
+    vires_t data;
+    uint8_t low_tim;
+}batsoc_t;
+
+static batsoc_t batsoc;
 #endif
 
 /**
@@ -260,7 +286,7 @@ static uint8_t crc8(const uint8_t *data, uint8_t len)
 void usbConnectCB(void *ptr)
 {
     (void)ptr;
-    appChangeModeReq(app_state, MODE_HID);
+    appModeRequest(MODE_HID);
 #if defined(ENABLE_DEBUG) && defined(EANBLE_VCP)
     dbg_init(&vcp);
 #endif
@@ -279,7 +305,7 @@ void usbConnectCB(void *ptr)
 void usbDisconnectCB(void *ptr)
 {
     (void)ptr;
-    appChangeModeReq(app_state, MODE_CC2500);
+    appModeRequest(MODE_CC2500);
 #if defined(ENABLE_DEBUG) && defined(ENABLE_UART)
     dbg_init(&pcom);
 #endif
@@ -299,9 +325,9 @@ void usbDisconnectCB(void *ptr)
  *          MODE_NONE
  *
  * */
-uint8_t appGetCurrentMode(void)
+app_mode_t appGetCurrentMode(void)
 {
-    return app_state & STATE_MASK;
+    return app.mode;
 }
 
 /**
@@ -318,65 +344,36 @@ uint32_t appGetUpTime(void)
  * @brief Operating mode change request
  *
  * */
-void appChangeModeReq(uint8_t prev_mode, uint8_t new_mode)
+void appModeRequest(app_mode_t new_mode)
 {
-    uint8_t cur_state = app_state & STATE_MASK;
+    app_state_t cur_state = app.state;
 
     // Do nothing if requesting the current mode or invalid
-    if(cur_state == new_mode || new_mode > MODE_NONE){
+    if(app.mode == new_mode || new_mode > MODE_NONE){
         return;
     }
     // Request in progress, if same return
-    if(cur_state == MODE_CHANGE_REQ){
-        if(((app_state & MODE_MASK) >> MODE_BIT_POS) == new_mode){
+    if(cur_state == APP_STATE_MODE_REQ){
+        if(app.new_mode == new_mode){
             return;
         }
     }
 
-    switch(new_mode){
-        default:
-            app_state = prev_mode;
-            // default to last mode on invalid new mode
-            return;
-        case MODE_HID:
-        case MODE_PPM:
-        case MODE_SERIAL:
-        case MODE_CC2500:
-            multiprotocol_mode_set(new_mode);
-        break;
-    }
-
-    // set the requested mode by overwriting the previous
-    app_state = (new_mode << MODE_BIT_POS) | MODE_CHANGE_REQ;
+    app.state = APP_STATE_MODE_REQ;
+    app.new_mode = new_mode;
 }
 
 /**
  * @brief Change mode request handler
  *
  * */
-static void appChangeMode(uint8_t new_mode)
+static void appModeChange(app_mode_t new_mode)
 {
-#ifdef ENABLE_DISPLAY
-    if(IS_DISPLAY_ENABLED){
-        LCD_FillRect(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
-        APP_FLAG_DISPLAY_UP_SET;
-    }
-#endif
-
     switch(new_mode){
         case MODE_CC2500:
         case MODE_PPM:
 #ifdef ENABLE_BUZZER
             buzPlayTone(400,150);
-#endif
-#ifdef ENABLE_DISPLAY
-            if(IS_DISPLAY_ENABLED){
-                if(new_mode == MODE_PPM){
-                    APP_DRAW_ICON(ico_35mhz);
-                }else{
-                    APP_DRAW_ICON(ico_2_4ghz);
-                }
-            }
 #endif
             break;
         case MODE_HID:
@@ -385,11 +382,6 @@ static void appChangeMode(uint8_t new_mode)
     #ifdef ENABLE_BUZZER
             buzPlayTone(2000,150);
     #endif
-    #ifdef ENABLE_DISPLAY
-            if(IS_DISPLAY_ENABLED){
-                APP_DRAW_ICON(ico_usb);
-            }
-    #endif
 #endif /* ENABLE_GAME_CONTROLLER */
             LED_OFF;
             break;
@@ -397,7 +389,13 @@ static void appChangeMode(uint8_t new_mode)
             return;
     }
 
+    app.mode = new_mode;
+
+    multiprotocol_mode_set(new_mode);
     multiprotocol_setup();
+
+    APP_FLAG_DISPLAY_UP_SET;
+    APP_FLAG_MODE_UP_SET;
 }
 
 #ifdef ENABLE_BATTERY_MONITOR
@@ -407,7 +405,7 @@ static void appChangeMode(uint8_t new_mode)
  */
 uint32_t appGetBatConsumed(void)
 {
-    return bat_consumed;
+    return batsoc.consumed;
 }
 
 /**
@@ -418,38 +416,25 @@ uint32_t appGetBatConsumed(void)
  * */
 void appCheckBattery(void)
 {
-    vires_t res;
-    if (batteryReadVI(&res)) {
-#ifdef ENABLE_BATTERY_MONITOR
-        bat_consumed += (float)(res.cur / (float)(3600 / (TIMER_BATTERY_TIME / 1000)));
-#endif
-        if (res.vbat < BATTERY_VOLTAGE_MIN) {
+    if (batteryReadVI(&batsoc.data)) {
+        batsoc.consumed += (float)(batsoc.data.cur / (float)(3600 / (TIMER_BATTERY_TIME / 1000)));
+        if (batsoc.data.vbat < BATTERY_VOLTAGE_MIN) {
             if(!IS_BAT_LOW){
                 APP_FLAG_BAT_LOW_SET;
-                DBG_APP_WRN("!! Battery Low (%dmV) !!", res.vbat);
+                DBG_APP_WRN("!! Battery Low (%dmV) !!", batsoc.data.vbat);
 #ifdef ENABLE_DISPLAY
                 // Start blinking timer
-                bat_low_tim = startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
+                batsoc.low_tim = startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
             }
         } else if(IS_BAT_LOW){
             // Vbat has recover, disable low battery icon
             APP_FLAG_BAT_LOW_CLR;
-            if(IS_DISPLAY_ENABLED){
-                stopTimer(bat_low_tim);
-                if (IS_BAT_ICO_VISIBLE) {
-                    appToggleLowBatIco();
-                }
-            }
+            APP_FLAG_BAT_LOW_ICO_OFF_SET;
+            stopTimer(batsoc.low_tim);
         }
 
-        if(IS_DISPLAY_ENABLED){
-            // update battery voltage DRO
-            dro_bat.update(res.vbat / 1000.0f);
-            // [Ah] are given by the periodic call
-            dro_amph.update(bat_consumed / 1000.0f);
-            dro_ma.update(res.cur);
-            APP_FLAG_DISPLAY_UP_SET;
-        }
+        APP_FLAG_DISPLAY_UP_SET;
+        APP_FLAG_BAT_STATE_UP_SET;
 #else
             }
         }else{
@@ -468,17 +453,14 @@ void appCheckBattery(void)
  * called from timer and only if
  * display is enabled
  * */
-void appToggleLowBatIco(void){
-    if(!IS_DISPLAY_ENABLED){
-        return;
-    }
-
-    if(!(IS_BAT_ICO_VISIBLE)){
+void appToggleLowBatIco(void)
+{
+    if(!(IS_BAT_LOW_ICO_VISIBLE)){
         APP_FLAG_BAT_ICO_SET;
-        APP_DRAW_ICON(ico_low_bat);
+        APP_FLAG_BAT_LOW_ICO_ON_SET;
     }else{
         APP_FLAG_BAT_ICO_CLR;
-        APP_ERASE_ICON(ico_low_bat);
+        APP_FLAG_BAT_LOW_ICO_OFF_SET;
     }
 
     APP_FLAG_DISPLAY_UP_SET;
@@ -499,7 +481,7 @@ void appCheckProtocolFlags(void)
             APP_FLAG_DISPLAY_UP_SET;
         }
     }else{
-         if(IS_ERR_ICO_VISIBLE){
+        if(IS_ERR_ICO_VISIBLE){
             APP_FLAG_ERR_ICO_CLR;
             APP_ERASE_ICON(ico_error);
             APP_FLAG_DISPLAY_UP_SET;
@@ -507,13 +489,13 @@ void appCheckProtocolFlags(void)
     }
 
     if(!(flags & FLAG_BIND)){
-         if(!(IS_BIND_ICO_ON)){
+        if(!(IS_BIND_ICO_ON)){
             APP_FLAG_BIND_ICO_SET;
             APP_DRAW_ICON(ico_bind);
             APP_FLAG_DISPLAY_UP_SET;
         }
     }else{
-         if(IS_BIND_ICO_ON){
+        if(IS_BIND_ICO_ON){
             APP_FLAG_BIND_ICO_CLR;
             APP_ERASE_ICON(ico_bind);
             APP_FLAG_DISPLAY_UP_SET;
@@ -642,8 +624,8 @@ void appDefaultEEPROM(void)
  * */
 extern "C" void setup(void)
 {
-    app_state = MODE_NONE;
-    app_flags = 0;
+    app.state = APP_STATE_INIT;
+    app.flags = 0;
 
 #if defined(ENABLE_DEBUG)
     #if defined(ENABLE_VCP)
@@ -690,7 +672,7 @@ extern "C" void setup(void)
     tmp.u = eeprom->rsense;
     adcSetSenseResistor(tmp.f);
 
-    bat_consumed = 0;  //mAh
+    batsoc.consumed = 0;  //mAh
 
     /* Get battery voltage */
     DBG_APP_INF("Battery voltage: %dmV", batteryGetVoltage());
@@ -713,7 +695,7 @@ extern "C" void setup(void)
         dro_amph.draw();
         dro_ma.setIcon(&ico_ma);
         dro_ma.draw();
-
+        // Start timer to update indications on display
         startTimer(TIMER_PPM_TIME, SWTIM_AUTO_RELOAD, appCheckProtocolFlags);
         APP_FLAG_DISPLAY_UP_SET;
     }
@@ -732,29 +714,28 @@ extern "C" void setup(void)
  * */
 extern "C" void loop(void)
 {
-    switch(app_state & STATE_MASK){
-        case MODE_CC2500:
-        case MODE_PPM:
-        case MODE_HID:
+    switch(app.state){
+        case APP_STATE_LOOP:
             multiprotocol_loop();
             break;
 
-        case MODE_CHANGE_REQ:
-            app_state = app_state >> MODE_BIT_POS;
-            appChangeMode(app_state);
+        case APP_STATE_MODE_REQ:
+            appModeChange(app.new_mode);
+            app.state = APP_STATE_LOOP;
             break;
 
-        case MODE_NONE:
+        case APP_STATE_INIT:
         // Set based on hardware switch, usualy at startup
     #if defined(TX35_MHZ_INSTALLED) && defined(CC2500_INSTALLED)
-            appChangeModeReq(app_state, IS_HW_SW_AUX3_PRESSED ? MODE_PPM : MODE_CC2500);
+            appModeRequest(IS_HW_SW_AUX3_PRESSED ? MODE_PPM : MODE_CC2500);
     #elif defined(CC2500_INSTALLED)
-            appChangeModeReq(app_state, MODE_CC2500);
+            appModeRequest(MODE_CC2500);
     #elif defined(TX35_MHZ_INSTALLED)
-            appChangeModeReq(app_state, MODE_PPM);
+            appModeRequest(MODE_PPM);
     #else
-            appChangeModeReq(app_state, MODE_SERIAL);
+            appModeRequest(MODE_SERIAL);
     #endif
+            app.state = APP_STATE_LOOP;
             break;
 
         default:
@@ -768,8 +749,61 @@ extern "C" void loop(void)
     processTimer();
 
 #ifdef ENABLE_DISPLAY
-   if(IS_DISPLAY_ENABLED){
-        if(IS_DISPLAY_UP_PENDING){
+    /* Display update interfeeres with timming,
+    any access to display or display buffer must be done here */
+    if(IS_DISPLAY_ENABLED && IS_DISPLAY_UP_PENDING){
+        bool shouldUpdate = true;
+        // If there is no input signal, update must occur
+        if(multiprotocol_flags_get() & FLAG_INPUT_SIGNAL){
+            // input signal is present, check if there is time for update
+            if (ticksIsIntervalTimedout()) {
+                // we are early, multiprotocol_loop() has not yet been called
+                shouldUpdate = false;
+            }else{
+                // Timer still running
+                int16_t time = TICKS_TO_US(ticksGetIntervalRemaining());
+                // If there is time, update display
+                shouldUpdate = (time > DISPLAY_MIN_UPDATE_TIME);
+            }
+        }
+
+        if (shouldUpdate) {
+            if(IS_BAT_STATE_UP_PENDING){
+                // update battery voltage DRO
+                dro_bat.update(batsoc.data.vbat / 1000.0f);
+                // [Ah] are given by the periodic call
+                dro_amph.update(batsoc.consumed / 1000.0f);
+                dro_ma.update(batsoc.data.cur);
+                APP_FLAG_BAT_STATE_UP_CLR;
+            }
+
+            if(IS_BAT_LOW_ICO_ON_PENDING){
+                APP_DRAW_ICON(ico_low_bat);
+                APP_FLAG_BAT_LOW_ICO_ON_CLR;
+            }
+
+            if(IS_BAT_LOW_ICO_OFF_PENDING){
+                APP_ERASE_ICON(ico_low_bat);
+                APP_FLAG_BAT_LOW_ICO_OFF_CLR;
+            }
+
+            if(IS_MODE_UP_PENDING){
+                LCD_FillRect(ICO_CLR_START, ICO_CLR_SIZE, BLACK);
+                switch(app.mode){
+                    case MODE_PPM:
+                        APP_DRAW_ICON(ico_35mhz);
+                        break;
+                    case MODE_CC2500:
+                        APP_DRAW_ICON(ico_2_4ghz);
+                        break;
+                    case MODE_HID:
+                        APP_DRAW_ICON(ico_usb);
+                        break;
+
+                    default: break;
+                }
+            }
+
             LCD_Update();
             APP_FLAG_DISPLAY_UP_CLR;
         }

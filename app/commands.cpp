@@ -258,7 +258,7 @@ public:
 		if((flags & FLAG_BIND) == 0){
 			console->print("Bind already in progress");
 		}else{
-			appChangeModeReq(0, MODE_CC2500);
+			appModeRequest(MODE_CC2500);
             multiprotocol_flags_set(FLAG_CHANGE_PROTOCOL);
 		    multiprotocol_flags_clr(FLAG_BIND);
 			if((flags & FLAG_INPUT_SIGNAL) == 0){
@@ -338,7 +338,7 @@ public:
         console->println("mode, 0-14");
     }
 	char execute(int argc, char **argv) {
-        uint8_t cur_mode = appGetCurrentMode();
+        app_mode_t cur_mode = appGetCurrentMode();
 		if(argc == 1){
 			console->printf("Current mode: %d\n", cur_mode);
 			return CMD_OK;
@@ -346,7 +346,7 @@ public:
 
         int32_t int_value;
 		if(ia2i(argv[1], &int_value)){
-			appChangeModeReq(cur_mode, (uint8_t)int_value);
+			appModeRequest((app_mode_t)int_value);
             return CMD_OK;
 		}
 
