@@ -31,9 +31,9 @@ extern "C" {
  * LED's
  * */
 #ifdef BOARD_LASER4PLUS
-#define LED_PORT                GPIOB
-#define LED_PIN                 3
-#define LED_INIT                GPIOB->CRL = (GPIOB->CRL & ~(15<<12)) | (2<<12) // assume swd is already enabled
+#define LED_PORT                GPIOC /* Actually laser4+ board does not have any led */
+#define LED_PIN                 13
+#define LED_INIT                GPO_INIT(LED_PORT, LED_PIN); LED_OFF;
 #define LED_ON                  GPO_CLR(LED_PORT, LED_PIN)
 #define LED_OFF                 GPO_SET(LED_PORT, LED_PIN)
 #define LED_TOGGLE              GPO_TOGGLE(LED_PORT, LED_PIN)
