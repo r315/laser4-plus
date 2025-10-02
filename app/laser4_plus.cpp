@@ -34,6 +34,7 @@
 #define APP_FLAG_BAT_LOW_ICO_ON (1 << 7)
 #define APP_FLAG_BAT_LOW_ICO_OFF (1 << 8)
 #define APP_FLAG_MODE_UP        (1 << 9)
+#define APP_FLAG_USB_CONNECTED  (1 << 10)
 
 #define APP_FLAG_CHECK(_F)      (APP_FLAGS & (_F))
 #define IS_BAT_LOW              APP_FLAG_CHECK(APP_FLAG_BATLOW)
@@ -46,6 +47,7 @@
 #define IS_BAT_LOW_ICO_ON_PENDING   APP_FLAG_CHECK(APP_FLAG_BAT_LOW_ICO_ON)
 #define IS_BAT_LOW_ICO_OFF_PENDING  APP_FLAG_CHECK(APP_FLAG_BAT_LOW_ICO_OFF)
 #define IS_MODE_UP_PENDING      APP_FLAG_CHECK(APP_FLAG_MODE_UP)
+#define IS_USB_CONNECTED        APP_FLAG_CHECK(APP_FLAG_USB_CONNECTED)
 
 #define APP_FLAG_BAT_LOW_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_BATLOW)
 #define APP_FLAG_BAT_LOW_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_BATLOW)
@@ -74,6 +76,9 @@
 #define APP_FLAG_BAT_LOW_ICO_ON_CLR     APP_FLAGS = (APP_FLAGS & ~APP_FLAG_BAT_LOW_ICO_ON)
 #define APP_FLAG_BAT_LOW_ICO_OFF_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_BAT_LOW_ICO_OFF)
 #define APP_FLAG_BAT_LOW_ICO_OFF_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_BAT_LOW_ICO_OFF)
+
+#define APP_FLAG_USB_CONNECTED_SET    APP_FLAGS = (APP_FLAGS | APP_FLAG_USB_CONNECTED)
+#define APP_FLAG_USB_CONNECTED_CLR    APP_FLAGS = (APP_FLAGS & ~APP_FLAG_USB_CONNECTED)
 
 typedef struct app_s{
     uint32_t flags;
@@ -287,6 +292,7 @@ void usbConnectCB(void *ptr)
 {
     (void)ptr;
     appModeRequest(MODE_HID);
+    APP_FLAG_USB_CONNECTED_SET;
 #if defined(ENABLE_DEBUG) && defined(EANBLE_VCP)
     dbg_init(&vcp);
 #endif
@@ -306,6 +312,7 @@ void usbDisconnectCB(void *ptr)
 {
     (void)ptr;
     appModeRequest(MODE_CC2500);
+    APP_FLAG_USB_CONNECTED_CLR;
 #if defined(ENABLE_DEBUG) && defined(ENABLE_UART)
     dbg_init(&pcom);
 #endif
@@ -349,7 +356,7 @@ void appModeRequest(app_mode_t new_mode)
     app_state_t cur_state = app.state;
 
     // Do nothing if requesting the current mode or invalid
-    if(app.mode == new_mode || new_mode > MODE_NONE){
+    if(app.mode == new_mode || new_mode > MODE_NONE || cur_state == APP_STATE_INIT){
         return;
     }
     // Request in progress, if same return
@@ -725,7 +732,12 @@ extern "C" void loop(void)
             break;
 
         case APP_STATE_INIT:
-        // Set based on hardware switch, usualy at startup
+            // Set based on hardware switch, usualy at startup
+            app.state = APP_STATE_LOOP;
+            if(IS_USB_CONNECTED){
+                appModeRequest(MODE_HID);
+                break;
+            }
     #if defined(TX35_MHZ_INSTALLED) && defined(CC2500_INSTALLED)
             appModeRequest(IS_HW_SW_AUX3_PRESSED ? MODE_PPM : MODE_CC2500);
     #elif defined(CC2500_INSTALLED)
@@ -735,7 +747,6 @@ extern "C" void loop(void)
     #else
             appModeRequest(MODE_SERIAL);
     #endif
-            app.state = APP_STATE_LOOP;
             break;
 
         default:
