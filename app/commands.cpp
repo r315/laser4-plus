@@ -201,7 +201,7 @@ public:
         console->println("----------------------------------------");
 		channelValues();
         const char *mode_name;
-        switch(appGetCurrentMode()){
+        switch(appModeGet()){
             case MODE_PPM: mode_name = "TX 35MHz"; break;
             case MODE_SERIAL: mode_name = "Serial"; break;
             case MODE_HID: mode_name = "Game controller"; break;
@@ -345,7 +345,7 @@ public:
         console->println("proto, 0-14");
     }
 	char execute(int argc, char **argv) {
-        app_mode_t cur_mode = appGetCurrentMode();
+        app_mode_t cur_mode = appModeGet();
 		if(argc == 1){
 			console->printf("Current: %d\n", cur_mode);
 			return CMD_OK;

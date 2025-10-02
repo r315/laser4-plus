@@ -324,6 +324,16 @@ void usbDisconnectCB(void *ptr)
 }
 
 /**
+ * @brief Get number of seconds elapsed sinse powerup
+ * @param
+ * @return
+ */
+uint32_t appGetUpTime(void)
+{
+    return millis() / 1000UL;
+}
+
+/**
  * @brief Get current operation mode
  * @return  MODE_CHANGE_REQ
  *          MODE_CC2500
@@ -332,19 +342,9 @@ void usbDisconnectCB(void *ptr)
  *          MODE_NONE
  *
  * */
-app_mode_t appGetCurrentMode(void)
+app_mode_t appModeGet(void)
 {
     return app.mode;
-}
-
-/**
- * @brief Get number of seconds elapsed sinse powerup
- * @param
- * @return
- */
-uint32_t appGetUpTime(void)
-{
-    return millis() / 1000UL;
 }
 
 /**

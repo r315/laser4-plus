@@ -58,7 +58,7 @@ typedef union {
 }f2u_u;
 
 void appModeRequest(app_mode_t new_mode);
-app_mode_t appGetCurrentMode(void);
+app_mode_t appModeGet(void);
 uint32_t appGetBatConsumed(void);
 uint32_t appGetUpTime(void);
 
