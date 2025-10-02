@@ -80,7 +80,7 @@ public:
 	char execute(int argc, char **argv) {
         uint32_t value;
 
-		if(argc == 1 || !xstrcmp(argv[1], "help")){
+		if(argc == 1){
             help();
 			return CMD_OK;
 		}
@@ -220,7 +220,10 @@ class CmdId : public ConsoleCommand {
 public:
     CmdId() : ConsoleCommand("id") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
-	void help(void) {}
+	void help(void) {
+        console->println("usage: id");
+        console->println("\t prints transmitter identification");
+    }
 
 	char execute(int argc, char **argv) {
         (void) argc;
@@ -248,7 +251,11 @@ class CmdBind : public ConsoleCommand {
 public:
     CmdBind() : ConsoleCommand("bind") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
-	void help(void) {}
+	void help(void) {
+        console->println("usage: bind");
+        console->println("\tStart bind process");
+    }
+
 	char execute(int argc, char **argv) {
         (void) argc;
         (void) argv;
@@ -277,8 +284,8 @@ public:
     CmdPpm() : ConsoleCommand("ppm") {}
 	void init(void *params) { console = static_cast<Console*>(params); ppm_timer_id = -1;}
 	void help(void) {
-        console->println("usage: ppm [sim]");
-        console->println("sim <0|1>,\t\tEnable/disable simulation");
+        console->println("usage: ppm <sim|set>");
+        console->println("sim [0|1],\t\tEnable/disable simulation");
         console->println("set <channel> <value>,\t Set channel 0-3, value 900-2100");
     }
 
@@ -327,20 +334,20 @@ public:
 	}
 }cmdppm;
 
-class CmdMode : public ConsoleCommand {
+class CmdProto : public ConsoleCommand {
 	Console *console;
 public:
-    CmdMode() : ConsoleCommand("mode") {}
+    CmdProto() : ConsoleCommand("proto") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {
-        console->println("Changes operating mode between game controller and multiprotocol");
-        console->println("usage: mode [mode]");
-        console->println("mode, 0-14");
+        console->println("usage: proto [n]");
+        console->println("Protocol selection by 'switches'");
+        console->println("proto, 0-14");
     }
 	char execute(int argc, char **argv) {
         app_mode_t cur_mode = appGetCurrentMode();
 		if(argc == 1){
-			console->printf("Current mode: %d\n", cur_mode);
+			console->printf("Current: %d\n", cur_mode);
 			return CMD_OK;
 		}
 
@@ -352,7 +359,7 @@ public:
 
 		return CMD_BAD_PARAM;
 	}
-}cmdmode;
+}cmdproto;
 
 class CmdEeprom : public ConsoleCommand {
 	Console *console;
@@ -398,11 +405,6 @@ public:
 			channelRanges();
             console->printf("Buzzer vol   \t\t: %d\n", eeprom->buz_vol);
 			console->println("========================================");
-			return CMD_OK;
-		}
-
-		if(xstrcmp(argv[1],"help") == 0){
-			help();
 			return CMD_OK;
 		}
 
@@ -461,11 +463,6 @@ public:
 			return CMD_OK;
 		}
 
-		if(!xstrcmp(argv[1],"help")){
-			help();
-			return CMD_OK;
-		}
-
 		if(!xstrcmp(argv[1],"calibrate")){
 			if(adcCalibrate()){
 				console->printf("Adc resolution  \t%.3fmV/step\n", adcGetResolution());
@@ -505,17 +502,16 @@ public:
     CmdBuz() : ConsoleCommand("buz") {}
 	void init(void *params) { console = static_cast<Console*>(params); }
 	void help(void) {
-		console->println("usage: buz <-r|-v|-t>");
+		console->println("usage: buz <vol|freq>");
 		console->println(
 			"vol <volume>, set volume\n"
-			"freq <freq> <duration>"
+			"freq <f> <d>"
 		);
 	}
 	char execute(int argc, char **argv) {
         int32_t val;
 
 		if(argc < 1){
-			help();
 			console->printf("Current level %u\n", buzSetLevel(0));
 			return CMD_OK;
 		}
@@ -555,8 +551,6 @@ public:
         (void)argv;
 
     	console->print("Entering DFU mode\n");
-    	//LCD_Fill(0, 0, LCD_W, LCD_H, BLACK);
-    	//LCD_Update();
 
 		reboot_into_dfu();
     	NVIC_SystemReset();
@@ -577,7 +571,7 @@ ConsoleCommand *laser4_commands[]{
 	&cmdbind,
 	&cmdstatus,
 	&cmdppm,
-	&cmdmode,
+	&cmdproto,
 	&cmdeeprom,
 #ifdef ENABLE_BATTERY_MONITOR
 	&cmdadc,
