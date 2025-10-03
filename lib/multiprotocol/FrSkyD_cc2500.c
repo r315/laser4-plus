@@ -55,7 +55,25 @@ static void __attribute__((unused)) FRSKYD_build_bind_packet(radio_t *radio)
     radio->packet[16] = 0x00;
     radio->packet[17] = 0x01;
 }
-
+/**
+ * @brief sends servo data through FrSky protocol
+ *
+ * packet[6]  = ch0[7:0]
+ * packet[7]  = ch1[7:0]
+ * packet[8]  = ch2[7:0]
+ * packet[9]  = ch3[7:0]
+ * packet[10] = ch1[11:8] << 4 | ch0[11:8]
+ * packet[11] = ch3[11:8] << 4 | ch2[11:8]
+ * packet[12] = ch4[7:0]
+ * packet[13] = ch5[7:0]
+ * packet[14] = ch6[7:0]
+ * packet[15] = ch7[7:0]
+ * packet[16] = ch5[11:8] << 4 | ch4[11:8]
+ * packet[17] = ch7[11:8] << 4 | ch6[11:8]
+ *
+ *
+ * @param radio
+ */
 static void __attribute__((unused)) FRSKYD_data_frame(radio_t *radio)
 {
     //pachet[4] is telemetry user frame counter(hub)

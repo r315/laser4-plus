@@ -62,10 +62,20 @@ void Frsky_SetPower(radio_t *radio){
     }
 }
 
-// Channel value for FrSky (PPM is multiplied by 1.5)
+
+
+/**
+ * @brief Channel value for FrSky (PPM is multiplied by 1.5)
+ * Experimenting concluded that FrSky value ranges from
+ * 1298 to 3151
+ *
+ * @param val ppm value between 750 to 2250 (+/-125%)
+ * @return FrSky protocol value between 1298 to 3151
+ */
 uint16_t convert_channel_frsky(uint16_t val)
 {
-    return ((val * 15) >> 4) + 1290;
+    //return ((val * 15) >> 4) + 1290;
+    return (val - 750) * (3151 - 1298) / (2250 - 750) + 1298;
 }
 
 #if defined(FRSKYD_CC2500_INO) || defined(FRSKYX_CC2500_INO)
