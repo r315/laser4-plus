@@ -15,10 +15,12 @@
 #define DBG_APP_INF(...) DBG_INF(DBG_TAG __VA_ARGS__)
 #define DBG_APP_WRN(...) DBG_WRN(DBG_TAG __VA_ARGS__)
 #define DBG_APP_ERR(...) DBG_ERR(DBG_TAG __VA_ARGS__)
+#define DBG_APP_PRINTF(...) DBG_PRINTF(__VA_ARGS__)
 #else
 #define DBG_APP_INF(...)
 #define DBG_APP_WRN(...)
 #define DBG_APP_ERR(...)
+#define DBG_APP_PRINTF(...)
 #endif
 
 #define DISPLAY_MIN_UPDATE_TIME 6000   /* Minimum time required for display buffer update and display transfer using DMA in us*/
@@ -246,14 +248,16 @@ static const meep_t eeprom_default_data = {
     .uid = DEFAULT_ID,
     .vdiv = DEFAULT_VOLTAGE_DIV,
     .rsense = DEFAULT_SENSE_RESISTOR,
-    .servo_max_100 = CHANNEL_MAX_100,
-    .servo_min_100 = CHANNEL_MIN_100,
-    .servo_max_125 = CHANNEL_MAX_125,
-    .servo_min_125 = CHANNEL_MIN_125,
-    .switch_on = CHANNEL_SWITCH,
-    .switch_off = CHANNEL_MIN_100,
-    .ppm_max_100 = PPM_MAX_100,
-    .ppm_min_100 = PPM_MIN_100,
+    .ranges = {
+        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
+        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
+        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
+        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
+        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
+        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
+        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
+        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
+    },
     .cksum = 0
 };
 
@@ -519,7 +523,7 @@ void appCheckProtocolFlags(void)
  * @param channel_aux Output pointer for servo data
  * @param nchannel  Output number os channels
  */
-void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel)
+uint8_t appGetAuxChannels(uint16_t *channel_aux)
 {
     uint8_t nch = 0;
 
@@ -528,13 +532,10 @@ void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel)
     if(diff != 0){
         uint16_t tmp = channel_aux[nch];        // Read current servo value
         tmp += diff * 10;                       // increment/decrement
-        if(tmp > eeprom->servo_max_100){
-            tmp = eeprom->servo_max_100;
-        }else if(tmp < eeprom->servo_min_100){
-            tmp = eeprom->servo_min_100;
-        }
+        if(tmp > SERVO_MAX_125){ tmp = SERVO_MAX_125; }
+        if(tmp < SERVO_MIN_125){ tmp = SERVO_MIN_125; }
         channel_aux[nch] = tmp;
-        DBG_APP_INF("\rEnc %s%d : %d", diff>0 ? "+" : "", diff, tmp);
+        DBG_APP_PRINTF("\rEnc %s%d : %d ", diff>0 ? "+" : "", diff, tmp);
     }
 
     nch += AUX_ENC_NUM;
@@ -546,9 +547,9 @@ void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel)
 
     for(uint8_t i = 0; i < AUX_SWITCH_NUM; i++){
         if((switches & (1 << i))){
-            channel_value = eeprom->switch_on;
+            channel_value = eeprom->ranges[CH6 + i].max;
         }else{
-            channel_value = eeprom->switch_off;
+            channel_value = eeprom->ranges[CH6 + i].min;
         }
 
         if(channel_value != channel_aux[i + nch]){
@@ -561,7 +562,7 @@ void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel)
     nch += AUX_SWITCH_NUM;
 #endif
 
-    *nchannel = nch;
+    return nch;
 }
 
 /**

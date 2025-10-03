@@ -8,21 +8,6 @@ extern "C" {
 #include <stdint.h>
 #include "console.h"
 
-//Channel MIN MAX values
-#ifdef BOARD_LASER4PLUS
-#define CHANNEL_MAX_100         1844
-#define CHANNEL_MIN_100         844
-#else
-#define CHANNEL_MAX_100         2000    // 100%
-#define CHANNEL_MIN_100         1000    // 100%
-#endif
-#define CHANNEL_MAX_125         2250    // 125%
-#define CHANNEL_MIN_125         750     // 125%
-#define CHANNEL_SWITCH          1104    // 1550us
-
-#define PPM_MAX_100             (2012 << 1) // 0.5us
-#define PPM_MIN_100             (988 << 1)  // 0.5us
-
 #define PPM_DEFAULT_VALUE       0
 #define AUX_SWITCH_NUM          3
 #define AUX_ENC_NUM             1

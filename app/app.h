@@ -5,6 +5,6 @@
 void appInitEEPROM(void);
 void appSaveEEPROM(void);
 void appDefaultEEPROM(void);
-void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel);
+uint8_t appGetAuxChannels(uint16_t *channel_aux);
 
 #endif // APP_H

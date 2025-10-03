@@ -379,23 +379,20 @@ public:
 	}
 
 	void channelRanges(void){
-		console->printf(
-			"CH MAX      \t\t: %d us\n"
-			"CH MIN      \t\t: %d us\n"
-			"Switch ON   \t\t: %d us\n"
-            "Switch OFF  \t\t: %d us\n",
-            eeprom->servo_max_100,
-            eeprom->servo_min_100,
-            eeprom->switch_on,
-            eeprom->switch_off
+        console->printf(
+            "PPM\tMin: %dus\tMax: %dus\n",
+            PPM_MIN_PERIOD,
+            PPM_MAX_PERIOD
         );
 
-        console->printf(
-			"PPM MAX     \t\t: %d 1/2us\n"
-			"PPM MIN     \t\t: %d 1/2us\n",
-			eeprom->ppm_max_100,
-            eeprom->ppm_min_100
-		);
+        for(uint8_t i = 0; i < MAX_CHN_NUM; i++){
+            console->printf(
+                "CH[%d]\tMin: %dus\tMax: %dus\n",
+                i,
+                eeprom->ranges[i].min,
+                eeprom->ranges[i].max
+            );
+        }
 	}
 
 	char execute(int argc, char **argv) {

@@ -82,13 +82,11 @@ void multiprotocol_setup(void)
         BIND_DONE;
     }
 
-    uint16_t channel_default = (eeprom->servo_max_100 + eeprom->servo_min_100) >> 1;
-
     for(uint8_t i = 0; i < MAX_CHN_NUM; i++){
-        radio.channel_data[i] = channel_default;
+        radio.channel_data[i] = ((SERVO_MAX - SERVO_MIN) >> 1) + SERVO_MIN;
     }
 
-    radio.channel_data[THROTTLE] = eeprom->servo_min_125;
+    radio.channel_data[THROTTLE] = SERVO_MIN_125;
 
     modules_reset();
 
@@ -204,31 +202,27 @@ static uint8_t Update_All(void)
             // Get data captured from ppm input
             for(uint8_t i = 0; i < radio.nchannels; i++){
                 // update servo data without interrupts to prevent bad read
-                uint16_t val;
                 cli();
-                val = ppm_value_get(i);
+                uint16_t servo_value = ppm_value_get(i);
                 sei();
-                val = map16b(val,
-                            eeprom->ppm_min_100,
-                            eeprom->ppm_max_100,
-                            eeprom->servo_min_100,
-                            eeprom->servo_max_100);
-
-                if(val & 0x8000){
-                    val = eeprom->servo_min_125;
-                }else if(val > eeprom->servo_max_125){
-                    val = eeprom->servo_max_125;
-                }
+                // Clip ppm pulse to absolute max and min servo values
+                if(servo_value > SERVO_MAX_125) servo_value = SERVO_MAX_125;
+                if(servo_value < SERVO_MIN_125) servo_value = SERVO_MIN_125;
+                // map ppm value to servo value
+                servo_value = map16b(servo_value,
+                            eeprom->ranges[i].min,
+                            eeprom->ranges[i].max,
+                            SERVO_MIN, SERVO_MAX);
 
                 if(chan_or){
                     ch = chan_or >> 28;
                     if(ch)
-                        radio.channel_data[ch-1] = val;
+                        radio.channel_data[ch-1] = servo_value;
                     else
-                        radio.channel_data[i] = val;
+                        radio.channel_data[i] = servo_value;
                     chan_or<<=4;
                 }else{
-                    radio.channel_data[i] = val;
+                    radio.channel_data[i] = servo_value;
                 }
             }
             PPM_FLAG_off;                           // wait for next frame before update
@@ -238,13 +232,13 @@ static uint8_t Update_All(void)
         }
         #endif //ENABLE_PPM
 
-        appGetAuxChannels(&radio.channel_data[radio.nchannels], &ch);
+        ch = appGetAuxChannels(&radio.channel_data[radio.nchannels]);
 
-        if(radio.nchannels + ch < MAX_CHN_NUM){
-            radio.nchannels += ch;
-        }else{
+        if(radio.nchannels + ch > MAX_CHN_NUM){
             DBG_MULTI_WRN("Too many aux channels received");
             radio.nchannels = MAX_CHN_NUM;
+        }else{
+            radio.nchannels += ch;
         }
 
         INPUT_SIGNAL_on;                            // valid signal received

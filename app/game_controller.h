@@ -16,8 +16,8 @@ extern "C" {
 #define REPORT_SWITCHES_SIZE    1
 
 #pragma pack (1)
-// must follow HID report structure
 typedef struct controller{
+/* must follow HID report structure */
   int8_t  buttons;
   int16_t  pitch;
   int16_t  roll;
@@ -25,9 +25,6 @@ typedef struct controller{
   int16_t  yaw;
   int16_t  aux1;
   int16_t  aux2;
-
-  uint16_t max_pulse;
-  uint16_t min_pulse;
 }controller_t;
 
 uint16_t USBHID_init(radio_t *radio);

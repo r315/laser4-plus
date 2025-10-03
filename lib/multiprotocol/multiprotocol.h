@@ -33,14 +33,18 @@ extern "C" {
 //******************
 #define BAUD                        100000
 #define RXBUFFER_SIZE               36    // 26 + 1 + 9
-#define MAX_CHN_NUM                 16
+#define MAX_CHN_NUM                 8
 #define TELEMETRY_BUFFER_SIZE       30
 #define PPM_TX_CALLBACK_INTERVAL    20000 /* us */
 #define PROTOCOL_DEFAULT_INTERVAL   5000
 #define US_TO_TICKS(_US)            ((_US) << 1)  /* One us takes two ticks */
 #define TICKS_TO_US(_TICKS)         ((_TICKS) >> 1)
 #define TICKS_1MS                   US_TO_TICKS(1000)
-
+// These values are fixed by specification
+#define SERVO_MAX                   2000    // 100%
+#define SERVO_MIN                   1000    // 100%
+#define SERVO_MAX_125               2250    // 125%
+#define SERVO_MIN_125               750     // 125%
 //********************
 //*** Blink timing ***
 //********************
@@ -149,32 +153,30 @@ extern "C" {
 
 
 //Channel definitions
-#define    CH1        0
-#define    CH2        1
-#define    CH3        2
-#define    CH4        3
-#define    CH5        4
-#define    CH6        5
-#define    CH7        6
-#define    CH8        7
-#define    CH9        8
-#define    CH10       9
-#define    CH11       10
-#define    CH12       11
-#define    CH13       12
-#define    CH14       13
-#define    CH15       14
-#define    CH16       15
+#define CH1        0
+#define CH2        1
+#define CH3        2
+#define CH4        3
+#define CH5        4
+#define CH6        5
+#define CH7        6
+#define CH8        7
+#define CH9        8
+#define CH10       9
+#define CH11       10
+#define CH12       11
+#define CH13       12
+#define CH14       13
+#define CH15       14
+#define CH16       15
 
-#define    AILERON    0
-#define    ELEVATOR   1
-#define    THROTTLE   2
-#define    RUDDER     3
-
+#define AILERON    CH1
+#define ELEVATOR   CH2
+#define THROTTLE   CH3
+#define RUDDER     CH4
 
 #define DEFAULT_ID      0x2AD141A7
 #define MODE_SERIAL     0
-
 
 #define NONE            0
 #define P_HIGH          1
@@ -182,6 +184,10 @@ extern "C" {
 #define AUTOBIND        1
 #define NO_AUTOBIND     0
 
+typedef struct rservo{
+    uint16_t min;
+    uint16_t max;
+}rservo_t;
 
 struct meep{
     uint8_t bind;               // Not in use
@@ -191,14 +197,7 @@ struct meep{
     uint32_t uid;               // cpu unique identifier
     uint32_t vdiv;              // Battery voltage divider racio
     uint32_t rsense;            // Battery sence resistor in ohms
-    uint16_t servo_max_100;     // Maximum servo value in us
-    uint16_t servo_min_100;     // Minimum servo value in us
-    uint16_t servo_max_125;     // 125% maximum servo value in us
-    uint16_t servo_min_125;     // 125% minimum servo value in us
-    uint16_t switch_on;         // Servo value in us for active switch
-    uint16_t switch_off;        // Servo value in us for inactive switch
-    uint16_t ppm_max_100;       // Maximum ppm pulse period in timer tick units
-    uint16_t ppm_min_100;       // Minimum ppm pulse period in timer tick units
+    rservo_t ranges[MAX_CHN_NUM];// servos value range, board specific value
     uint8_t cksum;
 } __attribute__((packed));
 

@@ -223,7 +223,7 @@ extern "C" {
 #define SWTIM_AUTO_RELOAD       (1 << 1)
 #define SWTIM_IN_USE            (1 << 2)
 
-#define L4P_EEPROM_SZ           40          // 4byte aligned
+#define L4P_EEPROM_SZ           52          // 4byte aligned
 #define EEPROM_Read             NV_Read
 #define EEPROM_Write(addr,data,len)  NV_Write(addr,data,len)
 #define EEPROM_Sync             NV_Sync

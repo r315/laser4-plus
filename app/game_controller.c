@@ -29,12 +29,11 @@ RAM_CODE uint16_t USBHID_callback(radio_t *radio)
     for(i = 0; i < REPORT_CHANNELS_SIZE; i++){
         uint16_t val = radio->channel_data[i];
 
-        if(val < laser4.min_pulse || val > laser4.max_pulse){
-            // if out of pulse interval, center it
-            val = (laser4.max_pulse + laser4.min_pulse) >> 2;
-        }
+        // Clip servo value
+        if(val > SERVO_MAX){ val = SERVO_MAX; }
+        if(val < SERVO_MIN){ val = SERVO_MIN; }
 
-        val = map16b(val, laser4.min_pulse, laser4.max_pulse, LOGICAL_MINIMUM, LOGICAL_MAXIMUM);
+        val = map16b(val, SERVO_MIN, SERVO_MAX, LOGICAL_MINIMUM, LOGICAL_MAXIMUM);
 
         *(data + (channel_map[i] * 2)) = val;
         *(data + 1 + (channel_map[i] * 2)) = val >> 8;
@@ -86,9 +85,6 @@ uint16_t USBHID_init(radio_t *radio)
     laser4.aux1 = LOGICAL_MAXIMUM/2;
     laser4.aux2 = LOGICAL_MAXIMUM/2;
     laser4.buttons = 0;
-    laser4.max_pulse = eeprom->servo_max_100;
-    laser4.min_pulse = eeprom->servo_min_100;
-
     channel_map = CH_AETR;
 
     return PPM_TX_CALLBACK_INTERVAL;
