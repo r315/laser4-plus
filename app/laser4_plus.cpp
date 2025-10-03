@@ -534,7 +534,7 @@ void appGetAuxChannels(uint16_t *channel_aux, uint8_t *nchannel)
             tmp = eeprom->servo_min_100;
         }
         channel_aux[nch] = tmp;
-        DBG_APP_INF("Encoder %d", diff);
+        DBG_APP_INF("\rEnc %s%d : %d", diff>0 ? "+" : "", diff, tmp);
     }
 
     nch += AUX_ENC_NUM;
