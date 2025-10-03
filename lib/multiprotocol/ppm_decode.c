@@ -37,6 +37,11 @@ uint8_t ppm_nchannel_get(void)
     return nch;
 }
 
+/**
+ * @brief Get ppm channel pulse in us
+ * @param ch Channel for which value should be returned
+ * @return pulse duration in us
+ */
 uint16_t ppm_value_get(uint8_t ch)
 {
     return (ch < nch) ? ppm_data[ch] : 0;
@@ -63,7 +68,7 @@ RAM_CODE static void ppm_handler(void){
         bad_frame = 0;
     }else if(bad_frame == 0){			// need to wait for start of frame
         //servo values between 800us and 2200us will end up here
-        ppm_data[chan] = cur_tick;
+        ppm_data[chan] = TICKS_TO_US(cur_tick);
         if(chan++ >= MAX_PPM_CHANNELS)
             bad_frame = 1;		        // don't accept any new channels
     }

@@ -131,9 +131,20 @@ extern "C" {
 
 #define MIN_PPM_CHANNELS        4
 #define MAX_PPM_CHANNELS        6
-#define PPM_MAX_PERIOD          2200    /* servo values in us */
-#define PPM_MIN_PERIOD          800
+// PPM values are board specific [us]
+#ifdef BOARD_LASER4PLUS
+#define PPM_MAX_PERIOD          2012
+#define PPM_MIN_PERIOD          988
 #define PPM_PULSE_WIDTH         300
+#define SWITCH_ACTIVE           1750
+#define SWITCH_INACTIVE         1250
+#else
+#define PPM_MAX_PERIOD          2100
+#define PPM_MIN_PERIOD          900
+#define PPM_PULSE_WIDTH         300
+#define SWITCH_ACTIVE           1750
+#define SWITCH_INACTIVE         1250
+#endif
 
 /**
  * Buzzer

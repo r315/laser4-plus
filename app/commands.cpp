@@ -301,7 +301,7 @@ public:
             if(ia2i(argv[2], &sim_enable)){
                 if((sim_enable & 1) && (ppm_timer_id == -1)){
                     for(uint8_t ch = 0; ch < MIN_PPM_CHANNELS; ch++){
-                        ppm_sim_set_channel_data(ch, US_TO_TICKS(1500));
+                        ppm_sim_set_channel_data(ch, ((SERVO_MAX - SERVO_MIN) >> 1) + SERVO_MIN);
                     }
                     console->println("Starting ppm simulation");
                     ppm_timer_id = startTimer(20, SWTIM_AUTO_RELOAD, ppm_sim_handler);
