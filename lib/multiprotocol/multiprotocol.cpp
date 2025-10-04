@@ -82,12 +82,6 @@ void multiprotocol_setup(void)
         BIND_DONE;
     }
 
-    for(uint8_t i = 0; i < MAX_CHN_NUM; i++){
-        radio.channel_data[i] = ((SERVO_MAX - SERVO_MIN) >> 1) + SERVO_MIN;
-    }
-
-    radio.channel_data[THROTTLE] = SERVO_MIN_125;
-
     modules_reset();
 
     radio.protocol_id_master = random_id(false);
@@ -205,9 +199,9 @@ static uint8_t Update_All(void)
                 cli();
                 uint16_t servo_value = ppm_value_get(i);
                 sei();
-                // Clip ppm pulse to absolute max and min servo values
-                if(servo_value > SERVO_MAX_125) servo_value = SERVO_MAX_125;
-                if(servo_value < SERVO_MIN_125) servo_value = SERVO_MIN_125;
+                // Clip ppm pulse to configured channel range.
+                if(servo_value > eeprom->ranges[i].max) servo_value = eeprom->ranges[i].max;
+                if(servo_value < eeprom->ranges[i].min) servo_value = eeprom->ranges[i].min;
                 // map ppm value to servo value
                 servo_value = map16b(servo_value,
                             eeprom->ranges[i].min,

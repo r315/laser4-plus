@@ -286,17 +286,23 @@ public:
 	void help(void) {
         console->println("usage: ppm <sim|set>");
         console->println("sim [0|1],\t\tEnable/disable simulation");
-        console->println("set <channel> <value>,\t Set channel 0-3, value 900-2100");
+        console->println("set <channel> <value>,"
+            "\tSet simulated channel value [900;2100]");
+        console->println("trim <channel> <min> <max>,"
+            "\t Trim channel range [750;2250]");
     }
 
 	char execute(int argc, char **argv) {
+        int32_t channel;
+        int32_t value, min, max;
 
         if(argc == 1){
             help();
             return CMD_OK;
         }
-
         if(!xstrcmp(argv[1], "sim")){
+            // Only 4 channels are simulated, remaining channels are obtained
+            // From encoder and switches
             int32_t sim_enable;
             if(ia2i(argv[2], &sim_enable)){
                 if((sim_enable & 1) && (ppm_timer_id == -1)){
@@ -316,18 +322,35 @@ public:
             return CMD_OK;
         }
 
+        /* Set value of simulated channels */
         if(!xstrcmp(argv[1], "set")){
-            int32_t channel;
-            int32_t value;
             if(ia2i(argv[2], &channel)){
                 channel &= 3;
                 if(ia2i(argv[3], &value)){
-                    if(value > 2100)value = 2100;
-                    if (value < 900)value = 900;
-                    ppm_sim_set_channel_data(channel, US_TO_TICKS(value));
+                    if(value > SERVO_MAX_125)value = SERVO_MAX_125;
+                    if(value < SERVO_MIN_125)value = SERVO_MIN_125;
+                    ppm_sim_set_channel_data(channel, value);
                     return CMD_OK;
                 }
             }
+        }
+
+        /* Trims channel range, command 'eeprom save' must be issued to
+        make trim persistent */
+        while(!xstrcmp(argv[1], "trim")){
+            if(!ia2i(argv[2], &channel)) break;
+            if(!ia2i(argv[3], &min)) break;
+            if(!ia2i(argv[4], &max)) break;
+            channel &= 7;
+            if(min > SERVO_MAX_125) min = SERVO_MAX_125;
+            if(min < SERVO_MIN_125) min = SERVO_MIN_125;
+            if(max > SERVO_MAX_125) max = SERVO_MAX_125;
+            if(max < SERVO_MIN_125) max = SERVO_MIN_125;
+
+            eeprom->ranges[channel].min = min;
+            eeprom->ranges[channel].max = max;
+
+            return CMD_OK;
         }
 
 		return CMD_BAD_PARAM;

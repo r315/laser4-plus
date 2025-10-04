@@ -85,6 +85,8 @@ uint16_t USBHID_init(radio_t *radio)
     laser4.aux1 = LOGICAL_MAXIMUM/2;
     laser4.aux2 = LOGICAL_MAXIMUM/2;
     laser4.buttons = 0;
+
+    /* Actually XYWZTR */
     channel_map = CH_AETR;
 
     return PPM_TX_CALLBACK_INTERVAL;
