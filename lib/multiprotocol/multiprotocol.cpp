@@ -82,6 +82,12 @@ void multiprotocol_setup(void)
         BIND_DONE;
     }
 
+    for(uint8_t i = 0; i < MAX_CHN_NUM; i++){
+        radio.channel_data[i] = ((SERVO_MAX - SERVO_MIN) >> 1) + SERVO_MIN;
+    }
+
+    radio.channel_data[THROTTLE] = SERVO_MIN_125;
+
     modules_reset();
 
     radio.protocol_id_master = random_id(false);
