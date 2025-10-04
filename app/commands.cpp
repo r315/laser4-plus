@@ -168,7 +168,7 @@ public:
         uint8_t nchannels;
         multiprotocol_channel_data_get(&channel_data, &nchannels);
 		for(uint8_t i = 0; i < nchannels; i++){
-        	console->printf("CH[%u]\t         : %u\n", i, channel_data[i]);
+        	console->printf("CH[%u]\t%u\t%u\n", i, ppm_value_get(i), channel_data[i]);
     	}
 	}
 
@@ -200,6 +200,7 @@ public:
 
         console->println("\n  Channel data");
         console->println("----------------------------------------");
+        console->println("Channel\tPPM\tServo");
 		channelValues();
         const char *mode_name;
         switch(appModeGet()){
