@@ -291,7 +291,9 @@ public:
         console->println("set <channel> <value>,"
             "\tSet simulated channel value [900;2100]");
         console->println("trim <channel> <min> <max>,"
-            "\t Trim channel range [750;2250]");
+            "\t Trim stick to ppm");
+        console->println("servo <channel> <min> <max>,"
+            "\t Servo limits range [750;2250]");
     }
 
 	char execute(int argc, char **argv) {
@@ -343,14 +345,30 @@ public:
             if(!ia2i(argv[2], &channel)) break;
             if(!ia2i(argv[3], &min)) break;
             if(!ia2i(argv[4], &max)) break;
-            channel &= 7;
+            if(channel > PPM_CH_IN_NUM) break;
+            if(min > PPM_MAX_PERIOD) min = PPM_MAX_PERIOD;
+            if(min < PPM_MIN_PERIOD) min = PPM_MIN_PERIOD;
+            if(max > PPM_MAX_PERIOD) max = PPM_MAX_PERIOD;
+            if(max < PPM_MIN_PERIOD) max = PPM_MIN_PERIOD;
+
+            eeprom->ppm_range[channel].min = min;
+            eeprom->ppm_range[channel].max = max;
+
+            return CMD_OK;
+        }
+        // Change this parameter to other command??
+        while(!xstrcmp(argv[1], "servo")){
+            if(!ia2i(argv[2], &channel)) break;
+            if(!ia2i(argv[3], &min)) break;
+            if(!ia2i(argv[4], &max)) break;
+            if(channel > MAX_CHN_NUM) break;
             if(min > SERVO_MAX_125) min = SERVO_MAX_125;
             if(min < SERVO_MIN_125) min = SERVO_MIN_125;
             if(max > SERVO_MAX_125) max = SERVO_MAX_125;
             if(max < SERVO_MIN_125) max = SERVO_MIN_125;
 
-            eeprom->ranges[channel].min = min;
-            eeprom->ranges[channel].max = max;
+            eeprom->ch_range[channel].min = min;
+            eeprom->ch_range[channel].max = max;
 
             return CMD_OK;
         }
@@ -396,26 +414,22 @@ public:
 		console->println("usage: eeprom [dump|load|save|erase|default]");
 	}
 
-	void id(void){
-		console->printf(
-			"ID          \t\t: 0x%X\n",
-			eeprom->uid
-		);
-	}
-
 	void channelRanges(void){
-        console->printf(
-            "PPM\tMin: %dus\tMax: %dus\n",
-            PPM_MIN_PERIOD,
-            PPM_MAX_PERIOD
-        );
+        for(uint8_t i = 0; i < PPM_CH_IN_NUM; i++){
+            console->printf(
+                "PPM[%u]\tMin: %uus\tMax: %uus\n",
+                    i,
+                    eeprom->ppm_range[i].min,
+                    eeprom->ppm_range[i].max
+            );
+        }
 
         for(uint8_t i = 0; i < MAX_CHN_NUM; i++){
             console->printf(
                 "CH[%d]\tMin: %dus\tMax: %dus\n",
                 i,
-                eeprom->ranges[i].min,
-                eeprom->ranges[i].max
+                eeprom->ch_range[i].min,
+                eeprom->ch_range[i].max
             );
         }
 	}
@@ -423,9 +437,14 @@ public:
 	char execute(int argc, char **argv) {
 		if(argc == 1){
 			console->println("========================================");
-			id();
+			console->printf("ID\t: 0x%X\n", eeprom->uid);
+            f2u_u t;
+            t.u = eeprom->vdiv;
+            console->printf("Vdiv\t: %.3f\n", t.f);
+            t.u = eeprom->rsense;
+            console->printf("RSense\t: %.3f\n", t.f);
 			channelRanges();
-            console->printf("Buzzer vol   \t\t: %d\n", eeprom->buz_vol);
+            console->printf("Buz vol\t: %d\n", eeprom->buz_vol);
 			console->println("========================================");
 			return CMD_OK;
 		}

@@ -248,15 +248,21 @@ static const meep_t eeprom_default_data = {
     .uid = DEFAULT_ID,
     .vdiv = DEFAULT_VOLTAGE_DIV,
     .rsense = DEFAULT_SENSE_RESISTOR,
-    .ranges = {
+    .ppm_range = {
         {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
         {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
         {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
-        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
-        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
-        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
-        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
-        {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
+        {PPM_MIN_PERIOD, PPM_MAX_PERIOD}  // 800, 1700
+    },
+    .ch_range = {
+        {SERVO_MIN, SERVO_MAX},
+        {SERVO_MIN, SERVO_MAX},
+        {SERVO_MIN, SERVO_MAX},
+        {SERVO_MIN, SERVO_MAX},
+        {SERVO_MIN, SERVO_MAX},
+        {SERVO_MIN, SERVO_MAX},
+        {SERVO_MIN, SERVO_MAX},
+        {SERVO_MIN, SERVO_MAX}
     },
     .cksum = 0
 };
@@ -547,9 +553,9 @@ uint8_t appGetAuxChannels(uint16_t *channel_aux)
 
     for(uint8_t i = 0; i < AUX_SWITCH_NUM; i++){
         if((switches & (1 << i))){
-            channel_value = eeprom->ranges[CH6 + i].max;
+            channel_value = eeprom->ch_range[CH6 + i].max;
         }else{
-            channel_value = eeprom->ranges[CH6 + i].min;
+            channel_value = eeprom->ch_range[CH6 + i].min;
         }
 
         if(channel_value != channel_aux[i + nch]){

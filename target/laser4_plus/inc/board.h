@@ -167,7 +167,7 @@ extern "C" {
 
 #define HW_BANK_SWITCH          0       /* bank_switch(); */
 
-#if defined(ENABLE_PWM)
+#ifdef ENABLE_PWM
 /**
  * PA0 <- CH1
  * PA1 <- CH2
@@ -223,7 +223,8 @@ extern "C" {
 #define SWTIM_AUTO_RELOAD       (1 << 1)
 #define SWTIM_IN_USE            (1 << 2)
 
-#define L4P_EEPROM_SZ           52          // 4byte aligned
+/* This is not eeprom size, but it should be > than requested eeprom size and be 4byte aligned */
+#define L4P_EEPROM_SZ           128
 #define EEPROM_Read             NV_Read
 #define EEPROM_Write(addr,data,len)  NV_Write(addr,data,len)
 #define EEPROM_Sync             NV_Sync

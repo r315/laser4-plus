@@ -26,7 +26,6 @@
 #include "FrSkyDVX_Common.h"
 #include "game_controller.h"
 #include "app.h"
-#include "board.h"
 #include "debug.h"
 
 //Personal config file
@@ -205,14 +204,16 @@ static uint8_t Update_All(void)
                 cli();
                 uint16_t servo_value = ppm_value_get(i);
                 sei();
-                // Clip ppm pulse to configured channel range.
-                if(servo_value > eeprom->ranges[i].max) servo_value = eeprom->ranges[i].max;
-                if(servo_value < eeprom->ranges[i].min) servo_value = eeprom->ranges[i].min;
+                // Clip ppm pulse to configured ppm period range.
+                if(servo_value < eeprom->ppm_range[i].min) servo_value = eeprom->ppm_range[i].min;
+                if(servo_value > eeprom->ppm_range[i].max) servo_value = eeprom->ppm_range[i].max;
                 // map ppm value to servo value
                 servo_value = map16b(servo_value,
-                            eeprom->ranges[i].min,
-                            eeprom->ranges[i].max,
-                            SERVO_MIN, SERVO_MAX);
+                            eeprom->ppm_range[i].min,
+                            eeprom->ppm_range[i].max,
+                            eeprom->ch_range[i].min,
+                            eeprom->ch_range[i].max
+                        );
 
                 if(chan_or){
                     ch = chan_or >> 28;
