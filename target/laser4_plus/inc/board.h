@@ -129,8 +129,8 @@ extern "C" {
 #define PPM_DMA_REQ             DMA1_REQ_TIM4_UP
 #define TIME_BASE               TIM3
 
-#define MIN_PPM_CHANNELS        4
-#define MAX_PPM_CHANNELS        6
+#define PPM_CH_IN_NUM           4
+#define PPM_CH_OUT_NUM          6
 // PPM values are board specific [us]
 #ifdef BOARD_LASER4PLUS
 #define PPM_MAX_PERIOD          2012

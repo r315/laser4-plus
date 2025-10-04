@@ -84,7 +84,7 @@ static void auxEncoderInit(void);
 
 #ifdef ENABLE_PPM_OUTPUT
 static dmatype_t ppmdma;
-static uint16_t ppm_data[MAX_PPM_CHANNELS + 2];
+static uint16_t ppm_data[PPM_CH_OUT_NUM + 2];
 static void ppmOutInit(void);
 #endif
 
@@ -873,13 +873,13 @@ static void ppmEotHandler(void)
  *
  * @param data : pointer to servo data in us unit
  * @param nch : Number of channels in servo data,
- * has a maximum of MAX_PPM_CHANNELS
+ * has a maximum of PPM_CH_OUT_NUM
  *
  * */
 void ppmOut(const uint16_t *data, uint8_t nch)
 {
-    if(nch > MAX_PPM_CHANNELS){
-        nch = MAX_PPM_CHANNELS;
+    if(nch > PPM_CH_OUT_NUM){
+        nch = PPM_CH_OUT_NUM;
     }
     // Copy channel data to local buffer allows
     // application to change buffer right after this call
@@ -946,7 +946,7 @@ void ppmOutInit(void)
     ppmdma.src = (void*)&ppm_data[0];
     ppmdma.dst = (void*)&PPM_TIM->ARR;
     ppmdma.eot = ppmEotHandler;
-    ppmdma.len = MAX_PPM_CHANNELS + 2;
+    ppmdma.len = PPM_CH_OUT_NUM + 2;
     DMA_Config(&ppmdma, PPM_DMA_REQ);
 
     PPM_TIM->CR1 =  TIM_CR1_DIR | TIM_CR1_ARPE;     // Down count and buffered ARR

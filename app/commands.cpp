@@ -308,7 +308,7 @@ public:
             int32_t sim_enable;
             if(ia2i(argv[2], &sim_enable)){
                 if((sim_enable & 1) && (ppm_timer_id == -1)){
-                    for(uint8_t ch = 0; ch < MIN_PPM_CHANNELS; ch++){
+                    for(uint8_t ch = 0; ch < PPM_CH_IN_NUM; ch++){
                         ppm_sim_set_channel_data(ch, ((SERVO_MAX - SERVO_MIN) >> 1) + SERVO_MIN);
                     }
                     console->println("Starting ppm simulation");
