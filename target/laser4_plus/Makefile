@@ -150,6 +150,8 @@ CORE =cortex-m3
 MCU = -mcpu=$(CORE) -mthumb
 
 ifeq ($(RELEASE),1)
+GIT_TAG :=$(shell git describe --abbrev=0 --tags 2>/dev/null || true)
+VERSION :=VERSION_STRING=\"$(GIT_TAG)\"
 OPT = -Os -Wall -Wextra
 else
 OPT = -O0 -g -gdwarf-2 -Wall -Wextra
@@ -171,6 +173,7 @@ FIFO_INTERRUPT_SAFE \
 CONSOLE_WIDTH=128 \
 USE_PIXELDUST_FONT \
 $(XTAL) \
+$(VERSION) \
 
 ifeq ($(ENABLE_DFU),1)
 C_DEFS +=ENABLE_DFU

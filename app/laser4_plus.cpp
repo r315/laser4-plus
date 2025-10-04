@@ -649,7 +649,7 @@ extern "C" void setup(void)
     USB_DEVICE_RegisterResumeCallback(usbConnectCB, NULL);
 #endif
 
-    DBG_PRINT("\n Laser4+ version: %d.%d.%d \n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+    DBG_PRINT("\n Laser4+ version: %s\n", VERSION_STRING);
 
 #if defined(ENABLE_CLI)
     #if defined(ENABLE_VCP)
@@ -692,7 +692,7 @@ extern "C" void setup(void)
 #ifdef ENABLE_DISPLAY
     if(displayInit()){
         APP_FLAG_DISPLAY_SET;
-        MPANEL_print(VERSION_POS, &pixelDustFont, "V%u.%u.%u", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+        MPANEL_print(VERSION_POS, &pixelDustFont, "%s", VERSION_STRING);
         LCD_Update();
         DelayMs(1000);
         LCD_FillRect(VERSION_POS, 64, pixelDustFont.h, BLACK); // Erase version from display

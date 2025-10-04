@@ -152,6 +152,7 @@ public:
             //!!(flags & FLAG_RANGE),
             !!(flags & FLAG_BIND)
 		);
+
 		console->printf(
 			"Wait bind        : %d\n"
 			//"Tx pause         : %d\n"
@@ -178,7 +179,7 @@ public:
         console->println("\n========================================");
         console->println("            System Status");
 		console->println("========================================");
-
+        console->printf("\nVersion: %s\n", VERSION_STRING);
         console->println("\n  System Flags");
         console->println("----------------------------------------");
         systemFlags();
