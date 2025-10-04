@@ -4,10 +4,20 @@ norule:
 	@echo "	l4p, Laser4 plus"
 	@echo "	bp,  bluepill"
 	@echo "Build options"
+	@echo "	<board>, Build with debug"
+	@echo "	<board>-release, Build release build"
+	@echo "	<board>-program, Program generated binary"
+	@echo "	<board>-dfu, Release build for DFU"
 	@echo "	<board>-bootloader, Build DFU bootloader "
 	@echo "	<board>-release, Build dfu image"
 
 all: lp4-release
+
+program: l4p-program
+
+bootloader: l4p-bootloader
+
+dfu: l4p-dfu
 
 clean:
 	@$(RM) -rf build
@@ -23,15 +33,19 @@ BP_FLAGS  = TARGET=bp BOARD=BOARD_BLUEPILL
 l4p:         ; @$(MAKE_TGT) $(L4P_FLAGS)
 bp:          ; @$(MAKE_TGT) $(BP_FLAGS)
 
+# Release build
+l4p-release: ; @$(MAKE_TGT) $(L4P_FLAGS) RELEASE=1
+bp-release:  ; @$(MAKE_TGT) $(BP_FLAGS) RELEASE=1
+
 # Programming
 l4p-program: ; @$(MAKE_TGT) $(L4P_FLAGS) jlink-program
 bp-program:  ; @$(MAKE_TGT) $(BP_FLAGS) jlink-program
 
-# Release builds
-l4p-release: ; @$(MAKE_TGT) $(L4P_FLAGS) dfu
+# DFU builds
+l4p-dfu:     ; @$(MAKE_TGT) $(L4P_FLAGS) dfu
 	py lib/stm32-dfu-bootloader/bin2dfu.py build/l4p/l4p.dfu build/l4p/l4p.bin 0x8001000
 
-bp-release:  ; @$(MAKE_TGT) $(BP_FLAGS) dfu
+bp-dfu:      ; @$(MAKE_TGT) $(BP_FLAGS) dfu
 	py lib/stm32-dfu-bootloader/bin2dfu.py build/bp/bp.dfu build/bp/bp.bin 0x8001000
 
 # Bootloaders
@@ -41,11 +55,7 @@ l4p-bootloader:
 bp-bootloader:
 	@$(MAKE) -B -C lib/stm32-dfu-bootloader bin
 
-%-release:
-	@$(MAKE_TGT) $(if $(findstring l4p,$@),$(L4P_FLAGS),$(BP_FLAGS)) dfu
-	py lib/stm32-dfu-bootloader/bin2dfu.py build/$*/$*.dfu build/$*/$*.bin 0x8001000
-
-# The correct bootloader.bin must be created beforhand
+# The correct bootloader.bin must be generated beforehand
 stm-program.jlink:
 	@echo "Creating Jlink configuration file"
 	echo "erase" >> $@
