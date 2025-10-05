@@ -249,10 +249,6 @@ static batsoc_t batsoc;
  * EEPROM ram copy
  * */
 static const meep_t eeprom_default_data = {
-    .bind = 0,
-    .buz_vol = BUZ_DEFAULT_VOLUME,
-    .rfu1 = 0xFE,
-    .rfu2 = 0xFF,
     .uid = DEFAULT_ID,
     .vdiv = DEFAULT_VOLTAGE_DIV,
     .rsense = DEFAULT_SENSE_RESISTOR,
@@ -274,6 +270,9 @@ static const meep_t eeprom_default_data = {
         {SERVO_MIN, SERVO_MAX},
         {SERVO_MIN, SERVO_MAX}
     },
+#ifdef ENABLE_BUZZER
+    .buz_vol = BUZ_DEFAULT_VOLUME,
+#endif
     .cksum = 0
 };
 

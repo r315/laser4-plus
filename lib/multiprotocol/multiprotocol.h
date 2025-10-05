@@ -191,10 +191,6 @@ typedef struct rservo{
 }rservo_t;
 
 struct meep{
-    uint8_t bind;               // Not in use
-    uint8_t buz_vol;            // Buzzer volume
-    uint8_t rfu1;               // reserved for future use
-    uint8_t rfu2;               // reserved for future use
     uint32_t uid;               // cpu unique identifier
     uint32_t vdiv;              // Battery voltage divider racio
     uint32_t rsense;            // Battery sence resistor in ohms
@@ -202,6 +198,9 @@ struct meep{
     rservo_t ppm_range[PPM_CH_IN_NUM];// PPM values range, board specific value
 #endif
     rservo_t ch_range[MAX_CHN_NUM];// Servo value limits
+#ifdef ENABLE_BUZZER
+    uint8_t buz_vol;            // Buzzer volume
+#endif
     uint8_t cksum;
 } __attribute__((packed));
 

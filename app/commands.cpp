@@ -453,7 +453,9 @@ public:
             t.u = eeprom->rsense;
             console->printf("RSense\t: %.3f\n", t.f);
 			channelRanges();
+            #ifdef ENABLE_BUZZER
             console->printf("Buz vol\t: %d\n", eeprom->buz_vol);
+            #endif
 			console->println("========================================");
 			return CMD_OK;
 		}
