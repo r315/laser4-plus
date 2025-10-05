@@ -101,6 +101,14 @@ static tone_t chime[] = {
 };
 #endif
 
+#ifdef ENABLE_UART
+static stdinout_t pcom = {
+    .available = serial_available,
+    .read = serial_read,
+    .write = serial_write
+};
+#endif
+
 #if defined(ENABLE_CLI)
 static Console con;
 #endif

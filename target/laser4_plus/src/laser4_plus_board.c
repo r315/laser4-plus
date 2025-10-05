@@ -94,13 +94,6 @@ static serialbus_t uartbus;
 int serial_available(void) { return UART_Available(&uartbus); }
 int serial_read(char *buf, int len) { return UART_Read(&uartbus, (uint8_t*)buf, len); }
 int serial_write(const char *buf, int len) { return UART_Write(&uartbus, (const uint8_t*)buf, len); }
-
-stdinout_t pcom = {
-    .available = serial_available,
-    .read = serial_read,
-    .write = serial_write
-};
-
 #endif
 
 #ifdef ENABLE_VCP
@@ -353,6 +346,11 @@ void DelayMs(uint32_t ms)
     while(systicks < timeout){ }
 }
 
+/**
+ * @brief Current system tick
+ * @param
+ * @return milliseconds elapsed since power up
+ */
 uint32_t millis(void)
 {
     return systicks;

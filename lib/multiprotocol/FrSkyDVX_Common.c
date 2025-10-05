@@ -57,7 +57,9 @@ void Frsky_SetPower(radio_t *radio){
     }
 
     if(radio->prev_power != power){
+        #ifdef CC2500_INSTALLED
         CC2500_SetPower(power);
+        #endif
         radio->prev_power = power;
     }
 }
