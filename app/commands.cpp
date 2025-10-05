@@ -168,7 +168,11 @@ public:
         uint8_t nchannels;
         multiprotocol_channel_data_get(&channel_data, &nchannels);
 		for(uint8_t i = 0; i < nchannels; i++){
+            #ifdef ENABLE_PPM
         	console->printf("CH[%u]\t%u\t%u\n", i, ppm_value_get(i), channel_data[i]);
+            #else
+            console->printf("CH[%u]\t----\t%u\n", i, channel_data[i]);
+            #endif
     	}
 	}
 
@@ -298,12 +302,14 @@ public:
 
 	char execute(int argc, char **argv) {
         int32_t channel;
-        int32_t value, min, max;
+        int32_t min, max;
 
         if(argc == 1){
             help();
             return CMD_OK;
         }
+
+#ifdef ENABLE_PPM
         if(!xstrcmp(argv[1], "sim")){
             // Only 4 channels are simulated, remaining channels are obtained
             // From encoder and switches
@@ -330,10 +336,10 @@ public:
         if(!xstrcmp(argv[1], "set")){
             if(ia2i(argv[2], &channel)){
                 channel &= 3;
-                if(ia2i(argv[3], &value)){
-                    if(value > SERVO_MAX_125)value = SERVO_MAX_125;
-                    if(value < SERVO_MIN_125)value = SERVO_MIN_125;
-                    ppm_sim_set_channel_data(channel, value);
+                if(ia2i(argv[3], &min)){
+                    if(min > SERVO_MAX_125) min = SERVO_MAX_125;
+                    if(min < SERVO_MIN_125) min = SERVO_MIN_125;
+                    ppm_sim_set_channel_data(channel, min);
                     return CMD_OK;
                 }
             }
@@ -356,6 +362,7 @@ public:
 
             return CMD_OK;
         }
+#endif
         // Change this parameter to other command??
         while(!xstrcmp(argv[1], "servo")){
             if(!ia2i(argv[2], &channel)) break;
@@ -415,6 +422,7 @@ public:
 	}
 
 	void channelRanges(void){
+    #ifdef ENABLE_PPM
         for(uint8_t i = 0; i < PPM_CH_IN_NUM; i++){
             console->printf(
                 "PPM[%u]\tMin: %uus\tMax: %uus\n",
@@ -432,6 +440,7 @@ public:
                 eeprom->ch_range[i].max
             );
         }
+    #endif
 	}
 
 	char execute(int argc, char **argv) {

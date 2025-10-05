@@ -198,7 +198,9 @@ struct meep{
     uint32_t uid;               // cpu unique identifier
     uint32_t vdiv;              // Battery voltage divider racio
     uint32_t rsense;            // Battery sence resistor in ohms
+#ifdef ENABLE_PPM
     rservo_t ppm_range[PPM_CH_IN_NUM];// PPM values range, board specific value
+#endif
     rservo_t ch_range[MAX_CHN_NUM];// Servo value limits
     uint8_t cksum;
 } __attribute__((packed));

@@ -248,12 +248,14 @@ static const meep_t eeprom_default_data = {
     .uid = DEFAULT_ID,
     .vdiv = DEFAULT_VOLTAGE_DIV,
     .rsense = DEFAULT_SENSE_RESISTOR,
+#ifdef ENABLE_PPM
     .ppm_range = {
         {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
         {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
         {PPM_MIN_PERIOD, PPM_MAX_PERIOD},
         {PPM_MIN_PERIOD, PPM_MAX_PERIOD}  // 800, 1700
     },
+#endif
     .ch_range = {
         {SERVO_MIN, SERVO_MAX},
         {SERVO_MIN, SERVO_MAX},
@@ -752,7 +754,7 @@ extern "C" void loop(void)
     #elif defined(TX35_MHZ_INSTALLED)
             appModeRequest(MODE_PPM);
     #else
-            appModeRequest(MODE_SERIAL);
+            appModeRequest((app_mode_t)MODE_SERIAL);
     #endif
             break;
 
@@ -786,6 +788,7 @@ extern "C" void loop(void)
         }
 
         if (shouldUpdate) {
+        #ifdef ENABLE_BATTERY_MONITOR
             if(IS_BAT_STATE_UP_PENDING){
                 // update battery voltage DRO
                 dro_bat.update(batsoc.data.vbat / 1000.0f);
@@ -794,7 +797,7 @@ extern "C" void loop(void)
                 dro_ma.update(batsoc.data.cur);
                 APP_FLAG_BAT_STATE_UP_CLR;
             }
-
+        #endif
             if(IS_BAT_LOW_ICO_ON_PENDING){
                 APP_DRAW_ICON(ico_low_bat);
                 APP_FLAG_BAT_LOW_ICO_ON_CLR;
