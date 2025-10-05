@@ -85,13 +85,13 @@ RAM_CODE static void ppm_handler(void){
 void ppm_init(void(*cb)(void))
 {
     if(cb != NULL){
-        gpioRemoveInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN);
+        gpioRemoveInterrupt(HW_PPM_INPUT);
         ppm_frame_ready = cb;
         prev_tick = 0;
         chan = 0;
         nch = 0;
         bad_frame = 1;
-        gpioAttachInterrupt(HW_PPM_INPUT_PORT, HW_PPM_INPUT_PIN, 0, ppm_handler);
+        gpioAttachInterrupt(HW_PPM_INPUT, 0, ppm_handler);
     }
 }
 

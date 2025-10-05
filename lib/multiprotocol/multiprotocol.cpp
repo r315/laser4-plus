@@ -186,7 +186,6 @@ void multiprotocol_loop(void)
 static uint8_t Update_All(void)
 {
     uint8_t ch;
-    uint32_t chan_or = radio.chan_order;
     if(IS_RX_FLAG_on || IS_PPM_FLAG_on){
         #ifdef ENABLE_SERIAL
         if(radio.mode_select == MODE_SERIAL){       // Serial mode and something has been received
@@ -195,6 +194,8 @@ static uint8_t Update_All(void)
         #endif //ENABLE_SERIAL
 
         #ifdef ENABLE_PPM
+        uint32_t chan_or = radio.chan_order;
+
         if(radio.mode_select != MODE_SERIAL){
             // PPM mode and a full frame has been received
             radio.nchannels = ppm_nchannel_get();

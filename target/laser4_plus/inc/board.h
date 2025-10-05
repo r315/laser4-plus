@@ -124,6 +124,7 @@ extern "C" {
  */
 #define HW_PPM_INPUT_PIN        5
 #define HW_PPM_INPUT_PORT       GPIOB
+#define HW_PPM_INPUT            HW_PPM_INPUT_PORT,HW_PPM_INPUT_PIN
 #define PPM_TIM                 TIM4
 #define PPM_TIM_CH              (2 - 1)
 #define PPM_DMA_REQ             DMA1_REQ_TIM4_UP

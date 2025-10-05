@@ -561,7 +561,7 @@ uint8_t appGetAuxChannels(uint16_t *channel_aux)
         if(channel_value != channel_aux[i + nch]){
             channel_aux[i + nch] = channel_value;
             // This will always print on first call due to default values
-            DBG_APP_INF("Aux channel %d changed", i + 1);
+            DBG_APP_INF("Aux %d changed", i + 1);
         }
     }
 
