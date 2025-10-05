@@ -90,6 +90,7 @@ $(LIBEMB_PATH)/lib/src/strfunc.c \
 $(LIBEMB_PATH)/lib/src/fifo.c \
 $(LIBEMB_PATH)/lib/src/nvdata.c \
 $(LIBEMB_PATH)/lib/src/debug.c \
+$(LIBEMB_PATH)/lib/src/stimer.c \
 $(LIBEMB_PATH)/component/display/ssd1306.c \
 $(LIBEMB_PATH)/component/display/font.c \
 $(APP_PATH)/game_controller.c \

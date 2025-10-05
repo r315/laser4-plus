@@ -219,15 +219,10 @@ extern "C" {
 
 #define BUZ_PLAYING             (1 << 0)
 
-#define SWTIM_NUM               4
-#define SWTIM_RUNNING           (1 << 0)
-#define SWTIM_AUTO_RELOAD       (1 << 1)
-#define SWTIM_IN_USE            (1 << 2)
-
 /* This is not eeprom size, but it should be > than requested eeprom size and be 4byte aligned */
 #define L4P_EEPROM_SZ           128
 #define EEPROM_Read             NV_Read
-#define EEPROM_Write(addr,data,len)  NV_Write(addr,data,len)
+#define EEPROM_Write            NV_Write
 #define EEPROM_Sync             NV_Sync
 #define EEPROM_Erase            NV_Erase
 
@@ -253,11 +248,6 @@ uint16_t ticksIsIntervalTimedout(void);
 /* Generic delay function */
 void DelayMs(uint32_t ms);
 uint32_t millis(void);
-
-/* Software timers */
-uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void));
-void stopTimer(uint32_t tim);
-void processTimer(void);
 
 /* SPI API */
 void SPI_Write(uint8_t data);
@@ -313,7 +303,9 @@ uint32_t auxGetSwitches(void);
 #endif
 
 #ifdef ENABLE_UART
-extern stdinout_t pcom;
+int serial_available(void);
+int serial_read(char *buf, int len);
+int serial_write(const char *buf, int len);
 #endif
 
 #ifdef ENABLE_VCP

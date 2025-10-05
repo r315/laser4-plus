@@ -105,7 +105,7 @@ void ppm_sim_handler(void)
 
 void ppm_sim_set_channel_data(uint8_t ch, uint16_t data)
 {
-    if(ch < PPM_CH_OUT_NUM){
+    if(ch < PPM_CH_IN_NUM){
         ppm_data[ch] = data;
     }
 }

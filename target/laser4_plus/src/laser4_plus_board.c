@@ -46,7 +46,6 @@ typedef struct swtimer{
 }swtimer_t;
 
 // Private variables
-static swtimer_t timers[SWTIM_NUM];
 static volatile uint32_t systicks;
 static void (*gpio_int_handler)(void);
 
@@ -1065,62 +1064,6 @@ void buzWaitEnd(void)
     while(TONE_Status() == TONE_PLAYNG){}
 }
 #endif
-
-/**
- * @brief Start a software timer
- *
- * @param time : Timer duration in ms
- * @param flags : Extra flags for continuous mode, 0 for single time
- * @param cb : callback function when timer expires
- *
- * @return : Assigned timer index
- * */
-uint32_t startTimer(uint32_t time, uint32_t flags, void (*cb)(void)){
-
-    for(uint32_t i = 0; i < SWTIM_NUM; i++){
-        if((timers[i].status & SWTIM_RUNNING) == 0){
-            timers[i].time = time;
-            timers[i].count = 0;
-            timers[i].action = cb;
-            timers[i].status = flags | SWTIM_RUNNING;
-            return i;
-        }
-    }
-    return SWTIM_NUM;
-}
-
-/**
- * */
-void stopTimer(uint32_t tim){
-    timers[tim].status = 0;
-}
-
-/**
- * @brief Check if timers have expired and execute correspondent action
- *
- * */
-void processTimer(void)
-{
-    static uint32_t last_tick = 0;
-    uint32_t diff = systicks - last_tick;
-    swtimer_t *tim = timers;
-
-    for(uint32_t i = 0; i < SWTIM_NUM; i++, tim++){
-        if(tim->status & SWTIM_RUNNING){
-            tim->count += diff;
-            if(tim->count >= tim->time){
-                tim->action();
-                if(tim->status & SWTIM_AUTO_RELOAD){
-                    tim->count = 0;
-                }else{
-                    tim->status &= ~(SWTIM_RUNNING);
-                }
-            }
-        }
-    }
-
-    last_tick = systicks;
-}
 
 /**
  * @brief Enable CRC unit

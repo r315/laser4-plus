@@ -5,6 +5,7 @@
 #include "mpanel.h"
 #include "tone.h"
 #include "debug.h"
+#include "stimer.h"
 
 #if defined(ENABLE_VCP) || defined(ENABLE_GAME_CONTROLLER)
 #include "usb_device.h"
@@ -231,6 +232,7 @@ static mpanelicon_t ico_ma = {
 static MpanelDro dro_bat(DRO_BAT_POS, "%.2f",&font_seven_seg);
 static MpanelDro dro_amph(DRO_AMPH_POS, "%.2f",&font_seven_seg);
 static MpanelDro dro_ma(DRO_MA_POS, "%3u", &pixelDustFont);
+static stimer_t tim_disp_low_bat, tim_disp_indicators;
 
 void appToggleLowBatIco(void);
 #endif
@@ -239,10 +241,10 @@ void appToggleLowBatIco(void);
 typedef struct batsoc{
     float consumed;
     vires_t data;
-    uint8_t low_tim;
 }batsoc_t;
 
 static batsoc_t batsoc;
+static stimer_t tim_bat_mon;
 #endif
 
 /**
@@ -440,7 +442,7 @@ uint32_t appGetBatConsumed(void)
  * display it.
  *
  * */
-void appCheckBattery(void)
+uint32_t appCheckBattery(stimer_t *timer)
 {
     if (batteryReadVI(&batsoc.data)) {
         batsoc.consumed += (float)(batsoc.data.cur / (float)(3600 / (TIMER_BATTERY_TIME / 1000)));
@@ -450,13 +452,13 @@ void appCheckBattery(void)
                 DBG_APP_WRN("!! Battery Low (%dmV) !!", batsoc.data.vbat);
 #ifdef ENABLE_DISPLAY
                 // Start blinking timer
-                batsoc.low_tim = startTimer(TIMER_LOWBAT_TIME, SWTIM_AUTO_RELOAD, appToggleLowBatIco);
+                STIMER_Start(&tim_disp_low_bat);
             }
         } else if(IS_BAT_LOW){
             // Vbat has recover, disable low battery icon
             APP_FLAG_BAT_LOW_CLR;
             APP_FLAG_BAT_LOW_ICO_OFF_SET;
-            stopTimer(batsoc.low_tim);
+            STIMER_Stop(&tim_disp_low_bat);
         }
 
         APP_FLAG_DISPLAY_UP_SET;
@@ -469,6 +471,8 @@ void appCheckBattery(void)
         }
 #endif /* ENABLE_DISPLAY */
     }
+
+    return timer->interval;
 }
 #endif /* ENABLE_BATTERY_MONITOR */
 
@@ -479,7 +483,7 @@ void appCheckBattery(void)
  * called from timer and only if
  * display is enabled
  * */
-void appToggleLowBatIco(void)
+uint32_t appToggleLowBatIco(stimer_t *timer)
 {
     if(!(IS_BAT_LOW_ICO_VISIBLE)){
         APP_FLAG_BAT_ICO_SET;
@@ -490,13 +494,15 @@ void appToggleLowBatIco(void)
     }
 
     APP_FLAG_DISPLAY_UP_SET;
+
+    return timer->interval;
 }
 
 /**
  * @brief check multiprotocol flags and place icons
  * accordingly
  * */
-void appCheckProtocolFlags(void)
+uint32_t appCheckProtocolFlags(stimer_t *timer)
 {
     uint32_t flags = multiprotocol_flags_get();
 
@@ -527,6 +533,8 @@ void appCheckProtocolFlags(void)
             APP_FLAG_DISPLAY_UP_SET;
         }
     }
+
+    return timer->interval;
 }
 
 #endif /* ENABLE_DISPLAY */
@@ -700,8 +708,8 @@ extern "C" void setup(void)
     /* Get battery voltage */
     DBG_APP_INF("Battery voltage: %dmV", batteryGetVoltage());
 
-    startTimer(TIMER_BATTERY_TIME, SWTIM_AUTO_RELOAD, appCheckBattery);
-    appCheckBattery();
+    STIMER_Config(&tim_bat_mon, TIMER_BATTERY_TIME, appCheckBattery);
+    STIMER_Start(&tim_bat_mon);
 #endif
 
 #ifdef ENABLE_DISPLAY
@@ -718,9 +726,13 @@ extern "C" void setup(void)
         dro_amph.draw();
         dro_ma.setIcon(&ico_ma);
         dro_ma.draw();
-        // Start timer to update indications on display
-        startTimer(TIMER_PPM_TIME, SWTIM_AUTO_RELOAD, appCheckProtocolFlags);
+        // Configure timer indications update
+        STIMER_Config(&tim_disp_indicators, TIMER_PPM_TIME, appCheckProtocolFlags);
+        // Configure timer for low battery indication
+        STIMER_Config(&tim_disp_low_bat, TIMER_LOWBAT_TIME, appToggleLowBatIco);
+
         APP_FLAG_DISPLAY_UP_SET;
+        STIMER_Start(&tim_disp_indicators);
     }
 #endif
 
@@ -773,7 +785,7 @@ extern "C" void loop(void)
     con.process();
 #endif
 
-    processTimer();
+    STIMER_Tick(millis());
 
 #ifdef ENABLE_DISPLAY
     /* Display update interfeeres with timming,

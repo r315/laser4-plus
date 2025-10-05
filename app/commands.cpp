@@ -5,6 +5,7 @@
 #include "laser4_plus.h"
 #include "iface_cc2500.h"
 #include "multiprotocol.h"
+#include "stimer.h"
 
 #ifdef ENABLE_CLI
 
@@ -282,13 +283,24 @@ public:
 	}
 }cmdbind;
 
+uint32_t ppm_tim_handler(stimer_t *timer){
+#ifdef ENABLE_PPM
+    ppm_sim_handler();
+#endif
+    return timer->interval;
+}
 
 class CmdPpm : public ConsoleCommand {
     Console *console;
-    int32_t ppm_timer_id;
+    stimer_t tim_ppm;
 public:
     CmdPpm() : ConsoleCommand("ppm") {}
-	void init(void *params) { console = static_cast<Console*>(params); ppm_timer_id = -1;}
+
+	void init(void *params) {
+        console = static_cast<Console*>(params);
+        STIMER_Config(&tim_ppm, 20, ppm_tim_handler);
+    }
+
 	void help(void) {
         console->println("usage: ppm <sim|set>");
         console->println("sim [0|1],\t\tEnable/disable simulation");
@@ -313,21 +325,19 @@ public:
         if(!xstrcmp(argv[1], "sim")){
             // Only 4 channels are simulated, remaining channels are obtained
             // From encoder and switches
-            int32_t sim_enable;
-            if(ia2i(argv[2], &sim_enable)){
-                if((sim_enable & 1) && (ppm_timer_id == -1)){
+            if(ia2i(argv[2], &channel)){
+                if((channel & 1) && !STIMER_IsActive(&tim_ppm)){
                     for(uint8_t ch = 0; ch < PPM_CH_IN_NUM; ch++){
                         ppm_sim_set_channel_data(ch, ((SERVO_MAX - SERVO_MIN) >> 1) + SERVO_MIN);
                     }
                     console->println("Starting ppm simulation");
-                    ppm_timer_id = startTimer(20, SWTIM_AUTO_RELOAD, ppm_sim_handler);
+                    STIMER_Start(&tim_ppm);
                 }else{
                     console->println("Stoping ppm simulation");
-                    stopTimer(ppm_timer_id);
-                    ppm_timer_id = -1;
+                    STIMER_Stop(&tim_ppm);
                 }
             }else{
-                console->printf("ppm simulation is %s\n", ppm_timer_id < 0 ? "disabled":"enabled");
+                console->printf("ppm simulation is %s\n", STIMER_IsActive(&tim_ppm) ? "enabled":"disabled");
             }
             return CMD_OK;
         }
