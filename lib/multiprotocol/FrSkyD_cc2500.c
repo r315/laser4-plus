@@ -119,16 +119,17 @@ uint16_t FRSKYD_init(radio_t *radio)
 
     radio->packet_count = 0;
 
+    uint8_t id = CC2500_ReadStatus(CC2500_30_PARTNUM);
+
+    if(id != 0x80){
+        DBG_FRSKY_ERR("Invalid cc2500 id: 0x%x", id);
+    }
+
     if(radio->flags & FLAG_BIND){
         radio->state = FRSKY_BIND_DONE;
     }else{
-        uint8_t id = CC2500_ReadStatus(CC2500_30_PARTNUM);
-        if(id != 0x80){
-            DBG_FRSKY_ERR("Invalid cc2500 id: 0x%x", id);
-        }else{
-            FRSKYD_RF_init(radio, 1);
-            radio->state = FRSKY_BIND;
-        }
+        FRSKYD_RF_init(radio, 1);
+        radio->state = FRSKY_BIND;
     }
 
     return CC2500_CALLBACK_INTERVAL;

@@ -316,6 +316,10 @@ static void protocol_init(void)
     #endif
         DATA_BUFFER_LOW_off;
 
+    #ifdef TX35_MHZ_INSTALLED
+        HW_TX_35MHZ_OFF;
+    #endif
+
         radio.blink = millis();
 
         switch(radio.protocol)                // Init the requested protocol
@@ -347,7 +351,7 @@ static void protocol_init(void)
 
             default:
                 radio.remote_callback = NULL;
-                DBG_MULTI_INF("No protocol configured");
+                DBG_MULTI_WRN("No protocol configured");
                 break;
         }
 
