@@ -574,13 +574,13 @@ public:
         int32_t val;
 
 		if(argc < 1){
-			console->printf("Current level %u\n", buzSetLevel(0));
+			console->printf("Current level %u\n", TONE_Volume(0));
 			return CMD_OK;
 		}
 
 		if(!xstrcmp(argv[1], "vol")){
 			if(ia2i(argv[2], &val)){
-				console->printf("Current level %u\n", buzSetLevel(val));
+				console->printf("Current level %u\n", TONE_Volume(val));
 				eeprom->buz_vol = val&255;
 				return CMD_OK;
 			}
@@ -589,7 +589,7 @@ public:
 		if(!xstrcmp(argv[1], "freq")){
 			int32_t freq, duration;
 			if(ia2i(argv[2], &freq) && ia2i(argv[3], &duration)){
-                buzPlayTone(freq, duration);
+                TONE_Start(freq, duration);
                 return CMD_OK;
             }
 			return CMD_OK;

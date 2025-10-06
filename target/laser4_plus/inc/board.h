@@ -215,8 +215,6 @@ extern "C" {
 #define BATTERY_VOLTAGE_MAX     4200U
 #define BATTERY_CURRENT_MAX     600U
 
-#define BUZ_PLAYING             (1 << 0)
-
 /* This is not eeprom size, but it should be > than requested eeprom size and be 4byte aligned */
 #define L4P_EEPROM_SZ           128
 #define EEPROM_Read             NV_Read
@@ -277,13 +275,6 @@ uint32_t batteryReadVI(vires_t *dst);
 
 #ifdef ENABLE_PPM_OUTPUT
 void ppmOut(const uint16_t *data, uint8_t nch);
-#endif
-
-#ifdef ENABLE_BUZZER
-void buzPlayTone(uint16_t freq, uint16_t duration);
-void buzPlay(tone_t *tones);
-uint16_t buzSetLevel(uint16_t level);
-void buzWaitEnd(void);
 #endif
 
 #ifdef ENABLE_AUX_ENCODER

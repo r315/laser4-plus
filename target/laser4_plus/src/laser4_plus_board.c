@@ -38,13 +38,6 @@ typedef struct adc{
     uint32_t battery_current;
 }adc_t;
 
-typedef struct swtimer{
-        uint32_t time;
-        uint32_t count;
-        uint32_t status;
-        void (*action)(void);
-}swtimer_t;
-
 // Private variables
 static volatile uint32_t systicks;
 static void (*gpio_int_handler)(void);
@@ -998,28 +991,6 @@ RAM_CODE void TIM2_IRQHandler(void){
     }
 }
 #endif /* ENABLE_PWM */
-
-#ifdef ENABLE_BUZZER
-void buzPlayTone(uint16_t freq, uint16_t duration)
-{
-    TONE_Start(freq, duration);
-}
-
-void buzPlay(tone_t *tones)
-{
-    TONE_Play(tones);
-}
-
-uint16_t buzSetLevel(uint16_t level)
-{
-    return TONE_Volume(level);
-}
-
-void buzWaitEnd(void)
-{
-    while(TONE_Status() == TONE_PLAYNG){}
-}
-#endif
 
 /**
  * @brief Enable CRC unit

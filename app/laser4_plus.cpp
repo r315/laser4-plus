@@ -402,14 +402,14 @@ static void appModeChange(app_mode_t new_mode)
         case MODE_CC2500:
         case MODE_PPM:
 #ifdef ENABLE_BUZZER
-            buzPlayTone(400,150);
+            TONE_Start(400,150);
 #endif
             break;
         case MODE_HID:
 #ifdef ENABLE_GAME_CONTROLLER
             DBG_APP_INF("\n ***** Starting game controller *****");
     #ifdef ENABLE_BUZZER
-            buzPlayTone(2000,150);
+            TONE_Start(2000,150);
     #endif
 #endif /* ENABLE_GAME_CONTROLLER */
             LED_OFF;
@@ -691,9 +691,9 @@ extern "C" void setup(void)
     appInitEEPROM();
 #ifdef ENABLE_BUZZER
     // Set volume from stored value
-    buzSetLevel(eeprom->buz_vol);
+    TONE_Volume(eeprom->buz_vol);
     // Play som random tone
-    buzPlay(chime);
+    TONE_Play(chime);
 #endif
 
 #ifdef ENABLE_BATTERY_MONITOR
@@ -739,7 +739,7 @@ extern "C" void setup(void)
 
 #ifdef ENABLE_BUZZER
     // wait for melody to finish
-    buzWaitEnd();
+    while(TONE_Status() == TONE_PLAYNG){};
 #endif
     // Configure watchdog
     WDT_Init(WATCHDOG_TIME);
