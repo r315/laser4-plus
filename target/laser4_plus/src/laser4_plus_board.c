@@ -119,8 +119,6 @@ static void laser4Init(void)
     systicksInit();
 
 #ifdef CC2500_INSTALLED
-    CC25_CS_INIT;
-
     hspi.bus = SPI_BUS1;
     hspi.freq = 4000;
     hspi.cfg = SPI_MODE0;

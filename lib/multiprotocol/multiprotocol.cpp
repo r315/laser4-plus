@@ -316,10 +316,6 @@ static void protocol_init(void)
     #endif
         DATA_BUFFER_LOW_off;
 
-    #ifdef TX35_MHZ_INSTALLED
-        HW_TX_35MHZ_OFF;
-    #endif
-
         radio.blink = millis();
 
         switch(radio.protocol)                // Init the requested protocol
@@ -417,7 +413,7 @@ int16_t map16b( int16_t x, int16_t in_min, int16_t in_max, int16_t out_min, int1
 static void modules_reset(void)
 {
     #ifdef CC2500_INSTALLED
-    HW_CC2500_MODULE_RESET;
+    CC2500_RESET;
     #endif
 
     #ifdef TX35_MHZ_INSTALLED

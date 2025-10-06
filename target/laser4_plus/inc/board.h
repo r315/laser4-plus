@@ -72,19 +72,17 @@ extern "C" {
 
 /**
  * SPI2
- * PB12 -> CS
- * PB13 -> SCK
- * PB14 <- MISO
- * PB15 -> MOSI
+ * PB12 -> CS       GPO
+ * PB13 -> SCK      AF
+ * PB14 <- MISO     IF
+ * PB15 -> MOSI     AF
  * */
 #define CC25_CS_PIN             12
 #define CC25_CS_PORT            GPIOB
-#define CC25_CS_INIT            GPO_INIT(CC25_CS_PORT, CC25_CS_PIN); CC25_CS_FALSE
 #define CC25_CS_FALSE           GPO_SET(CC25_CS_PORT, CC25_CS_PIN)
 #define CC25_CS_TRUE            GPO_CLR(CC25_CS_PORT, CC25_CS_PIN)
-#define HW_CC2500_MODULE_RESET
-//Output AF_PP, IN no pull
-#define SPI_PINS_INIT           GPIOB->CRH = (GPIOB->CRH & ~(0xFFF << 20)) | (0xB4B << 20);
+#define CC2500_RESET
+#define SPI_PINS_INIT           GPIOB->CRH = (GPIOB->CRH & ~(0xFFFF << 16)) | (0xB4B2 << 16);
 
 /**
  * Switches
