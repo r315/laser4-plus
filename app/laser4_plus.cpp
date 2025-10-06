@@ -673,8 +673,6 @@ extern "C" void setup(void)
     USB_DEVICE_RegisterResumeCallback(usbConnectCB, NULL);
 #endif
 
-    DBG_PRINT("\n Laser4+ version: %s\n", VERSION_STRING);
-
 #if defined(ENABLE_CLI)
     #if defined(ENABLE_VCP)
     #define CONSOLE_STDINOUT &vcp
@@ -687,6 +685,9 @@ extern "C" void setup(void)
     con.registerCommandList(laser4_commands);
     con.cls();
 #endif
+
+    DBG_PRINT("\n Laser4+ version: %s\n", VERSION_STRING);
+
     // Load eeprom data
     appInitEEPROM();
 #ifdef ENABLE_BUZZER
