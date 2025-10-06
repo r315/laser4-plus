@@ -6,6 +6,7 @@
 #include "tone.h"
 #include "debug.h"
 #include "stimer.h"
+#include "wdt.h"
 
 #if defined(ENABLE_VCP) || defined(ENABLE_GAME_CONTROLLER)
 #include "usb_device.h"
@@ -741,7 +742,7 @@ extern "C" void setup(void)
     buzWaitEnd();
 #endif
     // Configure watchdog
-    enableWatchDog(WATCHDOG_TIME);
+    WDT_Init(WATCHDOG_TIME);
 }
 
 /**
@@ -850,6 +851,6 @@ extern "C" void loop(void)
     }
 #endif
 
-    reloadWatchDog();
+    WDT_Reset();
 }
 

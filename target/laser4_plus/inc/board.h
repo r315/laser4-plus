@@ -252,16 +252,10 @@ uint32_t millis(void);
 /* SPI API */
 void SPI_Write(uint8_t data);
 uint8_t SPI_Read(void);
-
 /* Gpio API */
 void gpioInit(GPIO_TypeDef *port, uint8_t pin, uint8_t mode);
 void gpioAttachInterrupt(GPIO_TypeDef *port, uint8_t pin, uint8_t edge, void(*)(void));
 void gpioRemoveInterrupt(GPIO_TypeDef *port, uint8_t pin);
-
-/* Watchdog */
-void enableWatchDog(uint32_t interval);
-void reloadWatchDog(void);
-
 /* Random number generator and cpu unique id */
 uint32_t xrand(void);
 uint32_t cpuGetId(void);

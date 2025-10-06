@@ -79,6 +79,7 @@ $(LIBEMB_PATH)/drv/gpio/gpio_stm32f1xx.c \
 $(LIBEMB_PATH)/drv/clock/clock_stm32f1xx.c \
 $(LIBEMB_PATH)/drv/spi/spi_stm32f1xx.c \
 $(LIBEMB_PATH)/drv/i2c/i2c_stm32f1xx.c \
+$(LIBEMB_PATH)/drv/wdt/wdt_stm32f1xx.c \
 $(TARGET_PATH)/src/laser4_plus_board.c \
 
 APP_SOURCES = \
