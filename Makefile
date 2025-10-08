@@ -24,14 +24,17 @@ clean:
 
 # Common variables
 MAKE_TGT = $(MAKE) -C target/laser4_plus PROJECT_DIR=$(CURDIR)
+MAKE_DK415 = $(MAKE) -C target/415dk PROJECT_DIR=$(CURDIR)
 
 # Per-board settings
 L4P_FLAGS = XTAL=HSE12MHZ
 BP_FLAGS  = TARGET=bp BOARD=BOARD_BLUEPILL
+DK415_FLAGS = TARGET=dk415 BOARD=BOARD_DK415
 
 # Default build targets
 l4p:         ; @$(MAKE_TGT) $(L4P_FLAGS)
 bp:          ; @$(MAKE_TGT) $(BP_FLAGS)
+dk415:       ; @$(MAKE_DK415) $(DK415_FLAGS)
 
 # Release build
 l4p-release: ; @$(MAKE_TGT) $(L4P_FLAGS) RELEASE=1
@@ -40,6 +43,7 @@ bp-release:  ; @$(MAKE_TGT) $(BP_FLAGS) RELEASE=1
 # Programming
 l4p-program: ; @$(MAKE_TGT) $(L4P_FLAGS) jlink-program
 bp-program:  ; @$(MAKE_TGT) $(BP_FLAGS) jlink-program
+dk415-program:  ; @$(MAKE_DK415) $(DK415_FLAGS) jlink-program
 
 # DFU builds
 l4p-dfu:     ; @$(MAKE_TGT) $(L4P_FLAGS) dfu

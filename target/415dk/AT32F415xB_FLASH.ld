@@ -104,7 +104,7 @@ SECTIONS
   _sidata = LOADADDR(.data);
 
   /* Initialized data sections goes into RAM, load LMA copy after code */
-  .data : 
+  .data :
   {
     . = ALIGN(4);
     _sdata = .;        /* create a global symbol at data start */
@@ -116,6 +116,16 @@ SECTIONS
     . = ALIGN(4);
     _edata = .;        /* define a global symbol at data end */
   } >RAM AT> FLASH
+
+  /* used for EEPROM emulation, must be placed at next flash free page */
+  .eeprom : ALIGN(1024)
+  {
+    _seeprom = .;
+    KEEP(*(.eeprom))
+    FILL(0xFF)
+    . += 1024;
+    _eeeprom = .;
+  } >FLASH
 
   /* Uninitialized data section */
   .bss :

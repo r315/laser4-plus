@@ -1,28 +1,33 @@
 ######################################
 # target
 ######################################
-TARGET =415dk-multiprotocol
-BOARD  =BOARD_415DK
+TARGET ?=dk415-multiprotocol
+BOARD  ?=BOARD_DK415
 #######################################
 # Features
 #######################################
-#FEATURES += USE_MY_CONFIG
-#FEATURES += CC2500_INSTALLED
-#FEATURES += TX35_MHZ_INSTALLED
-#FEATURES += FRSKYD_CC2500_INO
-#FEATURES += ENABLE_PPM
-#FEATURES += ENABLE_PPM_OUTPUT
-#FEATURES += ENABLE_BATTERY_MONITOR
+FEATURES += USE_MY_CONFIG
+FEATURES += CC2500_INSTALLED
+FEATURES += TX35_MHZ_INSTALLED
+FEATURES += FRSKYD_CC2500_INO
+FEATURES += ENABLE_PPM
+FEATURES += ENABLE_PPM_OUTPUT
+FEATURES += ENABLE_AUX_ENCODER
+FEATURES += ENABLE_AUX_SWITCHES
+FEATURES += ENABLE_BUZZER
+FEATURES += ENABLE_BATTERY_MONITOR
 #FEATURES += ENABLE_GAME_CONTROLLER
-#FEATURES += ENABLE_DISPLAY
-#FEATURES += ENABLE_BUZZER
+FEATURES += ENABLE_I2C
+FEATURES += ENABLE_DISPLAY
 #FEATURES += ENABLE_VCP
 FEATURES += ENABLE_UART
 FEATURES += ENABLE_CLI
 FEATURES += ENABLE_DEBUG
-FEATURES += ENABLE_DEBUG_APP
+FEATURES += ENABLE_DEBUG_BOARD
 FEATURES += ENABLE_DEBUG_NVDATA
+FEATURES += ENABLE_DEBUG_APP
 FEATURES += ENABLE_DEBUG_MULTI
+FEATURES += ENABLE_DEBUG_FRSKY
 
 
 #######################################
@@ -30,13 +35,13 @@ FEATURES += ENABLE_DEBUG_MULTI
 #######################################
 
 PROJECT_DIR :=.
-BUILD_DIR   :=$(PROJECT_DIR)/build/415dk
+BUILD_DIR   :=$(PROJECT_DIR)/build/$(TARGET)
 APP_PATH    :=$(PROJECT_DIR)/app
-TARGET_PATH =$(CURDIR)
-LIBEMB_PATH =$(PROJECT_DIR)/lib/libemb
-DRIVER_PATH =$(LIBEMB_PATH)/drv
-DRIVER_SOC_PATH =$(LIBEMB_PATH)/drv/SOC/at32f4xx
-DRIVER_COMPONENT_PATH =$(LIBEMB_PATH)/component
+TARGET_PATH :=$(CURDIR)
+LIBEMB_PATH :=$(PROJECT_DIR)/lib/libemb
+DRIVER_PATH :=$(LIBEMB_PATH)/drv
+DRIVER_SOC_PATH :=$(LIBEMB_PATH)/drv/SOC/at32f4xx
+DRIVER_COMPONENT_PATH :=$(LIBEMB_PATH)/component
 
 LIB_USB_CDC_PATH :=$(PROJECT_DIR)/lib/stm32-usb-cdc
 LIB_USB_HID_PATH :=$(PROJECT_DIR)/lib/stm32-usb-cdc_hid
@@ -53,6 +58,7 @@ $(LIBEMB_PATH)/drv/inc \
 $(LIBEMB_PATH)/CMSIS/Core/Include \
 $(LIBEMB_PATH)/CMSIS/Device/ARTERY/AT32F4xx/inc \
 $(LIBEMB_PATH)/CMSIS/Device/ARTERY/AT32F4xx/inc \
+$(LIBEMB_PATH)/component/display \
 $(TARGET_PATH)/inc \
 $(DRIVER_SOC_PATH)/inc \
 $(LIB_MULTIPROTOCOL_PATH) \
@@ -65,10 +71,17 @@ AS_INCLUDES =\
 ######################################
 TARGET_SOURCES = \
 $(LIBEMB_PATH)/CMSIS/Device/ARTERY/AT32F4xx/src/startup_at32f415cbt7.c \
-$(LIBEMB_PATH)/drv/uart/uart_at32f4xx.c \
+$(LIBEMB_PATH)/CMSIS/Device/ARTERY/AT32F4xx/src/system_at32f4xx.c \
 $(TARGET_PATH)/src/415dk_board.c \
 $(DRIVER_SOC_PATH)/src/at32f4xx_rcc.c \
+$(DRIVER_PATH)/uart/uart_at32f4xx.c \
+$(DRIVER_PATH)/dma/dma_at32f4xx.c \
+$(DRIVER_PATH)/flash/fls_at32f4xx.c \
 $(DRIVER_PATH)/gpio/gpio_at32f4xx.c \
+$(DRIVER_PATH)/i2c/i2c_at32f4xx.c \
+$(DRIVER_PATH)/spi/spi_at32f4xx.c \
+$(DRIVER_PATH)/tone/tone_at32f4xx.c \
+$(DRIVER_PATH)/wdt/wdt_at32f4xx.c \
 
 LIB_SOURCES = \
 $(LIBEMB_PATH)/lib/src/fifo.c \
@@ -76,6 +89,10 @@ $(LIBEMB_PATH)/lib/src/strfunc.c \
 $(LIBEMB_PATH)/lib/src/fifo.c \
 $(LIBEMB_PATH)/lib/src/nvdata.c \
 $(LIBEMB_PATH)/lib/src/debug.c \
+$(LIBEMB_PATH)/lib/src/stimer.c \
+$(LIBEMB_PATH)/lib/src/lib2d.c \
+$(LIBEMB_PATH)/lib/src/font.c \
+$(LIBEMB_PATH)/component/display/ssd1306.c \
 
 C_SOURCES = \
 $(TARGET_SOURCES) \
@@ -87,10 +104,12 @@ $(LIB_MULTIPROTOCOL_PATH)/ppm_decode.c \
 
 CPP_SOURCES = \
 $(LIB_MULTIPROTOCOL_PATH)/multiprotocol.cpp \
-#$(APP_PATH)/laser4_plus.cpp \
-#$(wildcard $(APP_PATH)/*.cpp) \
+$(APP_PATH)/laser4_plus.cpp \
+$(APP_PATH)/commands.cpp \
+$(APP_PATH)/mpanel.cpp \
+$(LIBEMB_PATH)/lib/src/console.cpp \
 
-LDSCRIPT :=$(TARGET_PATH)/AT32F415xB_FLASH.ld
+LDSCRIPT :=AT32F415xB_FLASH.ld
 #######################################
 # Misc
 #######################################
@@ -102,6 +121,10 @@ $(FEATURES) \
 USE_STDPERIPH_DRIVER \
 UART_RX_MODE=UART_MODE_FIFO \
 UART_TX_MODE=UART_MODE_FIFO \
+FIFO_SIZE=128 \
+FIFO_INTERRUPT_SAFE \
+CONSOLE_WIDTH=128 \
+USE_PIXELDUST_FONT \
 
 #######################################
 # CFLAGS
@@ -109,24 +132,22 @@ UART_TX_MODE=UART_MODE_FIFO \
 
 DEVICE =AT32F415CBT7
 CORE =cortex-m4
-MCU = -mcpu=$(CORE) -mthumb
+MCU =-mcpu=$(CORE) -mthumb
 
 ifdef RELEASE
-DEBUG =0
 OPT   =-O2
 else
-DEBUG =1
-OPT   =-O0 -g -gdwarf-2 -Wall #-Wextra
+OPT   =-O0 -g -gdwarf-2 -Wall -Wextra
 endif
 
 ifndef V
 VERBOSE =@
 endif
 
-ASFLAGS  =$(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
-CFLAGS   =$(MCU) $(OPT) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) -std=gnu11 -fdata-sections -ffunction-sections #-fstack-usage
-CPPFLAGS =$(MCU) $(OPT) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) -fdata-sections -ffunction-sections -fno-unwind-tables -fno-exceptions -fno-rtti
-LDFLAGS  =$(MCU) $(SPECS) #-Wl,--gc-sections,-Map=$(BUILD_DIR)/$(TARGET).map,--cref
+ASFLAGS  =$(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -fdata-sections -ffunction-sections
+CFLAGS   =$(MCU) $(OPT) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) -fdata-sections -ffunction-sections -fno-builtin -std=gnu11
+CPPFLAGS =$(MCU) $(OPT) $(addprefix -D, $(C_DEFS)) $(addprefix -I, $(C_INCLUDES)) -fdata-sections -ffunction-sections -fno-unwind-tables -fno-exceptions -fno-rtti -fno-builtin
+LDFLAGS  =$(MCU) $(SPECS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,-gc-sections,-cref
 
 #CFLAGS += -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -Wa,-a,-ad,-alms=$(BUILD_DIR)/$(notdir $(<:.c=.lst))
 #######################################
@@ -136,12 +157,10 @@ LDFLAGS  =$(MCU) $(SPECS) #-Wl,--gc-sections,-Map=$(BUILD_DIR)/$(TARGET).map,--c
 LIBDIR =
 ifdef SEMIHOSTING
 SPECS =--specs=rdimon.specs
-LDLIBS =-nostartfiles -lc -lrdimon
+LDLIBS =-nostartfiles -lc -lrdimon #-nostdlib
 else
-SPECS=--specs=nosys.specs --specs=nano.specs
-#
-LIBS = -nostdlib
-#-nostdlib -lstd++ -lnosys -lm
+SPECS=--specs=nano.specs #--specs=nosys.specs
+LIBS =-lstdc++
 endif
 
 #######################################
@@ -172,21 +191,10 @@ OBJDUMP =$(PREFIX)objdump
 HEX = $(OBJCOPY) -O ihex
 BIN = $(OBJCOPY) -O binary -S
 
-
-ifeq ($(ST_LINK_PROBE),1)
-PRG_DEP =bin
-PRG_CFG =$(TARGET_PATH)/at32f415.cfg
-PRG_CMD =openocd -f $(PRG_CFG) -c "program $(BUILD_DIR)/$(TARGET).elf verify reset exit"
-ERASE_CMD =openocd -f $(PRG_CFG) -c "init" -c "halt" -c "stm32f1x unlock 0" -c "stm32f1x mass_erase 0" -c "exit"
-else
 ifeq ($(shell uname -s), Linux)
 JLK =JLinkExe
 else
 JLK =JLink
-endif
-PRG_DEP =bin $(PRG_CFG)
-PRG_CFG =$(BUILD_DIR)/$(TARGET).jlink
-PRG_CMD =$(JLK) -device $(DEVICE) -if SWD -speed auto -CommanderScript $(PRG_CFG)
 endif
 
 #######################################
@@ -197,8 +205,12 @@ all: $(BUILD_DIR)/$(TARGET).elf size
 
 bin: $(BUILD_DIR)/$(TARGET).bin
 
-program: $(PRG_DEP)
-	$(VERBOSE)$(PRG_CMD)
+jlink-program: bin $(BUILD_DIR)/$(TARGET).jlink
+	$(VERBOSE)$(JLK) -device $(DEVICE) -if SWD -speed auto -CommanderScript $(BUILD_DIR)/$(TARGET).jlink
+
+stlink-program: bin
+	$(VERBOSE)openocd -f $(TARGET_PATH)/at32f415.cfg -c "program $(BUILD_DIR)/$(TARGET).elf verify reset exit"
+#ERASE_CMD =openocd -f $(PRG_CFG) -c "init" -c "halt" -c "stm32f1x unlock 0" -c "stm32f1x mass_erase 0" -c "exit"
 
 $(BUILD_DIR)/$(TARGET).jlink: $(BUILD_DIR)/$(TARGET).bin
 	@echo "Creating Jlink configuration file"
