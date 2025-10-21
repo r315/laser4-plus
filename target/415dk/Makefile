@@ -125,6 +125,7 @@ FIFO_SIZE=128 \
 FIFO_INTERRUPT_SAFE \
 CONSOLE_WIDTH=128 \
 USE_PIXELDUST_FONT \
+$(VERSION) \
 
 #######################################
 # CFLAGS
@@ -135,6 +136,8 @@ CORE =cortex-m4
 MCU =-mcpu=$(CORE) -mthumb
 
 ifdef RELEASE
+GIT_TAG :=$(shell git describe --abbrev=0 --tags 2>/dev/null || true)
+VERSION :=VERSION_STRING=\"$(GIT_TAG)\"
 OPT   =-O2
 else
 OPT   =-O0 -g -gdwarf-2 -Wall -Wextra
