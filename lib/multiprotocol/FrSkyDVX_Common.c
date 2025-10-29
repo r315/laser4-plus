@@ -81,7 +81,11 @@ uint16_t convert_channel_frsky(uint16_t val)
 }
 
 #if defined(FRSKYD_CC2500_INO) || defined(FRSKYX_CC2500_INO)
-
+/**
+ * @brief Generates a hopping table based on a
+ * 16-bit address. This table seams random and ends with the value 0
+ * @param radio
+ */
 void Frsky_init_hop(radio_t *radio)
 {
     uint8_t val;

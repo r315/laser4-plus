@@ -35,25 +35,26 @@ static void __attribute__((unused)) FRSKYD_build_bind_packet(radio_t *radio)
 {
     //11 03 01 d7 2d 00 00 1e 3c 5b 78 00 00 00 00 00 00 01
     //11 03 01 19 3e 00 02 8e 2f bb 5c 00 00 00 00 00 00 01
-    radio->packet[0] = 0x11;
-    radio->packet[1] = 0x03;
-    radio->packet[2] = 0x01;
+    uint16_t hti = ((radio->state - FRSKY_BIND) % 10) * 5;
+
+    radio->packet[0] = 0x11;        // Length
+    radio->packet[1] = 0x03;        // Address 3 for bind
+    radio->packet[2] = 0x01;        // Bind packet
     radio->packet[3] = radio->rx_tx_addr[3];
     radio->packet[4] = radio->rx_tx_addr[2];
-    uint16_t idx = ((radio->state - FRSKY_BIND) % 10) * 5;
-    radio->packet[5] = idx;
-    radio->packet[6] = radio->hopping_frequency[idx++];
-    radio->packet[7] = radio->hopping_frequency[idx++];
-    radio->packet[8] = radio->hopping_frequency[idx++];
-    radio->packet[9] = radio->hopping_frequency[idx++];
-    radio->packet[10] = radio->hopping_frequency[idx++];
+    radio->packet[5] = hti;
+    radio->packet[6] = radio->hopping_frequency[hti+0];
+    radio->packet[7] = radio->hopping_frequency[hti+1];
+    radio->packet[8] = radio->hopping_frequency[hti+2];
+    radio->packet[9] = radio->hopping_frequency[hti+3];
+    radio->packet[10] = radio->hopping_frequency[hti+4];
     radio->packet[11] = 0x00;
     radio->packet[12] = 0x00;
     radio->packet[13] = 0x00;
     radio->packet[14] = 0x00;
     radio->packet[15] = 0x00;
     radio->packet[16] = 0x00;
-    radio->packet[17] = 0x01;
+    radio->packet[17] = radio->rx_tx_addr[1];
 }
 /**
  * @brief sends servo data through FrSky protocol
